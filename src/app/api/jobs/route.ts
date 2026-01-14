@@ -38,8 +38,8 @@ export async function GET(request: NextRequest) {
         const page = parseInt(searchParams.get('page') || '1');
         const limit = parseInt(searchParams.get('limit') || '10');
 
-        // Build query
-        const query: any = { status: JobStatus.ACTIVE };
+        // Build query - only show published jobs to public
+        const query: any = { status: JobStatus.PUBLISHED };
 
         if (search) {
             query.$or = [
