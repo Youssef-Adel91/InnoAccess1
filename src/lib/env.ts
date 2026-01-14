@@ -8,17 +8,17 @@ const envSchema = z.object({
     NEXTAUTH_URL: z.string().url('NEXTAUTH_URL must be a valid URL'),
     NEXTAUTH_SECRET: z.string().min(32, 'NEXTAUTH_SECRET must be at least 32 characters'),
 
-    // Cloudinary
-    CLOUDINARY_CLOUD_NAME: z.string().min(1, 'Cloudinary cloud name is required'),
-    CLOUDINARY_API_KEY: z.string().min(1, 'Cloudinary API key is required'),
-    CLOUDINARY_API_SECRET: z.string().min(1, 'Cloudinary API secret is required'),
+    // Cloudinary (optional - for file uploads)
+    CLOUDINARY_CLOUD_NAME: z.string().optional(),
+    CLOUDINARY_API_KEY: z.string().optional(),
+    CLOUDINARY_API_SECRET: z.string().optional(),
 
-    // Paymob
-    PAYMOB_API_KEY: z.string().min(1, 'Paymob API key is required'),
-    PAYMOB_INTEGRATION_ID_CARD: z.string().min(1, 'Paymob card integration ID is required'),
-    PAYMOB_INTEGRATION_ID_WALLET: z.string().min(1, 'Paymob wallet integration ID is required'),
-    PAYMOB_IFRAME_ID: z.string().min(1, 'Paymob iframe ID is required'),
-    PAYMOB_HMAC_SECRET: z.string().min(1, 'Paymob HMAC secret is required'),
+    // Paymob (optional - for payments)
+    PAYMOB_API_KEY: z.string().optional(),
+    PAYMOB_INTEGRATION_ID_CARD: z.string().optional(),
+    PAYMOB_INTEGRATION_ID_WALLET: z.string().optional(),
+    PAYMOB_IFRAME_ID: z.string().optional(),
+    PAYMOB_HMAC_SECRET: z.string().optional(),
 });
 
 // Validate environment variables at startup

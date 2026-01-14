@@ -15,16 +15,12 @@ export async function GET(
     try {
         await connectDB();
 
+        // SECURITY: Do NOT populate applicants in public endpoint
+        // Applicant data contains sensitive PII (emails, CVs, cover letters)
+        // Only job owner should access via /api/jobs/[id]/applicants
         const job = await Job.findById(params.id)
-            .populate('companyId', 'name email profile')
-            .populate({
-                path: 'applicants',
-                select: 'userId cvUrl coverLetter status appliedAt',
-                populate: {
-                    path: 'userId',
-                    select: 'name email profile',
-                },
-            })
+            .populate('companyId', 'name profile.companyName profile.companyLogo')
+            .select('-applicants') // Explicitly exclude applicants array
             .lean();
 
         if (!job) {

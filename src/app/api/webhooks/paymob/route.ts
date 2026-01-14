@@ -86,6 +86,19 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: true });
         }
 
+        // SECURITY FIX: Idempotency check - prevent replay attacks
+        if (enrollment.isPaymentProcessed) {
+            console.log('⚠️  Payment already processed, ignoring duplicate webhook:', paymentId);
+            return NextResponse.json({
+                success: true,
+                message: 'Payment already processed (idempotent)'
+            });
+        }
+
+        // Mark as processed immediately
+        enrollment.isPaymentProcessed = true;
+        await enrollment.save();
+
         // Update course enrollment count
         await Course.findByIdAndUpdate(enrollment.courseId, {
             $inc: { enrollmentCount: 1 },

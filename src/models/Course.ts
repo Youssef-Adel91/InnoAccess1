@@ -36,6 +36,8 @@ export interface ICourse extends Document {
     enrollmentCount: number;
     rating: number;
     isPublished: boolean;
+    isDeleted: boolean; // Soft delete flag
+    deletedAt?: Date; // Soft delete timestamp
     createdAt: Date;
     updatedAt: Date;
 }
@@ -148,6 +150,13 @@ const CourseSchema = new Schema<ICourse>(
         isPublished: {
             type: Boolean,
             default: false,
+        },
+        isDeleted: {
+            type: Boolean,
+            default: false,
+        },
+        deletedAt: {
+            type: Date,
         },
     },
     {
