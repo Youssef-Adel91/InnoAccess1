@@ -168,7 +168,7 @@ export async function POST(request: NextRequest) {
         const job = await Job.create({
             ...jobData,
             companyId: session.user.id,
-            status: JobStatus.ACTIVE,
+            status: JobStatus.PUBLISHED,
         });
 
         // Populate company info
