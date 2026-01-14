@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
             .sort({ createdAt: -1 })
             .lean();
 
+        // Note: profile includes companyName, companyBio, facebook, linkedin, twitter, instagram
         return NextResponse.json({
             success: true,
             data: {
