@@ -175,7 +175,6 @@ export async function GET(request: NextRequest) {
         try {
             console.log('🔄 Executing Job.find...');
             jobs = await Job.find(query)
-                .populate('applicants')
                 .sort({ createdAt: -1 })
                 .lean();
             console.log('✅ Query executed successfully');
@@ -186,11 +185,18 @@ export async function GET(request: NextRequest) {
 
         console.log('✅ Found jobs:', jobs.length);
 
-        // Add applicant count
-        const jobsWithCount = jobs.map(job => ({
-            ...job,
-            applicantCount: job.applicants?.length || 0,
-        }));
+        // Get applicant count from Application model
+        const Application = (await import('@/models/Application')).default;
+
+        const jobsWithCount = await Promise.all(
+            jobs.map(async (job) => {
+                const applicantCount = await Application.countDocuments({ jobId: job._id });
+                return {
+                    ...job,
+                    applicantCount,
+                };
+            })
+        );
 
         return NextResponse.json({
             success: true,
