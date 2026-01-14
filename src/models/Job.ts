@@ -10,12 +10,21 @@ export enum JobType {
 }
 
 /**
+ * Job Employment Type Enum
+ */
+export enum JobEmploymentType {
+    FULL_TIME = 'full-time',
+    PART_TIME = 'part-time',
+    INTERNSHIP = 'internship',
+}
+
+/**
  * Job Status Enum
  */
 export enum JobStatus {
-    ACTIVE = 'active',
-    CLOSED = 'closed',
+    PUBLISHED = 'published',
     DRAFT = 'draft',
+    ARCHIVED = 'archived',
 }
 
 /**
@@ -38,6 +47,10 @@ export interface IJob extends Document {
     salary: ISalary;
     location: string;
     type: JobType;
+    jobType: JobEmploymentType;
+    contactEmail: string;
+    contactPhone?: string;
+    companyLogo?: string; // Cloudinary URL for job-specific image
     accessibilityFeatures: string[];
     applicants: Types.ObjectId[];
     status: JobStatus;
@@ -109,6 +122,23 @@ const JobSchema = new Schema<IJob>(
             type: String,
             enum: Object.values(JobType),
             default: JobType.ONSITE,
+        },
+        jobType: {
+            type: String,
+            enum: Object.values(JobEmploymentType),
+            required: [true, 'Job employment type is required'],
+        },
+        contactEmail: {
+            type: String,
+            required: [true, 'Contact email is required'],
+            match: [/^\S+@\S+\.\S+$/, 'Please enter a valid email'],
+        },
+        contactPhone: {
+            type: String,
+            trim: true,
+        },
+        companyLogo: {
+            type: String, // Cloudinary URL
         },
         accessibilityFeatures: {
             type: [String],
