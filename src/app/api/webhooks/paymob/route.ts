@@ -99,6 +99,9 @@ export async function POST(request: NextRequest) {
         enrollment.isPaymentProcessed = true;
         await enrollment.save();
 
+        // Type assertion for populated course
+        const course = enrollment.courseId as any as import('@/models/Course').ICourse;
+
         // Update course enrollment count
         await Course.findByIdAndUpdate(enrollment.courseId, {
             $inc: { enrollmentCount: 1 },
@@ -109,17 +112,17 @@ export async function POST(request: NextRequest) {
             userId: enrollment.userId,
             type: NotificationType.PAYMENT_SUCCESS,
             title: 'Enrollment Confirmed',
-            message: `You're now enrolled in ${enrollment.courseId.title}!`,
-            link: `/courses/${enrollment.courseId._id}`,
+            message: `You're now enrolled in ${course.title}!`,
+            link: `/courses/${course._id}`,
         });
 
         // Notify trainer
         await Notification.create({
-            userId: enrollment.courseId.trainerId,
+            userId: course.trainerId,
             type: NotificationType.NEW_ENROLLMENT,
             title: 'New Student Enrolled',
-            message: `A new student has enrolled in your course: ${enrollment.courseId.title}`,
-            link: `/trainer/courses/${enrollment.courseId._id}`,
+            message: `A new student has enrolled in your course: ${course.title}`,
+            link: `/trainer/courses/${course._id}`,
         });
 
         console.log('✅ Payment processed successfully for:', paymentId);
