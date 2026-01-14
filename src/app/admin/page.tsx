@@ -230,6 +230,7 @@ export default function AdminDashboardPage() {
                                                 Approve
                                             </Button>
                                             <Button
+                                                onClick={() => handleReject(company._id)}
                                                 size="sm"
                                                 variant="danger"
                                                 aria-label={`Reject ${company.name}`}
