@@ -24,9 +24,13 @@ export async function POST(
     { params }: { params: { id: string } }
 ) {
     try {
+        console.log('🔔 Job Application - Start:', params.id);
         const session = await getServerSession(authOptions);
 
+        console.log('👤 User:', { exists: !!session, role: session?.user?.role });
+
         if (!session || session.user.role !== 'user') {
+            console.log('❌ Unauthorized - not a user');
             return NextResponse.json(
                 {
                     success: false,
@@ -40,9 +44,12 @@ export async function POST(
         }
 
         const body = await request.json();
+        console.log('📋 Application data:', { cvUrl: body.cvUrl, hasCoverLetter: !!body.coverLetter });
+
         const validationResult = applySchema.safeParse(body);
 
         if (!validationResult.success) {
+            console.log('❌ Validation failed:', validationResult.error.errors);
             return NextResponse.json(
                 {
                     success: false,
@@ -57,10 +64,11 @@ export async function POST(
 
         await connectDB();
 
-        // Check if job exists and is active
+        // Check if job exists and is published (accepting applications)
         const job = await Job.findById(params.id);
 
         if (!job) {
+            console.log('❌ Job not found');
             return NextResponse.json(
                 {
                     success: false,
@@ -73,7 +81,11 @@ export async function POST(
             );
         }
 
-        if (job.status !== 'active') {
+        console.log('📝 Job status:', job.status);
+
+        // Check if job is published (not draft or archived)
+        if (job.status !== 'published') {
+            console.log('❌ Job not accepting applications - status:', job.status);
             return NextResponse.json(
                 {
                     success: false,
