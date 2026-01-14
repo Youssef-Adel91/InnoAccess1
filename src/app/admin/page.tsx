@@ -228,30 +228,30 @@ export default function AdminDashboardPage() {
                 {/* Quick Links */}
                 <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
                     <Link
-                        href="/admin/users"
-                        className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
-                    >
-                        <Users className="h-8 w-8 text-blue-600 mb-3" aria-hidden="true" />
-                        <h3 className="text-lg font-semibold text-gray-900">Manage Users</h3>
-                        <p className="mt-1 text-sm text-gray-600">View and manage all platform users</p>
-                    </Link>
-
-                    <Link
-                        href="/admin/jobs"
+                        href="/jobs"
                         className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
                     >
                         <Briefcase className="h-8 w-8 text-green-600 mb-3" aria-hidden="true" />
-                        <h3 className="text-lg font-semibold text-gray-900">Manage Jobs</h3>
-                        <p className="mt-1 text-sm text-gray-600">Review and moderate job postings</p>
+                        <h3 className="text-lg font-semibold text-gray-900">Browse Jobs</h3>
+                        <p className="mt-1 text-sm text-gray-600">View all job postings</p>
                     </Link>
 
                     <Link
-                        href="/admin/courses"
+                        href="/courses"
                         className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
                     >
                         <GraduationCap className="h-8 w-8 text-yellow-600 mb-3" aria-hidden="true" />
-                        <h3 className="text-lg font-semibold text-gray-900">Manage Courses</h3>
-                        <p className="mt-1 text-sm text-gray-600">Review and moderate courses</p>
+                        <h3 className="text-lg font-semibold text-gray-900">Browse Courses</h3>
+                        <p className="mt-1 text-sm text-gray-600">View all available courses</p>
+                    </Link>
+
+                    <Link
+                        href="/notifications"
+                        className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+                    >
+                        <Users className="h-8 w-8 text-blue-600 mb-3" aria-hidden="true" />
+                        <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
+                        <p className="mt-1 text-sm text-gray-600">View your notifications</p>
                     </Link>
                 </div>
             </div>

@@ -32,8 +32,8 @@ export default function DashboardPage() {
             color: 'bg-blue-500',
         },
         {
-            name: 'My Courses',
-            href: '/dashboard/courses',
+            name: 'Browse Courses',
+            href: '/courses',
             icon: GraduationCap,
             description: 'Continue learning',
             color: 'bg-green-500',
@@ -46,10 +46,10 @@ export default function DashboardPage() {
             color: 'bg-yellow-500',
         },
         {
-            name: 'Settings',
-            href: '/dashboard/settings',
+            name: 'Admin Panel',
+            href: '/admin',
             icon: Settings,
-            description: 'Manage preferences',
+            description: 'Manage platform (admin only)',
             color: 'bg-gray-500',
         },
     ];
