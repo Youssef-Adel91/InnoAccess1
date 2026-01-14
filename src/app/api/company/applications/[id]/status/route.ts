@@ -95,6 +95,25 @@ export async function PATCH(
         application.status = validationResult.data.status as ApplicationStatus;
         await application.save();
 
+        // Send email notification to candidate
+        try {
+            const { sendApplicationStatusEmail } = await import('@/lib/email');
+            const user = await import('@/models/User').then(m => m.default);
+
+            const candidate = await user.findById(application.userId);
+            if (candidate && (validationResult.data.status === 'accepted' || validationResult.data.status === 'rejected')) {
+                await sendApplicationStatusEmail(
+                    candidate.email,
+                    candidate.name,
+                    job.title,
+                    validationResult.data.status as 'accepted' | 'rejected'
+                );
+            }
+        } catch (emailError) {
+            console.error('Failed to send email notification:', emailError);
+            // Continue even if email fails - don't block the status update
+        }
+
         return NextResponse.json({
             success: true,
             data: {

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { redirect, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Plus, Eye, Trash2 } from 'lucide-react';
+import { Plus, Eye, Trash2, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 interface Job {
@@ -106,8 +106,8 @@ export default function CompanyJobsPage() {
                         <button
                             onClick={() => setFilter('all')}
                             className={`py-4 px-1 border-b-2 font-medium text-sm ${filter === 'all'
-                                    ? 'border-blue-500 text-blue-600'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                ? 'border-blue-500 text-blue-600'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                                 }`}
                         >
                             All
@@ -115,8 +115,8 @@ export default function CompanyJobsPage() {
                         <button
                             onClick={() => setFilter('published')}
                             className={`py-4 px-1 border-b-2 font-medium text-sm ${filter === 'published'
-                                    ? 'border-blue-500 text-blue-600'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                ? 'border-blue-500 text-blue-600'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                                 }`}
                         >
                             Published
@@ -124,8 +124,8 @@ export default function CompanyJobsPage() {
                         <button
                             onClick={() => setFilter('draft')}
                             className={`py-4 px-1 border-b-2 font-medium text-sm ${filter === 'draft'
-                                    ? 'border-blue-500 text-blue-600'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                ? 'border-blue-500 text-blue-600'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                                 }`}
                         >
                             Drafts
@@ -169,8 +169,8 @@ export default function CompanyJobsPage() {
                                             <h2 className="text-xl font-semibold text-gray-900">{job.title}</h2>
                                             <span
                                                 className={`px-2 py-1 text-xs font-medium rounded ${job.status === 'published'
-                                                        ? 'bg-green-100 text-green-800'
-                                                        : 'bg-gray-100 text-gray-800'
+                                                    ? 'bg-green-100 text-green-800'
+                                                    : 'bg-gray-100 text-gray-800'
                                                     }`}
                                             >
                                                 {job.status}
@@ -190,6 +190,15 @@ export default function CompanyJobsPage() {
 
                                 {/* Actions */}
                                 <div className="flex gap-2">
+                                    <Button
+                                        onClick={() => router.push(`/company/jobs/${job._id}/edit`)}
+                                        variant="secondary"
+                                        size="sm"
+                                        aria-label={`Edit ${job.title}`}
+                                    >
+                                        <Edit className="h-4 w-4 mr-1" />
+                                        Edit
+                                    </Button>
                                     <Button
                                         onClick={() => router.push(`/company/jobs/${job._id}/applicants`)}
                                         variant="secondary"

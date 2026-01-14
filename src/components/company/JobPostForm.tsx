@@ -18,19 +18,26 @@ interface JobFormData {
     companyLogo: string;
 }
 
-export default function JobPostForm() {
+interface JobPostFormProps {
+    initialData?: any; // Job data for edit mode
+    jobId?: string; // If editing
+}
+
+export default function JobPostForm({ initialData, jobId }: JobPostFormProps) {
     const router = useRouter();
+    const isEditMode = !!jobId;
+
     const [formData, setFormData] = useState<JobFormData>({
-        title: '',
-        description: '',
-        requirements: '',
-        location: 'onsite',
-        jobType: 'full-time',
-        salaryMin: '',
-        salaryMax: '',
-        contactEmail: '',
-        contactPhone: '',
-        companyLogo: '',
+        title: initialData?.title || '',
+        description: initialData?.description || '',
+        requirements: initialData?.requirements?.join('\n') || '',
+        location: initialData?.type || 'onsite',
+        jobType: initialData?.jobType || 'full-time',
+        salaryMin: initialData?.salary?.min?.toString() || '',
+        salaryMax: initialData?.salary?.max?.toString() || '',
+        contactEmail: initialData?.contactEmail || '',
+        contactPhone: initialData?.contactPhone || '',
+        companyLogo: initialData?.companyLogo || '',
     });
 
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -115,8 +122,11 @@ export default function JobPostForm() {
         setErrors({});
 
         try {
-            const response = await fetch('/api/company/jobs', {
-                method: 'POST',
+            const endpoint = isEditMode ? `/api/company/jobs/${jobId}` : '/api/company/jobs';
+            const method = isEditMode ? 'PATCH' : 'POST';
+
+            const response = await fetch(endpoint, {
+                method,
                 headers: {
                     'Content-Type': 'application/json',
                 },
@@ -141,14 +151,14 @@ export default function JobPostForm() {
             const data = await response.json();
 
             if (data.success) {
-                alert(data.data.message);
+                alert(isEditMode ? 'Job updated successfully!' : data.data.message);
                 router.push('/company/jobs');
             } else {
-                setErrors({ submit: data.error?.message || 'Failed to create job' });
+                setErrors({ submit: data.error?.message || `Failed to ${isEditMode ? 'update' : 'create'} job` });
             }
         } catch (error) {
             console.error('Submit error:', error);
-            setErrors({ submit: 'An error occurred while creating the job' });
+            setErrors({ submit: `An error occurred while ${isEditMode ? 'updating' : 'creating'} the job` });
         } finally {
             setIsLoading(false);
         }
@@ -157,7 +167,9 @@ export default function JobPostForm() {
     return (
         <div className="max-w-4xl mx-auto">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Job Posting</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                    {isEditMode ? 'Edit Job Posting' : 'Job Posting'}
+                </h2>
 
                 {errors.submit && (
                     <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
