@@ -128,9 +128,17 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
     try {
+        console.log('🔍 GET /api/company/jobs - Start');
         const session = await getServerSession(authOptions);
 
+        console.log('👤 Session:', {
+            exists: !!session,
+            userId: session?.user?.id,
+            role: session?.user?.role,
+        });
+
         if (!session || session.user.role !== 'company') {
+            console.log('❌ Unauthorized - no session or not company');
             return NextResponse.json(
                 {
                     success: false,
@@ -148,6 +156,8 @@ export async function GET(request: NextRequest) {
         const { searchParams } = new URL(request.url);
         const statusFilter = searchParams.get('status') || 'all';
 
+        console.log('🔎 Filter:', statusFilter);
+
         // Build query
         const query: any = { companyId: session.user.id };
 
@@ -158,11 +168,15 @@ export async function GET(request: NextRequest) {
             query.status = { $ne: JobStatus.ARCHIVED };
         }
 
+        console.log('📋 Query:', JSON.stringify(query));
+
         // Get jobs with applicant count
         const jobs = await Job.find(query)
             .populate('applicants')
             .sort({ createdAt: -1 })
             .lean();
+
+        console.log('✅ Found jobs:', jobs.length);
 
         // Add applicant count
         const jobsWithCount = jobs.map(job => ({
@@ -178,7 +192,7 @@ export async function GET(request: NextRequest) {
             },
         });
     } catch (error: any) {
-        console.error('Fetch jobs error:', error);
+        console.error('❌ Fetch jobs error:', error);
         return NextResponse.json(
             {
                 success: false,
