@@ -26,12 +26,10 @@ export default function CompanyJobsPage() {
 
     // Read filter from URL on mount
     useEffect(() => {
-        if (typeof window !== 'undefined') {
-            const params = new URLSearchParams(window.location.search);
-            const statusParam = params.get('status');
-            if (statusParam === 'draft' || statusParam === 'published' || statusParam === 'all') {
-                setFilter(statusParam);
-            }
+        const params = new URLSearchParams(window.location.search);
+        const statusParam = params.get('status');
+        if (statusParam === 'draft' || statusParam === 'published' || statusParam === 'all') {
+            setFilter(statusParam);
         }
     }, []);
 
