@@ -89,12 +89,20 @@ export default function JobsPage() {
                                 <h2 className="text-2xl font-bold text-gray-900">Your Job Management</h2>
                                 <p className="mt-1 text-gray-600">Manage your postings and review applications</p>
                             </div>
-                            <Link href="/company/jobs/new">
-                                <button className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600">
-                                    <Plus className="h-5 w-5 mr-2" />
-                                    Post New Job
-                                </button>
-                            </Link>
+                            <div className="flex gap-3">
+                                <Link href="/company/jobs?status=draft">
+                                    <button className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-600">
+                                        <Briefcase className="h-5 w-5 mr-2" />
+                                        View Drafts
+                                    </button>
+                                </Link>
+                                <Link href="/company/jobs/new">
+                                    <button className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600">
+                                        <Plus className="h-5 w-5 mr-2" />
+                                        Post New Job
+                                    </button>
+                                </Link>
+                            </div>
                         </div>
 
                         {/* Company Jobs Quick View */}
