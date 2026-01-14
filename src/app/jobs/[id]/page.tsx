@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { MapPin, Briefcase, DollarSign, Clock, Building2, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import CVUploadDialog from '@/components/jobs/CVUploadDialog';
 
 interface Job {
     _id: string;
@@ -37,8 +38,8 @@ export default function JobDetailsPage() {
     const { data: session } = useSession();
     const [job, setJob] = useState<Job | null>(null);
     const [loading, setLoading] = useState(true);
-    const [applying, setApplying] = useState(false);
     const [applied, setApplied] = useState(false);
+    const [showCVDialog, setShowCVDialog] = useState(false);
 
     useEffect(() => {
         async function fetchJob() {
@@ -59,18 +60,16 @@ export default function JobDetailsPage() {
         fetchJob();
     }, [params.id]);
 
-    const handleApply = async () => {
+    const handleApply = () => {
         if (!session) {
             window.location.href = '/auth/signin';
             return;
         }
+        setShowCVDialog(true);
+    };
 
-        setApplying(true);
-
+    const handleSubmitApplication = async (cvUrl: string, coverLetter?: string) => {
         try {
-            // In a real scenario, you'd upload CV first
-            const cvUrl = 'https://example.com/cv.pdf'; // Placeholder
-
             const response = await fetch(`/api/jobs/${params.id}/apply`, {
                 method: 'POST',
                 headers: {
@@ -78,7 +77,7 @@ export default function JobDetailsPage() {
                 },
                 body: JSON.stringify({
                     cvUrl,
-                    coverLetter: 'I am interested in this position...',
+                    coverLetter,
                 }),
             });
 
@@ -86,15 +85,15 @@ export default function JobDetailsPage() {
 
             if (data.success) {
                 setApplied(true);
+                setShowCVDialog(false);
                 alert('Application submitted successfully!');
             } else {
-                alert(data.error?.message || 'Failed to apply');
+                throw new Error(data.error?.message || 'Failed to apply');
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Application error:', error);
-            alert('An error occurred while submitting your application');
-        } finally {
-            setApplying(false);
+            alert(error.message || 'An error occurred while submitting your application');
+            throw error;
         }
     };
 
@@ -172,10 +171,9 @@ export default function JobDetailsPage() {
                             ) : (
                                 <Button
                                     onClick={handleApply}
-                                    isLoading={applying}
                                     size="lg"
                                     variant="primary"
-                                    disabled={!session || session.user.role !== 'user'}
+                                    disabled={!session || session.user.role !== 'user' || applied}
                                 >
                                     Apply Now
                                 </Button>
@@ -248,7 +246,6 @@ export default function JobDetailsPage() {
                                 </p>
                                 <Button
                                     onClick={handleApply}
-                                    isLoading={applying}
                                     size="lg"
                                     variant="primary"
                                 >
@@ -258,6 +255,13 @@ export default function JobDetailsPage() {
                         )}
                     </div>
                 )}
+
+                {/* CV Upload Dialog */}
+                <CVUploadDialog
+                    isOpen={showCVDialog}
+                    onClose={() => setShowCVDialog(false)}
+                    onSubmit={handleSubmitApplication}
+                />
             </div>
         </main>
     );
