@@ -18,6 +18,7 @@ export interface IEnrollment extends Document {
     progress: string[]; // Array of completed video IDs
     lastWatched: ILastWatched;
     paymentId: string; // Paymob order ID
+    isPaymentProcessed: boolean; // Idempotency flag
     completedAt?: Date;
     enrolledAt: Date;
     updatedAt: Date;
@@ -70,6 +71,11 @@ const EnrollmentSchema = new Schema<IEnrollment>(
         paymentId: {
             type: String,
             required: [true, 'Payment ID is required'],
+        },
+        isPaymentProcessed: {
+            type: Boolean,
+            default: false,
+            required: true,
         },
         completedAt: Date,
         enrolledAt: {
