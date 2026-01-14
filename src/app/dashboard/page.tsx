@@ -46,10 +46,10 @@ export default function DashboardPage() {
             color: 'bg-yellow-500',
         },
         {
-            name: 'Admin Panel',
-            href: '/admin',
+            name: 'My Profile',
+            href: '/profile',
             icon: Settings,
-            description: 'Manage platform (admin only)',
+            description: 'Edit your information',
             color: 'bg-gray-500',
         },
     ];
@@ -103,22 +103,30 @@ export default function DashboardPage() {
                 <div className="mb-8">
                     <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {quickActions.map((action) => {
-                            const Icon = action.icon;
-                            return (
-                                <Link
-                                    key={action.name}
-                                    href={action.href}
-                                    className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
-                                >
-                                    <div className={`inline-flex p-3 rounded-lg ${action.color} text-white mb-4`}>
-                                        <Icon className="h-6 w-6" aria-hidden="true" />
-                                    </div>
-                                    <h3 className="text-lg font-semibold text-gray-900">{action.name}</h3>
-                                    <p className="mt-1 text-sm text-gray-600">{action.description}</p>
-                                </Link>
-                            );
-                        })}
+                        {quickActions
+                            .filter((action) => {
+                                // Hide admin panel from non-admin users
+                                if (action.href === '/admin' && session?.user?.role !== 'admin') {
+                                    return false;
+                                }
+                                return true;
+                            })
+                            .map((action) => {
+                                const Icon = action.icon;
+                                return (
+                                    <Link
+                                        key={action.name}
+                                        href={action.href}
+                                        className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+                                    >
+                                        <div className={`inline-flex p-3 rounded-lg ${action.color} text-white mb-4`}>
+                                            <Icon className="h-6 w-6" aria-hidden="true" />
+                                        </div>
+                                        <h3 className="text-lg font-semibold text-gray-900">{action.name}</h3>
+                                        <p className="mt-1 text-sm text-gray-600">{action.description}</p>
+                                    </Link>
+                                );
+                            })}
                     </div>
                 </div>
 
