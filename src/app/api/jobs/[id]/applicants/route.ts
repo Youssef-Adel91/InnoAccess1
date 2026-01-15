@@ -12,7 +12,7 @@ import { authOptions } from '@/lib/auth';
  */
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await getServerSession(authOptions);
@@ -32,7 +32,9 @@ export async function GET(
 
         await connectDB();
 
-        const job = await Job.findById(params.id);
+        const { id } = await params;
+
+        const job = await Job.findById(id);
 
         if (!job) {
             return NextResponse.json(
@@ -70,7 +72,7 @@ export async function GET(
         const skip = (page - 1) * limit;
 
         // Populate applicants (only for authorized users)
-        const jobWithApplicants = await Job.findById(params.id)
+        const jobWithApplicants = await Job.findById(id)
             .populate({
                 path: 'applicants',
                 options: {
