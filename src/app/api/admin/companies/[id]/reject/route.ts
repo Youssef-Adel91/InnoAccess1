@@ -28,7 +28,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
         await connectDB();
 
-        const { id } = params;
+        const { id } = await params;
 
         // Find the company account
         const company = await User.findById(id);
