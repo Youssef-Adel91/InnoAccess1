@@ -22,7 +22,7 @@ export async function GET(
 
         await connectDB();
 
-        const { id: jobId } = params;
+        const { id: jobId } = await params;
 
         // Verify job ownership
         const job = await Job.findOne({
