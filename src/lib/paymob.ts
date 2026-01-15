@@ -119,6 +119,11 @@ class PaymobClient {
      */
     verifyHmac(webhookData: PaymobWebhookData, receivedHmac: string): boolean {
         try {
+            if (!env.PAYMOB_HMAC_SECRET) {
+                console.error('PAYMOB_HMAC_SECRET not configured');
+                return false;
+            }
+
             // Fields used in HMAC calculation (in exact order)
             const hmacFields = [
                 'amount_cents',
@@ -231,6 +236,13 @@ export async function initiateCardPayment(
     merchantOrderId: string,
     billingData: BillingData
 ): Promise<string> {
+    if (!env.PAYMOB_INTEGRATION_ID_CARD) {
+        throw new Error('PAYMOB_INTEGRATION_ID_CARD not configured');
+    }
+    if (!env.PAYMOB_IFRAME_ID) {
+        throw new Error('PAYMOB_IFRAME_ID not configured');
+    }
+
     const authToken = await paymobClient.getAuthToken();
     const paymobOrderId = await paymobClient.registerOrder(authToken, amountCents, merchantOrderId);
     const paymentToken = await paymobClient.getPaymentKey(
@@ -256,6 +268,10 @@ export async function initiateWalletPayment(
     merchantOrderId: string,
     billingData: BillingData
 ): Promise<string> {
+    if (!env.PAYMOB_INTEGRATION_ID_WALLET) {
+        throw new Error('PAYMOB_INTEGRATION_ID_WALLET not configured');
+    }
+
     const authToken = await paymobClient.getAuthToken();
     const paymobOrderId = await paymobClient.registerOrder(authToken, amountCents, merchantOrderId);
     const paymentToken = await paymobClient.getPaymentKey(
