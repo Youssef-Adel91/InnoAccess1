@@ -69,13 +69,10 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * PATCH /api/notifications/[id]/read
- * Mark notification as read
+ * PATCH /api/notifications/mark-read
+ * Mark all notifications as read for current user
  */
-export async function PATCH(
-    request: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: NextRequest) {
     try {
         const session = await getServerSession(authOptions);
 
@@ -94,42 +91,62 @@ export async function PATCH(
 
         await connectDB();
 
-        const { id } = await params;
-
-        const notification = await Notification.findOneAndUpdate(
-            { _id: id, userId: session.user.id },
-            { isRead: true },
-            { new: true }
+        // Mark all notifications as read for this user
+        const result = await Notification.updateMany(
+            { userId: session.user.id, isRead: false },
+            { isRead: true }
         );
-
-        if (!notification) {
-            return NextResponse.json(
-                {
-                    success: false,
-                    error: {
-                        message: 'Notification not found',
-                        code: 'NOT_FOUND',
-                    },
-                },
-                { status: 404 }
-            );
-        }
 
         return NextResponse.json({
             success: true,
-            data: { notification },
+            data: {
+                message: 'All notifications marked as read',
+                modifiedCount: result.modifiedCount
+            },
         });
     } catch (error: any) {
-        console.error('Mark notification read error:', error);
+        console.error('Mark notifications read error:', error);
         return NextResponse.json(
             {
                 success: false,
                 error: {
-                    message: 'Failed to update notification',
+                    message: 'Failed to update notifications',
                     code: 'UPDATE_ERROR',
                 },
             },
             { status: 500 }
         );
     }
+}
+
+if (!notification) {
+    return NextResponse.json(
+        {
+            success: false,
+            error: {
+                message: 'Notification not found',
+                code: 'NOT_FOUND',
+            },
+        },
+        { status: 404 }
+    );
+}
+
+return NextResponse.json({
+    success: true,
+    data: { notification },
+});
+    } catch (error: any) {
+    console.error('Mark notification read error:', error);
+    return NextResponse.json(
+        {
+            success: false,
+            error: {
+                message: 'Failed to update notification',
+                code: 'UPDATE_ERROR',
+            },
+        },
+        { status: 500 }
+    );
+}
 }
