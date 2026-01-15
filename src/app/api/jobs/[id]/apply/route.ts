@@ -9,9 +9,10 @@ import { authOptions } from '@/lib/auth';
 
 /**
  * Application Schema
+ * Note: cvUrl accepts any string (not just URLs) to support placeholder values when Cloudinary is not configured
  */
 const applySchema = z.object({
-    cvUrl: z.string().url('Invalid CV URL'),
+    cvUrl: z.string().min(1, 'CV is required'),
     coverLetter: z.string().max(2000).optional(),
 });
 
