@@ -110,7 +110,7 @@ export default function CVUploadDialog({ isOpen, onClose, onSubmit }: CVUploadDi
             formData.append('upload_preset', uploadPreset);
 
             const response = await fetch(
-                `https://api.cloudinary.com/v1_1/${cloudName}/raw/upload`,
+                `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`,
                 {
                     method: 'POST',
                     body: formData,
