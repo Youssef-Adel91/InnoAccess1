@@ -201,16 +201,20 @@ export default function ApplicantsPage() {
 
                                                 {/* Action Buttons */}
                                                 <div className="flex gap-3 mt-4">
-                                                    {/* Only show View CV if it's a real URL */}
+                                                    {/* Only show Download CV if it's a real URL */}
                                                     {applicant.cvUrl.startsWith('http') ? (
                                                         <Button
-                                                            onClick={() => window.open(applicant.cvUrl, '_blank')}
+                                                            onClick={() => {
+                                                                // Add Cloudinary download flag
+                                                                const downloadUrl = applicant.cvUrl.replace('/upload/', '/upload/fl_attachment/');
+                                                                window.open(downloadUrl, '_blank');
+                                                            }}
                                                             variant="secondary"
                                                             size="sm"
-                                                            aria-label={`View CV for ${candidateName}`}
+                                                            aria-label={`Download CV for ${candidateName}`}
                                                         >
                                                             <FileText className="h-4 w-4 mr-1" />
-                                                            View CV
+                                                            Download CV
                                                         </Button>
                                                     ) : (
                                                         <span className="text-xs text-gray-500 italic px-3 py-2">

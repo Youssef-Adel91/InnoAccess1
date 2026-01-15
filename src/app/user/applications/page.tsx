@@ -247,12 +247,13 @@ export default function UserApplicationsPage() {
                                         </Link>
                                         {application.cvUrl && application.cvUrl.startsWith('http') && (
                                             <a
-                                                href={application.cvUrl}
+                                                href={application.cvUrl.replace('/upload/', '/upload/fl_attachment/')}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="text-sm px-3 py-1.5 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition"
+                                                download
                                             >
-                                                View CV
+                                                Download CV
                                             </a>
                                         )}
                                     </div>
