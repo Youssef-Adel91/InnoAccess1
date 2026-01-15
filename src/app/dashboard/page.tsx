@@ -96,7 +96,7 @@ export default function DashboardPage() {
                             </div>
                             <div className="ml-3">
                                 <p className="text-sm text-yellow-700">
-                                    Your company account is pending admin approval. You'll be able to post jobs once
+                                    Your company account is pending admin approval. You&apos;ll be able to post jobs once
                                     approved.
                                 </p>
                             </div>

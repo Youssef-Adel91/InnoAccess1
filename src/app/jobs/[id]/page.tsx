@@ -113,7 +113,7 @@ export default function JobDetailsPage() {
             <main id="main-content" className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
                     <h1 className="text-2xl font-bold text-gray-900">Job Not Found</h1>
-                    <p className="mt-2 text-gray-600">The job you're looking for doesn't exist.</p>
+                    <p className="mt-2 text-gray-600">The job you&apos;re looking for doesn&apos;t exist.</p>
                     <Link href="/jobs" className="mt-4 inline-block">
                         <Button>Browse All Jobs</Button>
                     </Link>

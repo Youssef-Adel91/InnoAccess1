@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { GraduationCap, Clock, Users, Star } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
@@ -71,10 +72,11 @@ export default function CoursesPage() {
                             className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
                         >
                             <div className="aspect-video bg-gray-200 relative">
-                                <img
+                                <Image
                                     src={course.thumbnail}
                                     alt={course.title}
-                                    className="w-full h-full object-cover"
+                                    fill
+                                    className="object-cover"
                                 />
                                 <span className="absolute top-2 right-2 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium">
                                     {formatPrice(course.price)}
