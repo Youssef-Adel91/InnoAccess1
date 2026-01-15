@@ -142,7 +142,7 @@ export default function JobsPage() {
                         ) : (
                             <div className="bg-white rounded-lg p-8 text-center border border-gray-200">
                                 <Briefcase className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                                <p className="text-gray-600 mb-4">You haven't posted any jobs yet</p>
+                                <p className="text-gray-600 mb-4">You haven&apos;t posted any jobs yet</p>
                                 <Link href="/company/jobs/new">
                                     <button className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
                                         <Plus className="h-5 w-5 mr-2" />

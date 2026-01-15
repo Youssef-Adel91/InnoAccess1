@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { redirect, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Plus, Eye, Trash2, Edit } from 'lucide-react';
+import Image from 'next/image';
+import { Plus, ExternalLink, Eye, FileText, Edit2, Trash2, Briefcase } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 interface Job {
@@ -174,11 +175,12 @@ export default function CompanyJobsPage() {
                                 <div className="flex items-start gap-4 flex-1">
                                     {/* Logo */}
                                     {job.companyLogo && (
-                                        <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                                            <img
+                                        <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 relative">
+                                            <Image
                                                 src={job.companyLogo}
                                                 alt=""
-                                                className="w-full h-full object-cover"
+                                                fill
+                                                className="object-cover"
                                             />
                                         </div>
                                     )}
@@ -210,15 +212,12 @@ export default function CompanyJobsPage() {
 
                                 {/* Actions */}
                                 <div className="flex gap-2">
-                                    <Button
-                                        onClick={() => router.push(`/company/jobs/${job._id}/edit`)}
-                                        variant="secondary"
-                                        size="sm"
-                                        aria-label={`Edit ${job.title}`}
-                                    >
-                                        <Edit className="h-4 w-4 mr-1" />
-                                        Edit
-                                    </Button>
+                                    <Link href={`/company/jobs/${job._id}/edit`}>
+                                        <Button variant="secondary" size="sm">
+                                            <Edit2 className="h-4 w-4 mr-1" />
+                                            Edit
+                                        </Button>
+                                    </Link>
                                     <Button
                                         onClick={() => router.push(`/company/jobs/${job._id}/applicants`)}
                                         variant="secondary"

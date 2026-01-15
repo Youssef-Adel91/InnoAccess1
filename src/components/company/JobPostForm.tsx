@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import { Upload } from 'lucide-react';
 
@@ -308,7 +309,7 @@ export default function JobPostForm({ initialData, jobId }: JobPostFormProps) {
 
                         {/* Salary Range */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label htmlFor="salaryMin" className="block text-sm font-medium text-gray-700 mb-2">
                                 Salary Range (EGP) *
                             </label>
                             <div className="grid grid-cols-2 gap-4">
@@ -401,15 +402,16 @@ export default function JobPostForm({ initialData, jobId }: JobPostFormProps) {
 
                     {/* Right Column - Company Logo */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label htmlFor="companyLogo" className="block text-sm font-medium text-gray-700 mb-2">
                             Company Logo
                         </label>
-                        <div className="bg-gray-100 rounded-lg aspect-square flex items-center justify-center overflow-hidden">
+                        <div className="bg-gray-100 rounded-lg aspect-square flex items-center justify-center overflow-hidden relative">
                             {formData.companyLogo ? (
-                                <img
+                                <Image
                                     src={formData.companyLogo}
                                     alt="Company logo"
-                                    className="w-full h-full object-cover"
+                                    fill
+                                    className="object-cover"
                                 />
                             ) : (
                                 <div className="text-center p-6">
