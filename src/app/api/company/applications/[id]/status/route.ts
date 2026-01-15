@@ -19,21 +19,12 @@ const updateStatusSchema = z.object({
  */
 export async function PATCH(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await getServerSession(authOptions);
 
         if (!session || session.user.role !== 'company') {
-            return NextResponse.json(
-                {
-                    success: false,
-                    error: {
-                        message: 'Unauthorized',
-                        code: 'UNAUTHORIZED',
-                    },
-                },
-                { status: 401 }
             );
         }
 
