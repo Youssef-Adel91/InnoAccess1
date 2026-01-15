@@ -22,10 +22,11 @@ const applySchema = z.object({
  */
 export async function POST(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        console.log('🔔 Job Application - Start:', params.id);
+        const { id } = await params;
+        console.log('🔔 Job Application - Start:', id);
         const session = await getServerSession(authOptions);
 
         console.log('👤 User:', { exists: !!session, role: session?.user?.role });

@@ -10,15 +10,17 @@ import { authOptions } from '@/lib/auth';
  */
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         await connectDB();
 
+        const { id } = await params;
+
         // SECURITY: Do NOT populate applicants in public endpoint
         // Applicant data contains sensitive PII (emails, CVs, cover letters)
         // Only job owner should access via /api/jobs/[id]/applicants
-        const job = await Job.findById(params.id)
+        const job = await Job.findById(id)
             .populate('companyId', 'name profile.companyName profile.companyLogo')
             .select('-applicants') // Explicitly exclude applicants array
             .lean();

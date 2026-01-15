@@ -29,7 +29,7 @@ const enrollSchema = z.object({
  */
 export async function POST(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await getServerSession(authOptions);
@@ -65,8 +65,10 @@ export async function POST(
 
         await connectDB();
 
+        const { id } = await params;
+
         // Check if course exists and is published
-        const course = await Course.findById(params.id);
+        const course = await Course.findById(id);
 
         if (!course) {
             return NextResponse.json(
@@ -96,7 +98,7 @@ export async function POST(
 
         // Check if user already enrolled
         const existingEnrollment = await Enrollment.findOne({
-            courseId: params.id,
+            courseId: id,
             userId: session.user.id,
         });
 
@@ -115,7 +117,7 @@ export async function POST(
 
         // Initiate payment with Paymob
         const { paymentMethod, billingData } = validationResult.data;
-        const merchantOrderId = `COURSE_${params.id}_USER_${session.user.id}_${Date.now()}`;
+        const merchantOrderId = `COURSE_${id}_USER_${session.user.id}_${Date.now()}`;
 
         let paymentUrl;
 
@@ -142,7 +144,7 @@ export async function POST(
 
         // Create pending enrollment (will be activated after payment confirmation)
         const enrollment = await Enrollment.create({
-            courseId: params.id,
+            courseId: id,
             userId: session.user.id,
             paymentId: merchantOrderId,
             progress: [],
@@ -182,7 +184,7 @@ export async function POST(
  */
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await getServerSession(authOptions);
@@ -196,8 +198,10 @@ export async function GET(
 
         await connectDB();
 
+        const { id } = await params;
+
         const enrollment = await Enrollment.findOne({
-            courseId: params.id,
+            courseId: id,
             userId: session.user.id,
         });
 
