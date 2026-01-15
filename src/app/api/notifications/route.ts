@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * PATCH /api/notifications/mark-read
+ * PATCH /api/notifications
  * Mark all notifications as read for current user
  */
 export async function PATCH(request: NextRequest) {
@@ -91,7 +91,7 @@ export async function PATCH(request: NextRequest) {
 
         await connectDB();
 
-        // Mark all notifications as read for this user
+        // Mark all unread notifications as read for this user
         const result = await Notification.updateMany(
             { userId: session.user.id, isRead: false },
             { isRead: true }
@@ -117,36 +117,4 @@ export async function PATCH(request: NextRequest) {
             { status: 500 }
         );
     }
-}
-
-if (!notification) {
-    return NextResponse.json(
-        {
-            success: false,
-            error: {
-                message: 'Notification not found',
-                code: 'NOT_FOUND',
-            },
-        },
-        { status: 404 }
-    );
-}
-
-return NextResponse.json({
-    success: true,
-    data: { notification },
-});
-    } catch (error: any) {
-    console.error('Mark notification read error:', error);
-    return NextResponse.json(
-        {
-            success: false,
-            error: {
-                message: 'Failed to update notification',
-                code: 'UPDATE_ERROR',
-            },
-        },
-        { status: 500 }
-    );
-}
 }
