@@ -25,12 +25,12 @@ export async function PATCH(
         const session = await getServerSession(authOptions);
 
         if (!session || session.user.role !== 'company') {
-            );
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         await connectDB();
 
-        const { id: applicationId } = params;
+        const { id: applicationId } = await params;
         const body = await request.json();
 
         // Validate input
