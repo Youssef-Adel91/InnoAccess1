@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await getServerSession(authOptions);
@@ -81,7 +81,9 @@ export async function POST(
 
         await connectDB();
 
-        const company = await User.findById(params.id);
+        const { id } = await params;
+
+        const company = await User.findById(id);
 
         if (!company || company.role !== 'company') {
             return NextResponse.json(
