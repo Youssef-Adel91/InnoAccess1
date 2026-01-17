@@ -1,21 +1,108 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
-import { GraduationCap, Clock, Users, Star } from 'lucide-react';
+import { GraduationCap, Clock, Users, Star, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
-// NOTE: This page currently shows static UI only
-// To connect to the API, you'll need to:
-// 1. Make this a server component and fetch from API
-// 2. OR use client-side fetching with useEffect
-// For now, it shows empty state until courses are created via API
-
-const sampleCourses: any[] = []; // Empty - no fake data
+interface Course {
+    _id: string;
+    title: string;
+    description: string;
+    categoryId: {
+        name: string;
+        slug: string;
+    };
+    trainerId: {
+        name: string;
+    };
+    isFree: boolean;
+    price: number;
+    thumbnail?: string;
+    enrollmentCount: number;
+    rating: number;
+    modules: any[];
+}
 
 function formatPrice(cents: number): string {
     return `${(cents / 100).toFixed(0)} EGP`;
 }
 
 export default function CoursesPage() {
+    const [courses, setCourses] = useState<Course[]>([]);
+    const [categories, setCategories] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    // Filter state
+    const [selectedCategory, setSelectedCategory] = useState<string>('all');
+    const [priceFilter, setPriceFilter] = useState<string>('all'); // 'all', 'free', 'paid'
+
+    useEffect(() => {
+        fetchCategories();
+    }, []);
+
+    useEffect(() => {
+        fetchCourses();
+    }, [selectedCategory, priceFilter]);
+
+    const fetchCategories = async () => {
+        try {
+            const response = await fetch('/api/categories');
+            const result = await response.json();
+
+            if (result.success) {
+                setCategories(result.data?.categories || []);
+            }
+        } catch (err) {
+            console.error('Failed to fetch categories:', err);
+        }
+    };
+
+    const fetchCourses = async () => {
+        setLoading(true);
+        try {
+            // Build query params
+            const params = new URLSearchParams();
+            if (selectedCategory !== 'all') {
+                params.append('category', selectedCategory);
+            }
+
+            const response = await fetch(`/api/courses?${params.toString()}`);
+            const result = await response.json();
+
+            if (!result.success) {
+                throw new Error(result.error?.message || 'Failed to fetch courses');
+            }
+
+            let fetchedCourses = result.data?.courses || [];
+
+            // Apply price filter client-side
+            if (priceFilter === 'free') {
+                fetchedCourses = fetchedCourses.filter((c: Course) => c.isFree);
+            } else if (priceFilter === 'paid') {
+                fetchedCourses = fetchedCourses.filter((c: Course) => !c.isFree);
+            }
+
+            setCourses(fetchedCourses);
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <main className="min-h-screen flex items-center justify-center bg-gray-50">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-4 text-gray-600">Loading courses...</p>
+                </div>
+            </main>
+        );
+    }
+
     return (
         <main id="main-content" className="min-h-screen bg-gray-50 py-8">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -28,114 +115,140 @@ export default function CoursesPage() {
                 </div>
 
                 {/* Filters */}
-                <div className="mb-6 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                    <form className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div className="flex-1 md:col-span-2">
-                            <label htmlFor="search-courses" className="sr-only">
-                                Search courses
-                            </label>
-                            <input
-                                type="text"
-                                id="search-courses"
-                                placeholder="Search courses..."
-                                className="w-full rounded-md border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                aria-label="Search for courses"
-                            />
-                        </div>
+                <div className="mb-6 bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* Category Filter */}
                         <div>
-                            <label htmlFor="category" className="sr-only">
+                            <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
                                 Category
                             </label>
                             <select
                                 id="category"
+                                value={selectedCategory}
+                                onChange={(e) => setSelectedCategory(e.target.value)}
                                 className="w-full rounded-md border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                aria-label="Filter by category"
                             >
-                                <option value="">All Categories</option>
-                                <option value="programming">Programming</option>
-                                <option value="design">Design</option>
-                                <option value="marketing">Marketing</option>
-                                <option value="data">Data Science</option>
+                                <option value="all">All Categories</option>
+                                {categories.map((cat) => (
+                                    <option key={cat._id} value={cat._id}>
+                                        {cat.name}
+                                    </option>
+                                ))}
                             </select>
                         </div>
-                        <Button variant="primary" type="submit" className="w-full">
-                            Search
-                        </Button>
-                    </form>
+
+                        {/* Price Filter */}
+                        <div>
+                            <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-2">
+                                Price
+                            </label>
+                            <select
+                                id="price"
+                                value={priceFilter}
+                                onChange={(e) => setPriceFilter(e.target.value)}
+                                className="w-full rounded-md border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="all">All Courses</option>
+                                <option value="free">Free Only</option>
+                                <option value="paid">Paid Only</option>
+                            </select>
+                        </div>
+
+                        {/* Reset Button */}
+                        <div className="flex items-end">
+                            <button
+                                onClick={() => {
+                                    setSelectedCategory('all');
+                                    setPriceFilter('all');
+                                }}
+                                className="w-full px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+                            >
+                                Reset Filters
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
+                {/* Error Message */}
+                {error && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                        <p className="text-red-800">{error}</p>
+                    </div>
+                )}
+
                 {/* Course Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {sampleCourses.map((course) => (
-                        <article
-                            key={course.id}
-                            className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
-                        >
-                            <div className="aspect-video bg-gray-200 relative">
-                                <Image
-                                    src={course.thumbnail}
-                                    alt={course.title}
-                                    fill
-                                    className="object-cover"
-                                />
-                                <span className="absolute top-2 right-2 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium">
-                                    {formatPrice(course.price)}
-                                </span>
-                            </div>
-
-                            <div className="p-6">
-                                <div className="mb-2">
-                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                        {course.category}
+                {courses.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {courses.map((course) => (
+                            <article
+                                key={course._id}
+                                className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+                            >
+                                {/* Thumbnail */}
+                                <div className="h-48 bg-gradient-to-br from-blue-service to-purple-600 relative">
+                                    {course.thumbnail ? (
+                                        <img
+                                            src={course.thumbnail}
+                                            alt={course.title}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center">
+                                            <BookOpen className="h-16 w-16 text-white opacity-50" />
+                                        </div>
+                                    )}
+                                    <span className="absolute top-3 right-3 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                                        {course.isFree ? 'Free' : formatPrice(course.price)}
                                     </span>
                                 </div>
 
-                                <h2 className="text-lg font-semibold text-gray-900 mb-2">
-                                    <Link
-                                        href={`/courses/${course.id}`}
-                                        className="hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded"
-                                    >
+                                {/* Content */}
+                                <div className="p-6">
+                                    <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full mb-3">
+                                        {course.categoryId.name}
+                                    </span>
+
+                                    <h2 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2">
                                         {course.title}
-                                    </Link>
-                                </h2>
+                                    </h2>
 
-                                <p className="text-sm text-gray-600 mb-4">by {course.instructor}</p>
+                                    <p className="text-sm text-gray-600 mb-2">by {course.trainerId.name}</p>
 
-                                <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
-                                    <span className="flex items-center">
-                                        <Star className="mr-1 h-4 w-4 fill-yellow-400 text-yellow-400" aria-hidden="true" />
-                                        {course.rating}
-                                    </span>
-                                    <span className="flex items-center">
-                                        <Users className="mr-1 h-4 w-4" aria-hidden="true" />
-                                        {course.students.toLocaleString()}
-                                    </span>
-                                    <span className="flex items-center">
-                                        <Clock className="mr-1 h-4 w-4" aria-hidden="true" />
-                                        {course.duration}
-                                    </span>
-                                </div>
+                                    <p className="text-gray-700 text-sm mb-4 line-clamp-2">
+                                        {course.description}
+                                    </p>
 
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm text-gray-600">{course.modules} modules</span>
-                                    <Link href={`/courses/${course.id}`}>
-                                        <Button variant="primary" size="sm">
+                                    <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
+                                        <span className="flex items-center">
+                                            <Star className="mr-1 h-4 w-4 fill-yellow-400 text-yellow-400" />
+                                            {course.rating || 0}
+                                        </span>
+                                        <span className="flex items-center">
+                                            <Users className="mr-1 h-4 w-4" />
+                                            {course.enrollmentCount || 0}
+                                        </span>
+                                        <span className="flex items-center">
+                                            <BookOpen className="mr-1 h-4 w-4" />
+                                            {course.modules?.length || 0} modules
+                                        </span>
+                                    </div>
+
+                                    <Link href={`/courses/${course._id}`}>
+                                        <Button variant="primary" className="w-full">
                                             View Course
                                         </Button>
                                     </Link>
                                 </div>
-                            </div>
-                        </article>
-                    ))}
-                </div>
-
-                {/* Empty State */}
-                {sampleCourses.length === 0 && (
-                    <div className="text-center py-12">
-                        <GraduationCap className="mx-auto h-12 w-12 text-gray-400" aria-hidden="true" />
-                        <h3 className="mt-2 text-sm font-medium text-gray-900">No courses found</h3>
-                        <p className="mt-1 text-sm text-gray-500">
-                            Try adjusting your search filters
+                            </article>
+                        ))}
+                    </div>
+                ) : (
+                    /* Empty State */
+                    <div className="text-center py-12 bg-white rounded-lg shadow-md">
+                        <GraduationCap className="mx-auto h-16 w-16 text-gray-400" />
+                        <h3 className="mt-4 text-lg font-semibold text-gray-900">No courses available yet</h3>
+                        <p className="mt-2 text-sm text-gray-600">
+                            Check back later for new courses
                         </p>
                     </div>
                 )}

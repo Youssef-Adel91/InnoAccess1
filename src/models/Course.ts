@@ -1,14 +1,29 @@
 import mongoose, { Schema, Model, Document, Types } from 'mongoose';
 
 /**
+ * Video Status Enum
+ */
+export enum VideoStatus {
+    PENDING = 'pending',
+    APPROVED = 'approved',
+    REJECTED = 'rejected',
+}
+
+/**
  * Video Interface
  */
 export interface IVideo {
     title: string;
-    url: string; // Cloudinary URL
+    bunnyVideoId: string; // Bunny.net video ID
+    url?: string; // Generated Bunny CDN URL (optional, computed from bunnyVideoId)
     transcript: string; // Required for accessibility
     duration: number; // in seconds
     order: number;
+    status: VideoStatus; // Approval status
+    rejectionReason?: string; // Admin feedback if rejected
+    uploadedBy: Types.ObjectId; // Trainer who uploaded
+    uploadedAt: Date;
+    isFreePreview: boolean; // Can non-enrolled students watch this? (for paid courses)
 }
 
 /**
@@ -28,9 +43,10 @@ export interface IModule {
 export interface ICourse extends Document {
     title: string;
     description: string;
-    category: string;
+    categoryId: Types.ObjectId; // Reference to Category
     trainerId: Types.ObjectId;
-    price: number; // in cents
+    isFree: boolean; // Is entire course free?
+    price: number; // Required if not free (in cents)
     thumbnail?: string; // Cloudinary URL
     modules: IModule[];
     enrollmentCount: number;
@@ -50,9 +66,13 @@ const VideoSchema = new Schema<IVideo>({
         type: String,
         required: [true, 'Video title is required'],
     },
+    bunnyVideoId: {
+        type: String,
+        required: [true, 'Bunny video ID is required'],
+    },
     url: {
         type: String,
-        required: [true, 'Video URL is required'],
+        // Optional - can be generated from bunnyVideoId + CDN hostname
     },
     transcript: {
         type: String,
@@ -66,10 +86,32 @@ const VideoSchema = new Schema<IVideo>({
         type: Number,
         required: true,
     },
+    status: {
+        type: String,
+        enum: Object.values(VideoStatus),
+        default: VideoStatus.PENDING,
+    },
+    rejectionReason: {
+        type: String,
+    },
+    uploadedBy: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        required: [true, 'Uploader ID is required'],
+    },
+    uploadedAt: {
+        type: Date,
+        default: Date.now,
+    },
+    isFreePreview: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 /**
  * Module Schema
+ * Note: Modules can be created empty and populated with videos later
  */
 const ModuleSchema = new Schema<IModule>({
     title: {
@@ -79,13 +121,7 @@ const ModuleSchema = new Schema<IModule>({
     description: String,
     videos: {
         type: [VideoSchema],
-        required: true,
-        validate: {
-            validator: function (v: IVideo[]) {
-                return v && v.length > 0;
-            },
-            message: 'Each module must have at least one video',
-        },
+        default: [],
     },
     resources: [String],
     order: {
@@ -109,11 +145,10 @@ const CourseSchema = new Schema<ICourse>(
         description: {
             type: String,
             required: [true, 'Course description is required'],
-            minlength: [50, 'Description must be at least 50 characters'],
-            maxlength: [3000, 'Description cannot exceed 3000 characters'],
         },
-        category: {
-            type: String,
+        categoryId: {
+            type: Schema.Types.ObjectId,
+            ref: 'Category',
             required: [true, 'Category is required'],
         },
         trainerId: {
@@ -121,21 +156,22 @@ const CourseSchema = new Schema<ICourse>(
             ref: 'User',
             required: [true, 'Trainer ID is required'],
         },
+        isFree: {
+            type: Boolean,
+            default: false,
+        },
         price: {
             type: Number,
-            required: [true, 'Price is required'],
+            required: function (this: ICourse) {
+                return !this.isFree;
+            },
             min: [0, 'Price cannot be negative'],
+            default: 0,
         },
         thumbnail: String,
         modules: {
             type: [ModuleSchema],
-            required: true,
-            validate: {
-                validator: function (v: IModule[]) {
-                    return v && v.length > 0;
-                },
-                message: 'Course must have at least one module',
-            },
+            default: [],
         },
         enrollmentCount: {
             type: Number,

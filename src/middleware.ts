@@ -17,8 +17,11 @@ export default withAuth(
         }
 
         // Protect trainer routes
+        // Note: TrainerProfile approval updates User.role to 'trainer'
+        // So if role !== 'trainer', they either haven't applied or aren't approved yet
         if (path.startsWith('/trainer') && token?.role !== 'trainer') {
-            return NextResponse.redirect(new URL('/unauthorized', req.url));
+            // Redirect to application page if not a trainer
+            return NextResponse.redirect(new URL('/join-trainer', req.url));
         }
 
         // Check company approval

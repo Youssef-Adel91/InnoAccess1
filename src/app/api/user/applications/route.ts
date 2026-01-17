@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { connectDB } from '@/lib/db';
 import Application from '@/models/Application';
+import Job from '@/models/Job'; // Import Job model for populate
+import User from '@/models/User'; // Import User model for nested populate (companyId)
 import { authOptions } from '@/lib/auth';
+
+// Force models to be registered in Mongoose
+Job; User;
 
 /**
  * GET /api/user/applications

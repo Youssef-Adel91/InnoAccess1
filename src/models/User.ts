@@ -158,7 +158,7 @@ const UserSchema = new Schema<IUser>(
 );
 
 // Indexes for performance
-UserSchema.index({ email: 1 });
+// Note: email index is automatically created by unique: true constraint
 UserSchema.index({ role: 1 });
 UserSchema.index({ isApproved: 1, role: 1 });
 

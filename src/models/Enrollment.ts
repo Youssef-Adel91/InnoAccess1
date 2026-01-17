@@ -47,6 +47,7 @@ const LastWatchedSchema = new Schema<ILastWatched>({
 
 /**
  * Enrollment Schema
+ * Note: paymentId is optional for free courses
  */
 const EnrollmentSchema = new Schema<IEnrollment>(
     {
@@ -70,12 +71,11 @@ const EnrollmentSchema = new Schema<IEnrollment>(
         },
         paymentId: {
             type: String,
-            required: [true, 'Payment ID is required'],
+            required: false, // Optional - only for paid courses
         },
         isPaymentProcessed: {
             type: Boolean,
             default: false,
-            required: true,
         },
         completedAt: Date,
         enrolledAt: {
@@ -96,8 +96,12 @@ EnrollmentSchema.index({ enrolledAt: -1 });
 
 /**
  * Enrollment Model
+ * Force delete cached model to ensure schema updates apply
  */
-const Enrollment: Model<IEnrollment> =
-    mongoose.models.Enrollment || mongoose.model<IEnrollment>('Enrollment', EnrollmentSchema);
+if (mongoose.models.Enrollment) {
+    delete mongoose.models.Enrollment;
+}
+
+const Enrollment: Model<IEnrollment> = mongoose.model<IEnrollment>('Enrollment', EnrollmentSchema);
 
 export default Enrollment;

@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { X, Upload, FileText, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { uploadCVToBlob } from '@/app/actions/uploadCV';
 
 interface CVUploadDialogProps {
     isOpen: boolean;
@@ -97,35 +96,43 @@ export default function CVUploadDialog({ isOpen, onClose, onSubmit }: CVUploadDi
 
         setUploading(true);
         try {
-            // Create FormData for server action
+            // Upload to Vercel Blob - THE CORRECT SOLUTION
             const formData = new FormData();
             formData.append('cv', file);
 
-            // Call server action to upload to Vercel Blob
-            console.log('📤 Calling uploadCVToBlob server action...');
-            // Use timestamp as unique identifier since session is not available in client component
+            console.log('📤 Starting Vercel Blob upload...');
+            console.log('🔍 File:', file.name, file.type, file.size);
+
+            // Import and call server action
+            const { uploadCVToBlob } = await import('@/app/actions/uploadCV');
             const uniqueId = `user_${Date.now()}`;
+
+            console.log('🚀 Calling uploadCVToBlob with ID:', uniqueId);
             const result = await uploadCVToBlob(formData, uniqueId);
+
             console.log('📥 Upload result:', result);
 
             if (result.error) {
+                console.error('❌ Upload error:', result.error);
                 setUploadError(result.error);
-                setCvFile(null); // Clear file on error
+                setCvFile(null);
                 return;
             }
 
             if (!result.url) {
+                console.error('❌ No URL in result');
                 setUploadError('Upload succeeded but no URL returned');
-                setCvFile(null); // Clear file on error
+                setCvFile(null);
                 return;
             }
 
-            console.log('✅ CV URL set to:', result.url);
+            console.log('✅ Upload successful! URL:', result.url);
             setCvUrl(result.url);
         } catch (error: any) {
-            console.error('Upload error:', error);
+            console.error('💥 Upload exception:', error);
+            console.error('Stack:', error.stack);
             setUploadError(error.message || 'Failed to upload CV');
-            setCvFile(null); // Clear file on error
+            setCvFile(null);
         } finally {
             setUploading(false);
         }

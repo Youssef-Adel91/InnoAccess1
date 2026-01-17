@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
-import { Briefcase, GraduationCap, Bell, User, LogOut, Settings, Menu, FileText } from 'lucide-react';
+import { Briefcase, GraduationCap, Bell, User, LogOut, Settings, Menu, FileText, UserCheck, Video, Users } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 export function Header() {
@@ -97,6 +97,21 @@ export function Header() {
                             </Link>
                         )}
 
+                        {/* Become a Trainer - Only for users */}
+                        {session?.user?.role === 'user' && (
+                            <Link
+                                href="/join-trainer"
+                                className={`inline-flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 ${isActive('/join-trainer')
+                                    ? 'bg-blue-50 text-blue-700'
+                                    : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                                    }`}
+                                aria-current={isActive('/join-trainer') ? 'page' : undefined}
+                            >
+                                <UserCheck className="mr-2 h-4 w-4" aria-hidden="true" />
+                                Become a Trainer
+                            </Link>
+                        )}
+
                         {/* My Jobs - Only for companies */}
                         {session?.user?.role === 'company' && (
                             <Link
@@ -110,6 +125,49 @@ export function Header() {
                                 <Briefcase className="mr-2 h-4 w-4" aria-hidden="true" />
                                 My Jobs
                             </Link>
+                        )}
+
+                        {/* My Courses - Only for trainers */}
+                        {session?.user?.role === 'trainer' && (
+                            <Link
+                                href="/trainer/dashboard"
+                                className={`inline-flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 ${isActive('/trainer')
+                                    ? 'bg-blue-50 text-blue-700'
+                                    : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                                    }`}
+                                aria-current={isActive('/trainer') ? 'page' : undefined}
+                            >
+                                <GraduationCap className="mr-2 h-4 w-4" aria-hidden="true" />
+                                My Courses
+                            </Link>
+                        )}
+
+                        {/* Admin Approvals - Only for admins */}
+                        {session?.user?.role === 'admin' && (
+                            <>
+                                <Link
+                                    href="/admin/trainers/requests"
+                                    className={`inline-flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 ${isActive('/admin/trainers/requests')
+                                        ? 'bg-blue-50 text-blue-700'
+                                        : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                                        }`}
+                                    aria-current={isActive('/admin/trainers/requests') ? 'page' : undefined}
+                                >
+                                    <Users className="mr-2 h-4 w-4" aria-hidden="true" />
+                                    Trainer Requests
+                                </Link>
+                                <Link
+                                    href="/admin/approvals"
+                                    className={`inline-flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 ${isActive('/admin/approvals')
+                                        ? 'bg-blue-50 text-blue-700'
+                                        : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                                        }`}
+                                    aria-current={isActive('/admin/approvals') ? 'page' : undefined}
+                                >
+                                    <Video className="mr-2 h-4 w-4" aria-hidden="true" />
+                                    Video Approvals
+                                </Link>
+                            </>
                         )}
                     </div>
 
@@ -220,6 +278,22 @@ export function Header() {
                             </Link>
                         )}
 
+                        {/* Become a Trainer - Only for users (Mobile) */}
+                        {session?.user?.role === 'user' && (
+                            <Link
+                                href="/join-trainer"
+                                className={`flex items-center px-4 py-2 rounded-md text-base font-medium transition-colors ${isActive('/join-trainer')
+                                    ? 'bg-blue-50 text-blue-700'
+                                    : 'text-gray-700 hover:bg-gray-100'
+                                    }`}
+                                onClick={() => setMobileMenuOpen(false)}
+                                role="menuitem"
+                            >
+                                <UserCheck className="mr-3 h-5 w-5" aria-hidden="true" />
+                                Become a Trainer
+                            </Link>
+                        )}
+
                         {/* My Jobs - Only for companies */}
                         {session?.user?.role === 'company' && (
                             <Link
@@ -234,6 +308,52 @@ export function Header() {
                                 <Briefcase className="mr-3 h-5 w-5" aria-hidden="true" />
                                 My Jobs
                             </Link>
+                        )}
+
+                        {/* My Courses - Only for trainers (Mobile) */}
+                        {session?.user?.role === 'trainer' && (
+                            <Link
+                                href="/trainer/dashboard"
+                                className={`flex items-center px-4 py-2 rounded-md text-base font-medium transition-colors ${isActive('/trainer')
+                                    ? 'bg-blue-50 text-blue-700'
+                                    : 'text-gray-700 hover:bg-gray-100'
+                                    }`}
+                                onClick={() => setMobileMenuOpen(false)}
+                                role="menuitem"
+                            >
+                                <GraduationCap className="mr-3 h-5 w-5" aria-hidden="true" />
+                                My Courses
+                            </Link>
+                        )}
+
+                        {/* Admin Approvals - Only for admins (Mobile) */}
+                        {session?.user?.role === 'admin' && (
+                            <>
+                                <Link
+                                    href="/admin/trainers/requests"
+                                    className={`flex items-center px-4 py-2 rounded-md text-base font-medium transition-colors ${isActive('/admin/trainers/requests')
+                                        ? 'bg-blue-50 text-blue-700'
+                                        : 'text-gray-700 hover:bg-gray-100'
+                                        }`}
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    role="menuitem"
+                                >
+                                    <Users className="mr-3 h-5 w-5" aria-hidden="true" />
+                                    Trainer Requests
+                                </Link>
+                                <Link
+                                    href="/admin/approvals"
+                                    className={`flex items-center px-4 py-2 rounded-md text-base font-medium transition-colors ${isActive('/admin/approvals')
+                                        ? 'bg-blue-50 text-blue-700'
+                                        : 'text-gray-700 hover:bg-gray-100'
+                                        }`}
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    role="menuitem"
+                                >
+                                    <Video className="mr-3 h-5 w-5" aria-hidden="true" />
+                                    Video Approvals
+                                </Link>
+                            </>
                         )}
                     </div>
                 )}
