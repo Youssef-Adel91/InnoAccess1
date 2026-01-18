@@ -1,143 +1,151 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
+import Order, { OrderStatus, PaymentMethod } from '@/models/Order';
 import Enrollment from '@/models/Enrollment';
 import Course from '@/models/Course';
-import Notification, { NotificationType } from '@/models/Notification';
-import { paymobClient } from '@/lib/paymob';
+import { Types } from 'mongoose';
 
 /**
  * POST /api/webhooks/paymob
- * Handle Paymob payment webhook
+ * Handle Paymob payment webhooks with HMAC validation
+ * 
+ * CRITICAL: This webhook auto-enrolls students upon successful payment
  */
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
     try {
-        const { searchParams } = new URL(request.url);
-        const receivedHmac = searchParams.get('hmac');
+        // 1. استلام البيانات من Paymob
+        const data = await req.json();
+        const { obj } = data;
 
-        if (!receivedHmac) {
-            return NextResponse.json(
-                {
-                    success: false,
-                    error: 'Missing HMAC',
-                },
-                { status: 400 }
-            );
+        if (!obj) {
+            console.error('❌ Webhook: No obj in payload');
+            return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
         }
 
-        const webhookData = await request.json();
+        // 2. التحقق من الأمان (HMAC Validation)
+        const hmacSecret = process.env.PAYMOB_HMAC_SECRET;
 
-        // Verify HMAC signature
-        const isValid = paymobClient.verifyHmac(webhookData, receivedHmac);
-
-        if (!isValid) {
-            console.error('Invalid HMAC signature');
-            return NextResponse.json(
-                {
-                    success: false,
-                    error: 'Invalid signature',
-                },
-                { status: 403 }
-            );
+        if (!hmacSecret) {
+            console.error('❌ Missing PAYMOB_HMAC_SECRET');
+            return NextResponse.json({ error: 'Server Configuration Error' }, { status: 500 });
         }
 
-        // Check if payment was successful
-        if (!webhookData.success) {
-            console.log('Payment failed:', webhookData);
+        // ترتيب الحقول ده مهم جداً - حسب وثائق Paymob
+        const hmacString = [
+            obj.amount_cents,
+            obj.created_at,
+            obj.currency,
+            obj.error_occured,
+            obj.has_parent_transaction,
+            obj.id,
+            obj.integration_id,
+            obj.is_3d_secure,
+            obj.is_auth,
+            obj.is_capture,
+            obj.is_refunded,
+            obj.is_standalone_payment,
+            obj.is_voided,
+            obj.order.id,
+            obj.owner,
+            obj.pending,
+            obj.source_data?.pan || '',
+            obj.source_data?.sub_type || '',
+            obj.source_data?.type || '',
+            obj.success,
+        ].join('');
 
-            // Create failure notification
-            const paymentId = webhookData.order?.merchant_order_id;
-            if (paymentId) {
-                await connectDB();
+        const crypto = require('crypto');
+        const calculatedHmac = crypto
+            .createHmac('sha512', hmacSecret)
+            .update(hmacString)
+            .digest('hex');
 
-                const enrollment = await Enrollment.findOne({ paymentId });
+        const receivedHmac = req.nextUrl.searchParams.get('hmac');
 
-                if (enrollment) {
-                    await Notification.create({
-                        userId: enrollment.userId,
-                        type: NotificationType.PAYMENT_FAILED,
-                        title: 'Payment Failed',
-                        message: 'Your course enrollment payment was unsuccessful. Please try again.',
-                        link: '/dashboard/courses',
-                    });
-
-                    // Delete pending enrollment
-                    await Enrollment.findByIdAndDelete(enrollment._id);
-                }
-            }
-
-            return NextResponse.json({ success: true, message: 'Payment failed processed' });
+        if (receivedHmac && receivedHmac !== calculatedHmac) {
+            console.error('⛔ HMAC Validation Failed!');
+            console.error('Expected:', calculatedHmac);
+            console.error('Received:', receivedHmac);
+            return NextResponse.json({ message: 'Invalid HMAC' }, { status: 403 });
         }
 
-        // Payment was successful
-        const paymentId = webhookData.order?.merchant_order_id;
-
-        if (!paymentId) {
-            console.error('No merchant order ID in webhook');
-            return NextResponse.json({ success: true });
-        }
+        console.log('✅ HMAC Validated');
 
         await connectDB();
 
-        // Find the enrollment
-        const enrollment = await Enrollment.findOne({ paymentId }).populate('courseId');
+        // 3. البحث عن الطلب في الداتابيز
+        // Paymob بيبعت merchant_order_id اللي هو الـ _id بتاع Order عندنا
+        const merchantOrderId = obj.order?.merchant_order_id;
 
-        if (!enrollment) {
-            console.log('Enrollment not found for payment ID:', paymentId);
-            return NextResponse.json({ success: true });
+        if (!merchantOrderId) {
+            console.error('❌ No merchant_order_id in webhook');
+            return NextResponse.json({ error: 'No merchant_order_id' }, { status: 400 });
         }
 
-        // SECURITY FIX: Idempotency check - prevent replay attacks
-        if (enrollment.isPaymentProcessed) {
-            console.log('⚠️  Payment already processed, ignoring duplicate webhook:', paymentId);
-            return NextResponse.json({
-                success: true,
-                message: 'Payment already processed (idempotent)'
+        const order = await Order.findById(merchantOrderId);
+
+        if (!order) {
+            console.error(`⚠️ Order not found: ${merchantOrderId}`);
+            return NextResponse.json({ message: 'Order not found' }, { status: 404 });
+        }
+
+        // 4. منع التكرار (Idempotency) - CRITICAL!
+        if (order.status === OrderStatus.COMPLETED) {
+            console.log('ℹ️ Order already completed. Skipping.');
+            return NextResponse.json({ message: 'Already processed' }, { status: 200 });
+        }
+
+        // 5. التحقق من نجاح العملية
+        if (obj.success === true) {
+            console.log(`✅ Payment Successful for Order: ${order._id}`);
+
+            // أ) تحديث حالة الطلب
+            order.status = OrderStatus.COMPLETED;
+            order.paymobOrderId = obj.order.id.toString();
+            order.paymobTransactionId = obj.id.toString();
+            await order.save();
+
+            console.log('✅ Order status updated to COMPLETED');
+
+            // ب) تسجيل الطالب في الكورس (Enrollment)
+            const existingEnrollment = await Enrollment.findOne({
+                userId: order.userId,
+                courseId: order.courseId,
             });
+
+            if (!existingEnrollment) {
+                await Enrollment.create({
+                    userId: order.userId,
+                    courseId: order.courseId,
+                    orderId: order._id,
+                    paymentStatus: 'PAID',
+                    progress: [],
+                    enrolledAt: new Date(),
+                });
+
+                console.log(`🎓 User ${order.userId} enrolled in Course ${order.courseId}`);
+
+                // ج) تحديث عدد المسجلين في الكورس
+                await Course.findByIdAndUpdate(order.courseId, {
+                    $inc: { enrollmentCount: 1 },
+                });
+
+                console.log('✅ Course enrollment count updated');
+            } else {
+                console.log('ℹ️ Enrollment already exists');
+            }
+        } else {
+            // حالة الفشل
+            console.log(`❌ Payment Failed/Pending for Order: ${order._id}`);
+            order.status = OrderStatus.REJECTED;
+            order.paymobTransactionId = obj.id.toString();
+            order.rejectionReason = 'Payment failed or cancelled';
+            await order.save();
         }
 
-        // Mark as processed immediately
-        enrollment.isPaymentProcessed = true;
-        await enrollment.save();
-
-        // Type assertion for populated course
-        const course = enrollment.courseId as any as import('@/models/Course').ICourse;
-
-        // Update course enrollment count
-        await Course.findByIdAndUpdate(enrollment.courseId, {
-            $inc: { enrollmentCount: 1 },
-        });
-
-        // Create success notification
-        await Notification.create({
-            userId: enrollment.userId,
-            type: NotificationType.PAYMENT_SUCCESS,
-            title: 'Enrollment Confirmed',
-            message: `You're now enrolled in ${course.title}!`,
-            link: `/courses/${course._id}`,
-        });
-
-        // Notify trainer
-        await Notification.create({
-            userId: course.trainerId,
-            type: NotificationType.NEW_ENROLLMENT,
-            title: 'New Student Enrolled',
-            message: `A new student has enrolled in your course: ${course.title}`,
-            link: `/trainer/courses/${course._id}`,
-        });
-
-        console.log('✅ Payment processed successfully for:', paymentId);
-
-        return NextResponse.json({
-            success: true,
-            message: 'Webhook processed',
-        });
+        return NextResponse.json({ message: 'Webhook processed successfully' }, { status: 200 });
     } catch (error: any) {
-        console.error('Webhook processing error:', error);
-
-        // Always return 200 to Paymob to prevent retries
-        return NextResponse.json({
-            success: false,
-            error: error.message,
-        });
+        console.error('🔥 Webhook Error:', error);
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }

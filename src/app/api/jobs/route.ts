@@ -18,7 +18,7 @@ const createJobSchema = z.object({
         currency: z.string().default('EGP'),
     }),
     location: z.string().min(1),
-    type: z.enum([JobType.REMOTE, JobType.ONSITE, JobType.HYBRID]),
+    type: z.enum(['remote', 'onsite', 'hybrid']),
     accessibilityFeatures: z.array(z.string()).optional().default([]),
     expiresAt: z.string().optional(),
 });

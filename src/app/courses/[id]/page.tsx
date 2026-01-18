@@ -236,15 +236,21 @@ export default function CourseDetailPage() {
                                                 Continue Learning
                                             </Button>
                                         </Link>
-                                    ) : (
+                                    ) : course.isFree ? (
                                         <Button
                                             variant="primary"
                                             className="w-full mb-3"
                                             onClick={handleEnroll}
                                             disabled={enrolling}
                                         >
-                                            {enrolling ? 'Enrolling...' : (course.isFree ? 'Enroll for Free' : 'Buy Now')}
+                                            {enrolling ? 'Enrolling...' : 'Enroll for Free'}
                                         </Button>
+                                    ) : (
+                                        <Link href={`/courses/${courseId}/checkout`}>
+                                            <Button variant="primary" className="w-full mb-3">
+                                                Buy Now
+                                            </Button>
+                                        </Link>
                                     )
                                 ) : (
                                     <Link href="/auth/signin">

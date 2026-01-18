@@ -277,7 +277,16 @@ export default function AdminDashboardPage() {
                 </div>
 
                 {/* Quick Links */}
-                <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <Link
+                        href="/admin/orders"
+                        className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+                    >
+                        <CheckCircle className="h-8 w-8 text-orange-600 mb-3" aria-hidden="true" />
+                        <h3 className="text-lg font-semibold text-gray-900">Payment Orders</h3>
+                        <p className="mt-1 text-sm text-gray-600">Review manual payments</p>
+                    </Link>
+
                     <Link
                         href="/jobs"
                         className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"

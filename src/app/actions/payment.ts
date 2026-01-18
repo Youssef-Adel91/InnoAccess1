@@ -1,0 +1,468 @@
+'use server';
+
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { connectDB } from '@/lib/db';
+import Order, { OrderStatus, PaymentMethod } from '@/models/Order';
+import Course from '@/models/Course';
+import Enrollment from '@/models/Enrollment';
+import { put } from '@vercel/blob';
+import { Types } from 'mongoose';
+import { initiateCardPayment, initiateWalletPayment, BillingData } from '@/lib/paymob';
+import { CURRENCY } from '@/lib/payment-constants';
+
+/**
+ * Submit manual payment with receipt screenshot
+ */
+export async function submitManualPayment(courseId: string, formData: FormData) {
+    try {
+        const session = await getServerSession(authOptions);
+
+        if (!session) {
+            throw new Error('You must be logged in');
+        }
+
+        await connectDB();
+
+        // Get course
+        const course = await Course.findById(courseId);
+        if (!course) {
+            throw new Error('Course not found');
+        }
+
+        if (course.isFree) {
+            throw new Error('This course is free, no payment required');
+        }
+
+        // Check if already enrolled
+        const existingEnrollment = await Enrollment.findOne({
+            userId: session.user.id,
+            courseId: courseId,
+        });
+
+        if (existingEnrollment) {
+            throw new Error('You are already enrolled in this course');
+        }
+
+        // Check for pending order
+        const pendingOrder = await Order.findOne({
+            userId: session.user.id,
+            courseId: courseId,
+            status: OrderStatus.PENDING,
+        });
+
+        if (pendingOrder) {
+            throw new Error('You already have a pending payment for this course');
+        }
+
+        // Get receipt file
+        const receiptFile = formData.get('receipt') as File;
+        if (!receiptFile) {
+            throw new Error('Receipt screenshot is required');
+        }
+
+        // Validate file
+        if (!receiptFile.type.startsWith('image/')) {
+            throw new Error('Receipt must be an image file');
+        }
+
+        const maxSize = 5 * 1024 * 1024; // 5MB
+        if (receiptFile.size > maxSize) {
+            throw new Error('Receipt file size must be less than 5MB');
+        }
+
+        // Upload to Vercel Blob
+        const blob = await put(
+            `receipts/${session.user.id}/${courseId}-${Date.now()}.${receiptFile.name.split('.').pop()}`,
+            receiptFile,
+            {
+                access: 'public',
+                addRandomSuffix: false,
+            }
+        );
+
+        // Get phone number from form
+        const phoneNumber = formData.get('phoneNumber') as string;
+
+        // Create order
+        const order = await Order.create({
+            userId: new Types.ObjectId(session.user.id),
+            courseId: new Types.ObjectId(courseId),
+            amount: course.price,
+            currency: CURRENCY,
+            status: OrderStatus.PENDING,
+            paymentMethod: PaymentMethod.MANUAL,
+            receiptUrl: blob.url,
+            manualTransferNumber: phoneNumber || undefined,
+        });
+
+        console.log('✅ Manual payment submitted:', order._id);
+
+        return {
+            success: true,
+            data: {
+                message: 'Payment submitted for review. You will be enrolled once approved.',
+                orderId: order._id.toString(),
+            },
+        };
+    } catch (error: any) {
+        console.error('❌ Submit manual payment error:', error);
+        return {
+            success: false,
+            error: {
+                message: error.message || 'Failed to submit payment',
+                code: 'SUBMIT_MANUAL_PAYMENT_ERROR',
+            },
+        };
+    }
+}
+
+/**
+ * Initialize Paymob payment (Card or Wallet)
+ */
+export async function initPaymobPayment(
+    courseId: string,
+    paymentType: 'CARD' | 'WALLET',
+    phoneNumber?: string
+) {
+    try {
+        const session = await getServerSession(authOptions);
+
+        if (!session) {
+            throw new Error('You must be logged in');
+        }
+
+        await connectDB();
+
+        // Get course
+        const course = await Course.findById(courseId);
+        if (!course) {
+            throw new Error('Course not found');
+        }
+
+        if (course.isFree) {
+            throw new Error('This course is free, no payment required');
+        }
+
+        // Check if already enrolled
+        const existingEnrollment = await Enrollment.findOne({
+            userId: session.user.id,
+            courseId: courseId,
+        });
+
+        if (existingEnrollment) {
+            throw new Error('You are already enrolled in this course');
+        }
+
+        // Create order first
+        const order = await Order.create({
+            userId: new Types.ObjectId(session.user.id),
+            courseId: new Types.ObjectId(courseId),
+            amount: course.price,
+            currency: CURRENCY,
+            status: OrderStatus.PENDING,
+            paymentMethod: PaymentMethod.PAYMOB,
+        });
+
+        // Prepare billing data
+        const billingData: BillingData = {
+            email: session.user.email || `user${session.user.id}@innoaccess.com`,
+            first_name: session.user.name?.split(' ')[0] || 'Student',
+            last_name: session.user.name?.split(' ').slice(1).join(' ') || 'User',
+            phone_number: phoneNumber || '+20100000000',
+            city: 'Cairo',
+            country: 'EG',
+        };
+
+        // Amount in cents (already stored in cents in DB)
+        const amountCents = course.price;
+
+        // Initiate payment with Paymob
+        let paymentUrl: string;
+        let paymobOrderId: number;
+
+        if (paymentType === 'CARD') {
+            const result = await initiateCardPayment(
+                amountCents,
+                order._id.toString(),
+                billingData
+            );
+            paymentUrl = result.paymentUrl;
+            paymobOrderId = result.paymobOrderId;
+        } else {
+            // Wallet
+            if (!phoneNumber) {
+                throw new Error('Phone number is required for wallet payment');
+            }
+            const result = await initiateWalletPayment(
+                amountCents,
+                order._id.toString(),
+                billingData,
+                phoneNumber
+            );
+            paymentUrl = result.paymentUrl;
+            paymobOrderId = result.paymobOrderId;
+        }
+
+        // Store Paymob order ID for verification
+        order.paymobOrderId = paymobOrderId.toString();
+        await order.save();
+
+        console.log('✅ Paymob payment initiated:', order._id, 'Paymob Order ID:', paymobOrderId);
+
+        // Note: paymobTransactionId will be stored when webhook is received
+        // or can be manually verified using verifyPaymentStatus action
+
+        return {
+            success: true,
+            data: {
+                paymentUrl,
+                orderId: order._id.toString(),
+            },
+        };
+    } catch (error: any) {
+        console.error('❌ Init Paymob payment error:', error);
+        return {
+            success: false,
+            error: {
+                message: error.message || 'Failed to initialize payment',
+                code: 'INIT_PAYMOB_PAYMENT_ERROR',
+            },
+        };
+    }
+}
+
+/**
+ * ADMIN: Approve manual payment
+ */
+export async function approveManualPayment(orderId: string) {
+    try {
+        const session = await getServerSession(authOptions);
+
+        if (!session || session.user.role !== 'admin') {
+            throw new Error('Unauthorized');
+        }
+
+        await connectDB();
+
+        const order = await Order.findById(orderId);
+        if (!order) {
+            throw new Error('Order not found');
+        }
+
+        if (order.status !== OrderStatus.PENDING) {
+            throw new Error('Order is not pending');
+        }
+
+        // Update order
+        order.status = OrderStatus.COMPLETED;
+        order.reviewedBy = new Types.ObjectId(session.user.id);
+        order.reviewedAt = new Date();
+        await order.save();
+
+        // Create enrollment
+        await Enrollment.create({
+            userId: order.userId,
+            courseId: order.courseId,
+            orderId: order._id,
+            paymentStatus: 'PAID',
+            progress: [],
+        });
+
+        // Update course enrollment count
+        await Course.findByIdAndUpdate(order.courseId, {
+            $inc: { enrollmentCount: 1 },
+        });
+
+        console.log('✅ Manual payment approved:', orderId);
+
+        return {
+            success: true,
+            data: {
+                message: 'Payment approved and student enrolled',
+            },
+        };
+    } catch (error: any) {
+        console.error('❌ Approve manual payment error:', error);
+        return {
+            success: false,
+            error: {
+                message: error.message || 'Failed to approve payment',
+                code: 'APPROVE_PAYMENT_ERROR',
+            },
+        };
+    }
+}
+
+/**
+ * ADMIN: Reject manual payment
+ */
+export async function rejectManualPayment(orderId: string, reason: string) {
+    try {
+        const session = await getServerSession(authOptions);
+
+        if (!session || session.user.role !== 'admin') {
+            throw new Error('Unauthorized');
+        }
+
+        await connectDB();
+
+        const order = await Order.findById(orderId);
+        if (!order) {
+            throw new Error('Order not found');
+        }
+
+        if (order.status !== OrderStatus.PENDING) {
+            throw new Error('Order is not pending');
+        }
+
+        // Update order
+        order.status = OrderStatus.REJECTED;
+        order.rejectionReason = reason;
+        order.reviewedBy = new Types.ObjectId(session.user.id);
+        order.reviewedAt = new Date();
+        await order.save();
+
+        console.log('✅ Manual payment rejected:', orderId);
+
+        return {
+            success: true,
+            data: {
+                message: 'Payment rejected',
+            },
+        };
+    } catch (error: any) {
+        console.error('❌ Reject manual payment error:', error);
+        return {
+            success: false,
+            error: {
+                message: error.message || 'Failed to reject payment',
+                code: 'REJECT_PAYMENT_ERROR',
+            },
+        };
+    }
+}
+
+/**
+ * Verify payment status manually (fallback when webhook fails)
+ */
+export async function verifyPaymentStatus(orderId: string) {
+    try {
+        const session = await getServerSession(authOptions);
+
+        if (!session) {
+            throw new Error('You must be logged in');
+        }
+
+        await connectDB();
+
+        // Get the order
+        const order = await Order.findById(orderId);
+        if (!order) {
+            throw new Error('Order not found');
+        }
+
+        // Check if already completed
+        if (order.status === OrderStatus.COMPLETED) {
+            return {
+                success: true,
+                data: {
+                    message: 'Payment already verified',
+                    status: 'COMPLETED',
+                },
+            };
+        }
+
+        // Only verify Paymob payments
+        if (order.paymentMethod !== PaymentMethod.PAYMOB) {
+            throw new Error('Can only verify Paymob payments');
+        }
+
+        // Check if this order belongs to the current user
+        if (order.userId.toString() !== session.user.id) {
+            throw new Error('Unauthorized');
+        }
+
+        // Check if we have paymobOrderId
+        if (!order.paymobOrderId) {
+            return {
+                success: false,
+                error: {
+                    message: 'Payment not initialized properly. Please try payment again.',
+                    code: 'NO_PAYMOB_ORDER_ID',
+                },
+            };
+        }
+
+        // Query Paymob transactions using paymobOrderId
+        const { paymobClient } = await import('@/lib/paymob');
+
+        try {
+            const transactions = await paymobClient.getOrderTransactions(order.paymobOrderId);
+            const successfulTxn = transactions.find((txn: any) => txn.success === true);
+
+            if (!successfulTxn) {
+                return {
+                    success: false,
+                    error: {
+                        message: 'Payment not confirmed yet. Please complete payment and try again.',
+                        code: 'PAYMENT_NOT_CONFIRMED',
+                    },
+                };
+            }
+
+            // Update order with transaction details
+            order.status = OrderStatus.COMPLETED;
+            order.paymobTransactionId = successfulTxn.id?.toString();
+            await order.save();
+
+            // Check if enrollment already exists
+            const existingEnrollment = await Enrollment.findOne({
+                userId: order.userId,
+                courseId: order.courseId,
+            });
+
+            if (!existingEnrollment) {
+                await Enrollment.create({
+                    userId: order.userId,
+                    courseId: order.courseId,
+                    orderId: order._id,
+                    paymentStatus: 'PAID',
+                    progress: [],
+                });
+
+                await Course.findByIdAndUpdate(order.courseId, {
+                    $inc: { enrollmentCount: 1 },
+                });
+
+                console.log('✅ Manual verification: Enrollment created for order:', orderId);
+            }
+
+            return {
+                success: true,
+                data: {
+                    message: 'Payment verified successfully!',
+                    status: 'COMPLETED',
+                },
+            };
+        } catch (paymobError: any) {
+            console.error('Paymob query error:', paymobError);
+            return {
+                success: false,
+                error: {
+                    message: 'Unable to verify payment. Please try again or contact support.',
+                    code: 'PAYMOB_QUERY_ERROR',
+                },
+            };
+        }
+    } catch (error: any) {
+        console.error('❌ Verify payment status error:', error);
+        return {
+            success: false,
+            error: {
+                message: error.message || 'Failed to verify payment status',
+                code: 'VERIFY_PAYMENT_ERROR',
+            },
+        };
+    }
+}

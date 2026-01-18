@@ -19,6 +19,11 @@ export interface IEnrollment extends Document {
     lastWatched: ILastWatched;
     paymentId: string; // Paymob order ID
     isPaymentProcessed: boolean; // Idempotency flag
+
+    // Payment tracking
+    orderId?: Types.ObjectId; // Reference to Order model
+    paymentStatus?: string; // 'FREE', 'PAID'
+
     completedAt?: Date;
     enrolledAt: Date;
     updatedAt: Date;
@@ -76,6 +81,15 @@ const EnrollmentSchema = new Schema<IEnrollment>(
         isPaymentProcessed: {
             type: Boolean,
             default: false,
+        },
+        orderId: {
+            type: Schema.Types.ObjectId,
+            ref: 'Order',
+        },
+        paymentStatus: {
+            type: String,
+            enum: ['FREE', 'PAID'],
+            default: 'FREE',
         },
         completedAt: Date,
         enrolledAt: {

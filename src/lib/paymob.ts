@@ -90,14 +90,30 @@ class PaymobClient {
         integrationId: string
     ): Promise<string> {
         try {
+            // Ensure all billing data fields have values (Paymob requires them)
+            const completeBillingData = {
+                email: billingData.email,
+                first_name: billingData.first_name,
+                last_name: billingData.last_name,
+                phone_number: billingData.phone_number,
+                street: billingData.street || 'NA',
+                building: billingData.building || 'NA',
+                floor: billingData.floor || 'NA',
+                apartment: billingData.apartment || 'NA',
+                city: billingData.city,
+                country: billingData.country,
+                state: 'NA', // Required by Paymob
+                postal_code: 'NA', // Required by Paymob
+            };
+
             const response = await this.client.post('/acceptance/payment_keys', {
                 auth_token: authToken,
                 amount_cents: amountCents.toString(),
                 expiration: 3600, // 1 hour
                 order_id: paymobOrderId.toString(),
-                billing_data: billingData,
+                billing_data: completeBillingData,
                 currency: 'EGP',
-                integration_id: integrationId,
+                integration_id: parseInt(integrationId),
             });
 
             if (!response.data?.token) {
@@ -108,6 +124,68 @@ class PaymobClient {
         } catch (error) {
             console.error('Paymob payment key error:', error);
             throw new Error('Failed to get payment key from Paymob');
+        }
+    }
+
+    /**
+     * Get transactions for an order from Paymob
+     * @param paymobOrderId - Paymob order ID
+     * @returns {Promise<any[]>} List of transactions for this order
+     */
+    async getOrderTransactions(paymobOrderId: string): Promise<any[]> {
+        try {
+            console.log('🔍 Querying Paymob transactions for order:', paymobOrderId);
+
+            const authToken = await this.getAuthToken();
+            console.log('✅ Got auth token:', authToken?.substring(0, 20) + '...');
+
+            // Query transactions for specific order using order_id parameter
+            const response = await this.client.get('/acceptance/transactions', {
+                params: {
+                    order_id: paymobOrderId,
+                    auth_token: authToken,
+                },
+            });
+
+            console.log('✅ Paymob response received:', response.status);
+
+            // Paymob returns transactions in results array or directly in data
+            const transactions = response.data?.results || response.data || [];
+            console.log(`📊 Found ${Array.isArray(transactions) ? transactions.length : 0} transactions`);
+
+            return Array.isArray(transactions) ? transactions : [];
+        } catch (error: any) {
+            console.error('❌ Paymob transactions query error:', {
+                status: error.response?.status,
+                statusText: error.response?.statusText,
+                data: error.response?.data,
+                message: error.message,
+            });
+
+            // Return empty array instead of throwing to allow graceful degradation
+            return [];
+        }
+    }
+
+    /**
+     * Get transaction status from Paymob (for manual verification)
+     * @param transactionId - Paymob transaction ID
+     * @returns {Promise<any>} Transaction details
+     */
+    async getTransactionStatus(transactionId: string): Promise<any> {
+        try {
+            const authToken = await this.getAuthToken();
+
+            const response = await this.client.get(`/acceptance/transactions/${transactionId}`, {
+                params: {
+                    token: authToken,
+                },
+            });
+
+            return response.data;
+        } catch (error) {
+            console.error('Paymob transaction inquiry error:', error);
+            throw new Error('Failed to get transaction status from Paymob');
         }
     }
 
@@ -235,7 +313,7 @@ export async function initiateCardPayment(
     amountCents: number,
     merchantOrderId: string,
     billingData: BillingData
-): Promise<string> {
+): Promise<{ paymentUrl: string; paymobOrderId: number }> {
     if (!env.PAYMOB_INTEGRATION_ID_CARD) {
         throw new Error('PAYMOB_INTEGRATION_ID_CARD not configured');
     }
@@ -253,21 +331,24 @@ export async function initiateCardPayment(
         env.PAYMOB_INTEGRATION_ID_CARD
     );
 
-    return `${PAYMOB_BASE_URL}/acceptance/iframes/${env.PAYMOB_IFRAME_ID}?payment_token=${paymentToken}`;
+    const paymentUrl = `${PAYMOB_BASE_URL}/acceptance/iframes/${env.PAYMOB_IFRAME_ID}?payment_token=${paymentToken}`;
+    return { paymentUrl, paymobOrderId };
 }
 
 /**
  * Initiate wallet payment flow
  * @param amountCents - Amount in cents
  * @param merchantOrderId - Your order ID
- * @param billingData - User billing data
- * @returns {Promise<string>} Payment token for wallet
+ * @param billingData - User billing data  
+ * @param phoneNumber - User's phone number for wallet
+ * @returns {Promise<string>} Redirect URL for wallet payment
  */
 export async function initiateWalletPayment(
     amountCents: number,
     merchantOrderId: string,
-    billingData: BillingData
-): Promise<string> {
+    billingData: BillingData,
+    phoneNumber: string
+): Promise<{ paymentUrl: string; paymobOrderId: number }> {
     if (!env.PAYMOB_INTEGRATION_ID_WALLET) {
         throw new Error('PAYMOB_INTEGRATION_ID_WALLET not configured');
     }
@@ -282,5 +363,27 @@ export async function initiateWalletPayment(
         env.PAYMOB_INTEGRATION_ID_WALLET
     );
 
-    return paymentToken;
+    // Get wallet redirect data
+    const walletData = getWalletRedirectData(paymentToken, phoneNumber);
+    const paymentUrl = walletData.redirect_url || walletData.iframe_redirection_url || 'https://accept.paymob.com/api/acceptance/post_pay';
+
+    return { paymentUrl, paymobOrderId };
+}
+
+/**
+ * Get wallet redirect form data
+ * @param paymentToken - Payment token from initiateWalletPayment
+ * @param phoneNumber - Phone number for wallet
+ * @returns Form data for wallet redirect
+ */
+export function getWalletRedirectData(paymentToken: string, phoneNumber: string) {
+    return {
+        payment_token: paymentToken,
+        redirect_url: `https://accept.paymob.com/api/acceptance/post_pay`,
+        iframe_redirection_url: `https://accept.paymob.com/api/acceptance/iframes/wallet?payment_token=${paymentToken}`,
+        source: {
+            identifier: phoneNumber,
+            subtype: 'WALLET',
+        },
+    };
 }
