@@ -8,12 +8,12 @@ export default withAuth(
 
         // Protect admin routes
         if (path.startsWith('/admin') && token?.role !== 'admin') {
-            return NextResponse.redirect(new URL('/unauthorized', req.url));
+            return NextResponse.redirect(new URL('/', req.url));
         }
 
         // Protect company routes
         if (path.startsWith('/company') && token?.role !== 'company') {
-            return NextResponse.redirect(new URL('/unauthorized', req.url));
+            return NextResponse.redirect(new URL('/', req.url));
         }
 
         // Protect trainer routes
