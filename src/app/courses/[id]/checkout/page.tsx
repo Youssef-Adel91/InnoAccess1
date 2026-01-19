@@ -31,7 +31,7 @@ export default function CheckoutPage() {
     const [course, setCourse] = useState<Course | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<PaymentTab>('paymob');
+    const [activeTab, setActiveTab] = useState<PaymentTab>('manual');
     const [isEnrolled, setIsEnrolled] = useState(false);
 
     // Manual payment state
@@ -276,222 +276,211 @@ export default function CheckoutPage() {
                     </div>
                 )}
 
-                {/* Payment Tabs */}
-                <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                    {/* Tab Headers */}
-                    <div className="flex border-b">
+                {/* Payment Method Tabs */}
+                <div className="border-b border-gray-200 mb-8">
+                    <nav className="-mb-px flex space-x-8">
+                        {/* Paymob Tab - Disabled */}
                         <button
-                            onClick={() => setActiveTab('paymob')}
-                            className={`flex-1 px-6 py-4 font-medium transition-colors ${activeTab === 'paymob'
-                                ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-600'
-                                : 'text-gray-600 hover:bg-gray-50'
-                                }`}
+                            type="button"
+                            disabled
+                            className="relative border-b-2 border-transparent py-4 px-1 text-center font-medium text-sm opacity-40 cursor-not-allowed"
                         >
-                            <CreditCard className="h-5 w-5 inline-block mr-2" />
-                            Card / Wallet
+                            <CreditCard className="inline-block w-5 h-5 mr-2" />
+                            Paymob (Card / Wallet)
+                            <span className="absolute -top-1 -right-2 bg-gray-500 text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">
+                                Coming Soon
+                            </span>
                         </button>
+
+                        {/* Manual Payment Tab - Active */}
                         <button
+                            type="button"
                             onClick={() => setActiveTab('manual')}
-                            className={`flex-1 px-6 py-4 font-medium transition-colors ${activeTab === 'manual'
-                                ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-600'
-                                : 'text-gray-600 hover:bg-gray-50'
-                                }`}
-                        >
-                            <Smartphone className="h-5 w-5 inline-block mr-2" />
-                            InstaPay / Vodafone Cash
-                        </button>
-                    </div>
-
-                    {/* Tab Content */}
-                    <div className="p-6">
-                        {activeTab === 'paymob' ? (
-                            <div>
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Pay with Paymob</h3>
-
-                                {/* Payment Type Selection */}
                                 <div className="mb-6">
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Select Payment Method
-                                    </label>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <button
-                                            onClick={() => setPaymentType('CARD')}
-                                            className={`p-4 border-2 rounded-lg transition-colors ${paymentType === 'CARD'
-                                                ? 'border-blue-600 bg-blue-50'
-                                                : 'border-gray-300 hover:border-gray-400'
-                                                }`}
-                                        >
-                                            <CreditCard className="h-8 w-8 mx-auto mb-2 text-blue-600" />
-                                            <p className="font-medium">Credit Card</p>
-                                        </button>
-                                        <button
-                                            onClick={() => setPaymentType('WALLET')}
-                                            className={`p-4 border-2 rounded-lg transition-colors ${paymentType === 'WALLET'
-                                                ? 'border-blue-600 bg-blue-50'
-                                                : 'border-gray-300 hover:border-gray-400'
-                                                }`}
-                                        >
-                                            <Smartphone className="h-8 w-8 mx-auto mb-2 text-blue-600" />
-                                            <p className="font-medium">Mobile Wallet</p>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {/* Wallet Phone Input */}
-                                {paymentType === 'WALLET' && (
-                                    <div className="mb-6">
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Phone Number
-                                        </label>
-                                        <input
-                                            type="tel"
-                                            value={walletPhone}
-                                            onChange={(e) => setWalletPhone(e.target.value)}
-                                            placeholder="01XXXXXXXXX"
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                        />
-                                    </div>
-                                )}
-
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Select Payment Method
+                            </label>
+                            <div className="grid grid-cols-2 gap-4">
                                 <button
-                                    onClick={handlePaymobPayment}
-                                    disabled={submitting}
-                                    className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                                    onClick={() => setPaymentType('CARD')}
+                                    className={`p-4 border-2 rounded-lg transition-colors ${paymentType === 'CARD'
+                                        ? 'border-blue-600 bg-blue-50'
+                                        : 'border-gray-300 hover:border-gray-400'
+                                        }`}
                                 >
-                                    {submitting ? (
-                                        <>
-                                            <Loader2 className="h-5 w-5 inline-block mr-2 animate-spin" />
-                                            Processing...
-                                        </>
-                                    ) : (
-                                        `Pay ${(course.price / 100).toFixed(2)} EGP`
-                                    )}
+                                    <CreditCard className="h-8 w-8 mx-auto mb-2 text-blue-600" />
+                                    <p className="font-medium">Credit Card</p>
                                 </button>
-                            </div>
-                        ) : (
-                            <form onSubmit={handleManualSubmit}>
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Manual Transfer</h3>
-
-                                {/* Instructions */}
-                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                                    <h4 className="font-semibold text-blue-900 mb-2">Payment Instructions:</h4>
-                                    <ol className="list-decimal list-inside space-y-1 text-blue-800 text-sm">
-                                        <li>Transfer <strong>{(course.price / 100).toFixed(2)} EGP</strong> to:</li>
-                                        <li className="ml-6">
-                                            Phone: <strong className="font-mono text-lg">{INSTAPAY_PHONE_NUMBER}</strong>
-                                        </li>
-                                        <li className="ml-6">Method: InstaPay / Vodafone Cash</li>
-                                        <li>Take a screenshot of the transfer confirmation</li>
-                                        <li>Upload the screenshot below and submit</li>
-                                    </ol>
-                                </div>
-
-                                {/* Phone Number */}
-                                <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Your Phone Number (Optional)
-                                    </label>
-                                    <input
-                                        type="tel"
-                                        value={phoneNumber}
-                                        onChange={(e) => setPhoneNumber(e.target.value)}
-                                        placeholder="01XXXXXXXXX"
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    />
-                                </div>
-
-                                {/* File Upload */}
-                                <div className="mb-6">
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Receipt Screenshot *
-                                    </label>
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={(e) => setReceipt(e.target.files?.[0] || null)}
-                                        required
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    />
-                                    {receipt && (
-                                        <p className="mt-2 text-sm text-green-600">
-                                            ✓ {receipt.name} selected
-                                        </p>
-                                    )}
-                                </div>
-
                                 <button
-                                    type="submit"
-                                    disabled={submitting || !receipt}
-                                    className="w-full px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                                    onClick={() => setPaymentType('WALLET')}
+                                    className={`p-4 border-2 rounded-lg transition-colors ${paymentType === 'WALLET'
+                                        ? 'border-blue-600 bg-blue-50'
+                                        : 'border-gray-300 hover:border-gray-400'
+                                        }`}
                                 >
-                                    {submitting ? (
-                                        <>
-                                            <Loader2 className="h-5 w-5 inline-block mr-2 animate-spin" />
-                                            Submitting...
-                                        </>
-                                    ) : (
-                                        'Submit for Review'
-                                    )}
-                                </button>
-                            </form>
-                        )}
-                    </div>
-                </div>
-
-                {/* Payment Verification Modal */}
-                {showPaymentModal && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                        <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-                            <h3 className="text-xl font-bold text-gray-900 mb-4">Payment in Progress</h3>
-
-                            <div className="mb-6">
-                                <div className="flex items-center justify-center mb-4">
-                                    <Loader2 className="h-12 w-12 text-blue-600 animate-spin" />
-                                </div>
-                                <p className="text-center text-gray-600 mb-2">
-                                    Payment page opened in a new tab
-                                </p>
-                                <p className="text-center text-sm text-gray-500">
-                                    Complete your payment in the new tab, then click the button below
-                                </p>
-                            </div>
-
-                            {error && (
-                                <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-                                    <p className="text-sm text-red-800">{error}</p>
-                                </div>
-                            )}
-
-                            <div className="space-y-3">
-                                <button
-                                    onClick={handleVerifyPayment}
-                                    disabled={verifying}
-                                    className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-                                >
-                                    {verifying ? (
-                                        <>
-                                            <Loader2 className="h-5 w-5 inline-block mr-2 animate-spin" />
-                                            Verifying Payment...
-                                        </>
-                                    ) : (
-                                        'I have completed payment ✓'
-                                    )}
-                                </button>
-
-                                <button
-                                    onClick={() => {
-                                        setShowPaymentModal(false);
-                                        setError(null);
-                                    }}
-                                    className="w-full px-6 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
-                                >
-                                    Cancel
+                                    <Smartphone className="h-8 w-8 mx-auto mb-2 text-blue-600" />
+                                    <p className="font-medium">Mobile Wallet</p>
                                 </button>
                             </div>
                         </div>
+
+                        {/* Wallet Phone Input */}
+                        {paymentType === 'WALLET' && (
+                            <div className="mb-6">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Phone Number
+                                </label>
+                                <input
+                                    type="tel"
+                                    value={walletPhone}
+                                    onChange={(e) => setWalletPhone(e.target.value)}
+                                    placeholder="01XXXXXXXXX"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                />
+                            </div>
+                        )}
+
+                        <button
+                            onClick={handlePaymobPayment}
+                            disabled={submitting}
+                            className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                        >
+                            {submitting ? (
+                                <>
+                                    <Loader2 className="h-5 w-5 inline-block mr-2 animate-spin" />
+                                    Processing...
+                                </>
+                            ) : (
+                                `Pay ${(course.price / 100).toFixed(2)} EGP`
+                            )}
+                        </button>
+                </div>
+                ) : (
+                <form onSubmit={handleManualSubmit}>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Manual Transfer</h3>
+
+                    {/* Instructions */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                        <h4 className="font-semibold text-blue-900 mb-2">Payment Instructions:</h4>
+                        <ol className="list-decimal list-inside space-y-1 text-blue-800 text-sm">
+                            <li>Transfer <strong>{(course.price / 100).toFixed(2)} EGP</strong> to:</li>
+                            <li className="ml-6">
+                                Phone: <strong className="font-mono text-lg">{INSTAPAY_PHONE_NUMBER}</strong>
+                            </li>
+                            <li className="ml-6">Method: InstaPay / Vodafone Cash</li>
+                            <li>Take a screenshot of the transfer confirmation</li>
+                            <li>Upload the screenshot below and submit</li>
+                        </ol>
                     </div>
-                )}
+
+                    {/* Phone Number */}
+                    <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Your Phone Number (Optional)
+                        </label>
+                        <input
+                            type="tel"
+                            value={phoneNumber}
+                            onChange={(e) => setPhoneNumber(e.target.value)}
+                            placeholder="01XXXXXXXXX"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                    </div>
+
+                    {/* File Upload */}
+                    <div className="mb-6">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Receipt Screenshot *
+                        </label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => setReceipt(e.target.files?.[0] || null)}
+                            required
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                        {receipt && (
+                            <p className="mt-2 text-sm text-green-600">
+                                ✓ {receipt.name} selected
+                            </p>
+                        )}
+                    </div>
+
+                    <button
+                        type="submit"
+                        disabled={submitting || !receipt}
+                        className="w-full px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    >
+                        {submitting ? (
+                            <>
+                                <Loader2 className="h-5 w-5 inline-block mr-2 animate-spin" />
+                                Submitting...
+                            </>
+                        ) : (
+                            'Submit for Review'
+                        )}
+                    </button>
+                </form>
+                        )}
             </div>
-        </main>
+        </div>
+
+                {/* Payment Verification Modal */ }
+    {
+        showPaymentModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+                    <h3 className="text-xl font-bold text-gray-900 mb-4">Payment in Progress</h3>
+
+                    <div className="mb-6">
+                        <div className="flex items-center justify-center mb-4">
+                            <Loader2 className="h-12 w-12 text-blue-600 animate-spin" />
+                        </div>
+                        <p className="text-center text-gray-600 mb-2">
+                            Payment page opened in a new tab
+                        </p>
+                        <p className="text-center text-sm text-gray-500">
+                            Complete your payment in the new tab, then click the button below
+                        </p>
+                    </div>
+
+                    {error && (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                            <p className="text-sm text-red-800">{error}</p>
+                        </div>
+                    )}
+
+                    <div className="space-y-3">
+                        <button
+                            onClick={handleVerifyPayment}
+                            disabled={verifying}
+                            className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                        >
+                            {verifying ? (
+                                <>
+                                    <Loader2 className="h-5 w-5 inline-block mr-2 animate-spin" />
+                                    Verifying Payment...
+                                </>
+                            ) : (
+                                'I have completed payment ✓'
+                            )}
+                        </button>
+
+                        <button
+                            onClick={() => {
+                                setShowPaymentModal(false);
+                                setError(null);
+                            }}
+                            className="w-full px-6 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+            </div >
+        </main >
     );
 }
