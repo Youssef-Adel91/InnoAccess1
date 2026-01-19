@@ -307,7 +307,9 @@ export async function rejectManualPayment(orderId: string, reason: string) {
 
         await connectDB();
 
-        const order = await Order.findById(orderId);
+        const order = await Order.findById(orderId)
+            .populate('userId', 'name email')
+            .populate('courseId', 'title');
         if (!order) {
             throw new Error('Order not found');
         }
@@ -322,6 +324,63 @@ export async function rejectManualPayment(orderId: string, reason: string) {
         order.reviewedBy = new Types.ObjectId(session.user.id);
         order.reviewedAt = new Date();
         await order.save();
+
+        // Send rejection email
+        if (order.userId?.email) {
+            const rejectionEmailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #dc2626; color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+        .content { background-color: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px; }
+        .reason-box { background-color: #fee2e2; border-left: 4px solid #dc2626; padding: 15px; margin: 20px 0; }
+        .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>❌ Payment Rejected</h1>
+        </div>
+        <div class="content">
+            <h2>Dear ${order.userId.name || 'User'},</h2>
+            <p>We regret to inform you that your payment for the course <strong>${order.courseId.title}</strong> has been rejected.</p>
+            
+            <div class="reason-box">
+                <strong>Reason:</strong><br>
+                ${reason}
+            </div>
+            
+            <h3>What to do next:</h3>
+            <ul>
+                <li>Please review the rejection reason above</li>
+                <li>If you believe this is an error, contact us at <strong>innoaccess2@gmail.com</strong></li>
+                <li>You can submit a new payment with correct information</li>
+            </ul>
+            
+            <p style="margin-top: 30px;">Best regards,<br>
+            <strong>The InnoAccess Team</strong><br>
+            innoaccess2@gmail.com</p>
+        </div>
+        <div class="footer">
+            <p>This is an automated message from InnoAccess Platform</p>
+        </div>
+    </div>
+</body>
+</html>
+            `;
+
+            await sendEmail({
+                to: order.userId.email,
+                subject: `Payment Rejected - ${order.courseId.title}`,
+                html: rejectionEmailHtml,
+            });
+
+            console.log(`✅ Rejection email sent to ${order.userId.email}`);
+        }
 
         console.log('✅ Manual payment rejected:', orderId);
 
