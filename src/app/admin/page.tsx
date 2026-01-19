@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { Users, Briefcase, GraduationCap, Building2, CheckCircle, XCircle, Eye, X } from 'lucide-react';
+import { Users, Briefcase, GraduationCap, Building2, CheckCircle, XCircle, Eye, X, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 interface Stats {
@@ -312,6 +312,15 @@ export default function AdminDashboardPage() {
                         <Users className="h-8 w-8 text-blue-600 mb-3" aria-hidden="true" />
                         <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
                         <p className="mt-1 text-sm text-gray-600">View your notifications</p>
+                    </Link>
+
+                    <Link
+                        href="/admin/broadcast"
+                        className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+                    >
+                        <Mail className="h-8 w-8 text-purple-600 mb-3" aria-hidden="true" />
+                        <h3 className="text-lg font-semibold text-gray-900">Broadcast Email</h3>
+                        <p className="mt-1 text-sm text-gray-600">Send email to all users</p>
                     </Link>
                 </div>
 

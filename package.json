@@ -23,6 +23,7 @@
     "mongoose": "^8.10.1",
     "next": "^15.1.5",
     "next-auth": "^4.24.11",
+    "nodemailer": "^7.0.12",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tailwind-merge": "^2.6.0",
@@ -31,6 +32,7 @@
   },
   "devDependencies": {
     "@types/node": "^20",
+    "@types/nodemailer": "^7.0.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/tus-js-client": "^1.8.0",
