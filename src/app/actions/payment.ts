@@ -10,6 +10,7 @@ import { put } from '@vercel/blob';
 import { Types } from 'mongoose';
 import { initiateCardPayment, initiateWalletPayment, BillingData } from '@/lib/paymob';
 import { CURRENCY } from '@/lib/payment-constants';
+import { sendEmail } from '@/lib/mail';
 
 /**
  * Submit manual payment with receipt screenshot
@@ -326,7 +327,10 @@ export async function rejectManualPayment(orderId: string, reason: string) {
         await order.save();
 
         // Send rejection email
-        if (order.userId?.email) {
+        if (order.userId && typeof order.userId === 'object' && 'email' in order.userId && order.userId.email) {
+            const userName = typeof order.userId === 'object' && 'name' in order.userId ? order.userId.name : 'User';
+            const courseTitle = typeof order.courseId === 'object' && 'title' in order.courseId ? order.courseId.title : 'Course';
+
             const rejectionEmailHtml = `
 <!DOCTYPE html>
 <html>
@@ -346,8 +350,8 @@ export async function rejectManualPayment(orderId: string, reason: string) {
             <h1>❌ Payment Rejected</h1>
         </div>
         <div class="content">
-            <h2>Dear ${order.userId.name || 'User'},</h2>
-            <p>We regret to inform you that your payment for the course <strong>${order.courseId.title}</strong> has been rejected.</p>
+            <h2>Dear ${userName},</h2>
+            <p>We regret to inform you that your payment for the course <strong>${courseTitle}</strong> has been rejected.</p>
             
             <div class="reason-box">
                 <strong>Reason:</strong><br>
@@ -375,7 +379,7 @@ export async function rejectManualPayment(orderId: string, reason: string) {
 
             await sendEmail({
                 to: order.userId.email,
-                subject: `Payment Rejected - ${order.courseId.title}`,
+                subject: `Payment Rejected - ${courseTitle}`,
                 html: rejectionEmailHtml,
             });
 
