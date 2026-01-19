@@ -282,10 +282,19 @@ export async function approveManualPayment(orderId: string) {
             // Don't fail the approval if course update fails
         }
 
+        console.log('📋 Checking email conditions for approval...');
+        console.log('userId type:', typeof order.userId);
+        console.log('userId:', order.userId);
+        console.log('courseId type:', typeof order.courseId);
+        console.log('courseId:', order.courseId);
+
         // Send approval email
         if (order.userId && typeof order.userId === 'object' && 'email' in order.userId && order.userId.email) {
             const userName = typeof order.userId === 'object' && 'name' in order.userId ? order.userId.name : 'User';
             const courseTitle = typeof order.courseId === 'object' && 'title' in order.courseId ? order.courseId.title : 'Course';
+
+            console.log(`📧 Preparing approval email for: ${order.userId.email}`);
+            console.log(`User: ${userName}, Course: ${courseTitle}`);
 
             const approvalEmailHtml = `
 <!DOCTYPE html>
@@ -338,13 +347,28 @@ export async function approveManualPayment(orderId: string) {
 </html>
             `;
 
-            await sendEmail({
-                to: order.userId.email as string,
-                subject: `Payment Approved - Welcome to ${courseTitle}!`,
-                html: approvalEmailHtml,
-            });
+            console.log('🔄 Calling sendEmail function...');
+            try {
+                const emailSent = await sendEmail({
+                    to: order.userId.email as string,
+                    subject: `Payment Approved - Welcome to ${courseTitle}!`,
+                    html: approvalEmailHtml,
+                });
 
-            console.log(`✅ Approval email sent to ${order.userId.email}`);
+                if (emailSent) {
+                    console.log(`✅ Approval email sent successfully to ${order.userId.email}`);
+                } else {
+                    console.error(`❌ Failed to send approval email to ${order.userId.email}`);
+                }
+            } catch (emailError) {
+                console.error('❌ Error sending approval email:', emailError);
+            }
+        } else {
+            console.log('⚠️ Approval email not sent - conditions not met:');
+            console.log('   - userId exists:', !!order.userId);
+            console.log('   - userId is object:', typeof order.userId === 'object');
+            console.log('   - has email property:', order.userId && 'email' in order.userId);
+            console.log('   - email value:', order.userId && typeof order.userId === 'object' && 'email' in order.userId ? order.userId.email : 'N/A');
         }
 
         console.log('✅ Manual payment approved:', orderId);
