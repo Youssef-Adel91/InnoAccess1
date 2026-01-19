@@ -378,7 +378,7 @@ export async function rejectManualPayment(orderId: string, reason: string) {
             `;
 
             await sendEmail({
-                to: order.userId.email,
+                to: order.userId.email as string,
                 subject: `Payment Rejected - ${courseTitle}`,
                 html: rejectionEmailHtml,
             });
