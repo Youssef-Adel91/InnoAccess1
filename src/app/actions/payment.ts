@@ -272,10 +272,15 @@ export async function approveManualPayment(orderId: string) {
             progress: [],
         });
 
-        // Update course enrollment count
-        await Course.findByIdAndUpdate(order.courseId, {
-            $inc: { enrollmentCount: 1 },
-        });
+        // Update course enrollment count - ensure Course model is loaded
+        try {
+            await Course.findByIdAndUpdate(order.courseId, {
+                $inc: { enrollmentCount: 1 },
+            });
+        } catch (courseError) {
+            console.warn('⚠️ Could not update course enrollment count:', courseError);
+            // Don't fail the approval if course update fails
+        }
 
         // Send approval email
         if (order.userId && typeof order.userId === 'object' && 'email' in order.userId && order.userId.email) {
