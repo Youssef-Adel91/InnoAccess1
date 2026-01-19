@@ -27,8 +27,9 @@ export async function GET() {
 
         await connectDB();
 
-        // Get all pending orders (both manual and Paymob)
+        // Get pending manual orders
         const orders = await Order.find({
+            paymentMethod: PaymentMethod.MANUAL,
             status: OrderStatus.PENDING,
         })
             .populate('userId', 'name email')

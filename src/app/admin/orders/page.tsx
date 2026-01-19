@@ -20,10 +20,8 @@ interface Order {
     amount: number;
     currency: string;
     status: string;
-    paymentMethod: string;
     receiptUrl?: string;
     manualTransferNumber?: string;
-    paymobOrderId?: string;
     createdAt: string;
 }
 
