@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { connectDB } from '@/lib/db';
-import JobApplication from '@/models/JobApplication';
+import Application from '@/models/Application';
 import Job from '@/models/Job';
 import { sendEmail, getJobAcceptanceEmailTemplate } from '@/lib/mail';
 import { authOptions } from '@/lib/auth';
@@ -29,7 +29,7 @@ export async function POST(
         const { id } = await params;
 
         // Find the application
-        const application = await JobApplication.findById(id)
+        const application = await Application.findById(id)
             .populate('userId', 'name email')
             .populate('jobId', 'title companyId')
             .lean();
@@ -53,7 +53,7 @@ export async function POST(
         }
 
         // Update application status
-        await JobApplication.findByIdAndUpdate(id, { status: 'accepted' });
+        await Application.findByIdAndUpdate(id, { status: 'accepted' });
 
         // Send acceptance email
         if (application.userId?.email) {
