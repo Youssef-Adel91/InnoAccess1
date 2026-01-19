@@ -246,7 +246,9 @@ export async function approveManualPayment(orderId: string) {
 
         await connectDB();
 
-        const order = await Order.findById(orderId);
+        const order = await Order.findById(orderId)
+            .populate('userId', 'name email')
+            .populate('courseId', 'title');
         if (!order) {
             throw new Error('Order not found');
         }
@@ -274,6 +276,71 @@ export async function approveManualPayment(orderId: string) {
         await Course.findByIdAndUpdate(order.courseId, {
             $inc: { enrollmentCount: 1 },
         });
+
+        // Send approval email
+        if (order.userId && typeof order.userId === 'object' && 'email' in order.userId && order.userId.email) {
+            const userName = typeof order.userId === 'object' && 'name' in order.userId ? order.userId.name : 'User';
+            const courseTitle = typeof order.courseId === 'object' && 'title' in order.courseId ? order.courseId.title : 'Course';
+
+            const approvalEmailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #16a34a; color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+        .content { background-color: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px; }
+        .success-box { background-color: #dcfce7; border-left: 4px solid #16a34a; padding: 15px; margin: 20px 0; }
+        .button { display: inline-block; padding: 12px 30px; background-color: #2563eb; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+        .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>✅ Payment Approved!</h1>
+        </div>
+        <div class="content">
+            <h2>Dear ${userName},</h2>
+            <p>Great news! Your payment for the course <strong>${courseTitle}</strong> has been approved!</p>
+            
+            <div class="success-box">
+                <strong>✅ You're all set!</strong><br>
+                You now have full access to the course and can start learning immediately.
+            </div>
+            
+            <h3>What's next?</h3>
+            <ul>
+                <li>Access your course from the dashboard</li>
+                <li>Start watching the lessons at your own pace</li>
+                <li>Track your progress as you learn</li>
+            </ul>
+            
+            <p style="text-align: center;">
+                <a href="${process.env.NEXTAUTH_URL || 'https://inno-access1.vercel.app'}/courses/${order.courseId}" class="button">Start Learning Now</a>
+            </p>
+            
+            <p style="margin-top: 30px;">Best regards,<br>
+            <strong>The InnoAccess Team</strong><br>
+            innoaccess2@gmail.com</p>
+        </div>
+        <div class="footer">
+            <p>This is an automated message from InnoAccess Platform</p>
+        </div>
+    </div>
+</body>
+</html>
+            `;
+
+            await sendEmail({
+                to: order.userId.email as string,
+                subject: `Payment Approved - Welcome to ${courseTitle}!`,
+                html: approvalEmailHtml,
+            });
+
+            console.log(`✅ Approval email sent to ${order.userId.email}`);
+        }
 
         console.log('✅ Manual payment approved:', orderId);
 
