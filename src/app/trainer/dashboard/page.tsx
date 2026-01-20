@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getTrainerCourses } from '@/app/actions/courseManagement';
-import { Plus, BookOpen, Users, Video } from 'lucide-react';
+import { Plus, BookOpen, Users, Video, Trash2 } from 'lucide-react';
 
 interface Course {
     _id: string;
@@ -62,6 +62,30 @@ export default function TrainerDashboard() {
             setError(err.message);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDeleteCourse = async (courseId: string, courseTitle: string) => {
+        if (!confirm(`Are you sure you want to permanently delete "${courseTitle}"? This action cannot be undone.`)) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/courses/${courseId}`, {
+                method: 'DELETE',
+            });
+
+            const data = await response.json();
+
+            if (!data.success) {
+                throw new Error(data.error?.message || 'Failed to delete course');
+            }
+
+            // Refresh courses list
+            await fetchCourses();
+            alert('Course deleted successfully');
+        } catch (err: any) {
+            alert(err.message);
         }
     };
 
@@ -223,12 +247,21 @@ export default function TrainerDashboard() {
                                         </span>
                                     </div>
 
-                                    <Link
-                                        href={`/trainer/courses/${course._id}/manage`}
-                                        className="block w-full text-center bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium py-2 px-4 rounded-lg transition-colors"
-                                    >
-                                        Manage Course
-                                    </Link>
+                                    <div className="space-y-2">
+                                        <Link
+                                            href={`/trainer/courses/${course._id}/manage`}
+                                            className="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                                        >
+                                            Manage Course
+                                        </Link>
+                                        <button
+                                            onClick={() => handleDeleteCourse(course._id, course.title)}
+                                            className="w-full flex items-center justify-center bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                                        >
+                                            <Trash2 className="h-4 w-4 mr-2" />
+                                            Delete Course
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         ))}
