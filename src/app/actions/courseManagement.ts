@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { connectDB } from '@/lib/db';
 import Course from '@/models/Course';
+import { CourseType } from '@/types/course';
 import Category from '@/models/Category';
 import { Types } from 'mongoose';
 
@@ -17,6 +18,13 @@ export async function createCourse(data: {
     isFree: boolean;
     price?: number;
     thumbnail?: string;
+    courseType?: CourseType;
+    liveSession?: {
+        startDate: string;
+        durationMinutes: number;
+        zoomMeetingLink: string;
+        instructions?: string;
+    };
 }) {
     try {
         const session = await getServerSession(authOptions);
@@ -38,6 +46,20 @@ export async function createCourse(data: {
             throw new Error('Price is required for paid courses');
         }
 
+        const courseType = data.courseType || CourseType.RECORDED;
+
+        // Validate live session data if LIVE course
+        if (courseType === CourseType.LIVE) {
+            if (!data.liveSession) {
+                throw new Error('Live session details are required for LIVE courses');
+            }
+
+            const startDate = new Date(data.liveSession.startDate);
+            if (startDate <= new Date()) {
+                throw new Error('Workshop start date must be in the future');
+            }
+        }
+
         // Create course
         const course = await Course.create({
             title: data.title,
@@ -47,6 +69,14 @@ export async function createCourse(data: {
             isFree: data.isFree,
             price: data.isFree ? 0 : (data.price || 0),
             thumbnail: data.thumbnail,
+            courseType,
+            liveSession: courseType === CourseType.LIVE && data.liveSession ? {
+                startDate: new Date(data.liveSession.startDate),
+                durationMinutes: data.liveSession.durationMinutes,
+                zoomMeetingLink: data.liveSession.zoomMeetingLink,
+                instructions: data.liveSession.instructions,
+                isRecordingAvailable: false,
+            } : undefined,
             modules: [],
             enrollmentCount: 0,
             rating: 0,
@@ -54,7 +84,7 @@ export async function createCourse(data: {
             isDeleted: false,
         });
 
-        console.log('✅ Course created:', course._id);
+        console.log('✅ Course created:', course._id, 'Type:', courseType);
 
         return {
             success: true,
@@ -454,3 +484,76 @@ export async function updateModule(
         };
     }
 }
+
+/**
+ * Update live session links and details
+ */
+export async function updateLiveSessionLinks(
+    courseId: string,
+    data: {
+        zoomMeetingLink?: string;
+        zoomRecordingLink?: string;
+        instructions?: string;
+    }
+) {
+    try {
+        const session = await getServerSession(authOptions);
+
+        if (!session || session.user.role !== 'trainer') {
+            throw new Error('Unauthorized');
+        }
+
+        await connectDB();
+
+        const course = await Course.findById(courseId);
+
+        if (!course) {
+            throw new Error('Course not found');
+        }
+
+        if (course.trainerId.toString() !== session.user.id) {
+            throw new Error('Unauthorized - you can only modify your own courses');
+        }
+
+        if (course.courseType !== CourseType.LIVE) {
+            throw new Error('This action is only available for LIVE courses');
+        }
+
+        if (!course.liveSession) {
+            throw new Error('Live session not found');
+        }
+
+        // Update fields if provided
+        if (data.zoomMeetingLink !== undefined) {
+            course.liveSession.zoomMeetingLink = data.zoomMeetingLink;
+        }
+        if (data.zoomRecordingLink !== undefined) {
+            course.liveSession.zoomRecordingLink = data.zoomRecordingLink;
+            course.liveSession.isRecordingAvailable = !!data.zoomRecordingLink;
+        }
+        if (data.instructions !== undefined) {
+            course.liveSession.instructions = data.instructions;
+        }
+
+        await course.save();
+
+        console.log('✅ Live session links updated:', courseId);
+
+        return {
+            success: true,
+            data: {
+                message: 'Live session updated successfully',
+            },
+        };
+    } catch (error: any) {
+        console.error('❌ Update live session error:', error);
+        return {
+            success: false,
+            error: {
+                message: error.message || 'Failed to update live session',
+                code: 'UPDATE_LIVE_SESSION_ERROR',
+            },
+        };
+    }
+}
+

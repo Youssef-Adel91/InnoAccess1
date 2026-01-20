@@ -72,6 +72,22 @@ export default function CVUploadDialog({ isOpen, onClose, onSubmit }: CVUploadDi
         };
     }, [isOpen, onClose, uploading, submitting]);
 
+    // Prevent page closure during upload
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (uploading || submitting) {
+                e.preventDefault();
+                e.returnValue = ''; // Shows browser warning
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, [uploading, submitting]);
+
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;

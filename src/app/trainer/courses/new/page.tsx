@@ -5,7 +5,8 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { createCourse, getAllCategories } from '@/app/actions/courseManagement';
 import { uploadCourseThumbnail } from '@/app/actions/uploadCourseThumbnail';
-import { ArrowLeft, Upload, DollarSign } from 'lucide-react';
+import { CourseType } from '@/types/course';
+import { ArrowLeft, Upload, DollarSign, Video, Calendar } from 'lucide-react';
 import Link from 'next/link';
 
 interface Category {
@@ -31,6 +32,15 @@ export default function CreateCoursePage() {
     const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
     const [thumbnailPreview, setThumbnailPreview] = useState('');
     const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
+
+    // Course type and live session state
+    const [courseType, setCourseType] = useState<CourseType>(CourseType.RECORDED);
+    const [liveSession, setLiveSession] = useState({
+        startDate: '',
+        durationMinutes: 60,
+        zoomMeetingLink: '',
+        instructions: '',
+    });
 
     // Check authorization
     useEffect(() => {
@@ -107,6 +117,8 @@ export default function CreateCoursePage() {
                 isFree,
                 price: isFree ? 0 : Math.round(parseFloat(price) * 100), // Convert to cents
                 thumbnail: thumbnailUrl,
+                courseType,
+                liveSession: courseType === CourseType.LIVE ? liveSession : undefined,
             });
 
             if (!result.success) {
@@ -207,6 +219,119 @@ export default function CreateCoursePage() {
                             ))}
                         </select>
                     </div>
+
+                    {/* Course Type */}
+                    <div className="mb-6">
+                        <label className="block text-sm font-medium text-gray-700 mb-3">
+                            Course Type *
+                        </label>
+                        <div className="grid grid-cols-2 gap-4">
+                            <button
+                                type="button"
+                                onClick={() => setCourseType(CourseType.RECORDED)}
+                                className={`p-4 border-2 rounded-lg transition-colors text-left ${courseType === CourseType.RECORDED
+                                    ? 'border-blue-600 bg-blue-50'
+                                    : 'border-gray-300 hover:border-gray-400'
+                                    }`}
+                            >
+                                <div className="flex items-center mb-2">
+                                    <Video className="h-8 w-8 text-blue-600 mr-3" />
+                                    <p className="font-semibold text-gray-900">Recorded Course</p>
+                                </div>
+                                <p className="text-sm text-gray-600">
+                                    Upload video lessons and modules for on-demand learning
+                                </p>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => setCourseType(CourseType.LIVE)}
+                                className={`p-4 border-2 rounded-lg transition-colors text-left ${courseType === CourseType.LIVE
+                                    ? 'border-blue-600 bg-blue-50'
+                                    : 'border-gray-300 hover:border-gray-400'
+                                    }`}
+                            >
+                                <div className="flex items-center mb-2">
+                                    <Calendar className="h-8 w-8 text-red-600 mr-3" />
+                                    <p className="font-semibold text-gray-900">Live Zoom Workshop</p>
+                                </div>
+                                <p className="text-sm text-gray-600">
+                                    Schedule a live Zoom session with your students
+                                </p>
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Live Session Details (show только для LIVE courses) */}
+                    {courseType === CourseType.LIVE && (
+                        <div className="mb-6 p-6 bg-blue-50 border border-blue-200 rounded-lg">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-4">🔴 Live Workshop Details</h3>
+
+                            {/* Start Date & Time */}
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Workshop Date & Time *
+                                </label>
+                                <input
+                                    type="datetime-local"
+                                    value={liveSession.startDate}
+                                    onChange={(e) => setLiveSession({ ...liveSession, startDate: e.target.value })}
+                                    required={courseType === CourseType.LIVE}
+                                    min={new Date().toISOString().slice(0, 16)}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                />
+                            </div>
+
+                            {/* Duration */}
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Duration (minutes) *
+                                </label>
+                                <select
+                                    value={liveSession.durationMinutes}
+                                    onChange={(e) => setLiveSession({ ...liveSession, durationMinutes: parseInt(e.target.value) })}
+                                    required={courseType === CourseType.LIVE}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                >
+                                    <option value={30}>30 minutes</option>
+                                    <option value={60}>1 hour</option>
+                                    <option value={90}>1.5 hours</option>
+                                    <option value={120}>2 hours</option>
+                                    <option value={180}>3 hours</option>
+                                    <option value={240}>4 hours</option>
+                                </select>
+                            </div>
+
+                            {/* Zoom Meeting Link */}
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Zoom Meeting Link *
+                                </label>
+                                <input
+                                    type="url"
+                                    value={liveSession.zoomMeetingLink}
+                                    onChange={(e) => setLiveSession({ ...liveSession, zoomMeetingLink: e.target.value })}
+                                    required={courseType === CourseType.LIVE}
+                                    placeholder="https://zoom.us/j/..."
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                />
+                            </div>
+
+                            {/* Special Instructions */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Special Instructions (Optional)
+                                </label>
+                                <textarea
+                                    value={liveSession.instructions}
+                                    onChange={(e) => setLiveSession({ ...liveSession, instructions: e.target.value })}
+                                    rows={3}
+                                    placeholder="e.g., Bring your laptop, Download XYZ software beforehand..."
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                />
+                            </div>
+                        </div>
+                    )}
 
                     {/* Pricing Type */}
                     <div className="mb-6">

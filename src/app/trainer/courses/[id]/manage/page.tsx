@@ -6,6 +6,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { getCourseForManagement, addModule, publishCourse, deleteModule, deleteVideo, updateModule } from '@/app/actions/courseManagement';
 import { saveLessonVideo } from '@/app/actions/bunnyUpload';
 import { VideoUploader } from '@/components/trainer/VideoUploader';
+import LiveCourseManagement from '@/components/trainer/LiveCourseManagement';
 import { ArrowLeft, Plus, ChevronDown, ChevronUp, Video, CheckCircle, Clock, XCircle, Trash2, Edit2 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -21,6 +22,15 @@ interface Course {
     thumbnail?: string;
     modules: Module[];
     isPublished: boolean;
+    courseType: 'RECORDED' | 'LIVE';
+    liveSession?: {
+        startDate: string | Date;
+        durationMinutes: number;
+        zoomMeetingLink: string;
+        zoomRecordingLink?: string;
+        isRecordingAvailable: boolean;
+        instructions?: string;
+    };
 }
 
 interface Module {
@@ -307,216 +317,222 @@ export default function ManageCoursePage() {
                     </div>
                 )}
 
-                {/* Modules Section */}
-                <div className="mb-6">
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-xl font-bold text-gray-900">Course Content</h2>
-                        <button
-                            onClick={() => setShowAddModule(!showAddModule)}
-                            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
-                        >
-                            <Plus className="h-5 w-5 mr-2" />
-                            Add Module
-                        </button>
-                    </div>
-
-                    {/* Add Module Form */}
-                    {showAddModule && (
-                        <form onSubmit={handleAddModule} className="bg-white rounded-lg shadow-md p-6 mb-4">
-                            <h3 className="font-semibold text-gray-900 mb-4">New Module</h3>
-                            <input
-                                type="text"
-                                value={newModuleTitle}
-                                onChange={(e) => setNewModuleTitle(e.target.value)}
-                                required
-                                placeholder="Module Title (e.g., Introduction to React)"
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-4 focus:ring-2 focus:ring-blue-500"
-                            />
-                            <div className="flex justify-end space-x-3">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowAddModule(false)}
-                                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={addingModule}
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-300"
-                                >
-                                    {addingModule ? 'Adding...' : 'Add Module'}
-                                </button>
-                            </div>
-                        </form>
-                    )}
-
-                    {/* Modules List (Accordion) */}
-                    {course.modules.length === 0 ? (
-                        <div className="bg-white rounded-lg shadow-md p-12 text-center">
-                            <Video className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                                No modules yet
-                            </h3>
-                            <p className="text-gray-600 mb-4">
-                                Start by adding your first module
-                            </p>
+                {/* Conditional Rendering: LIVE vs RECORDED Course Management */}
+                {course.courseType === 'LIVE' ? (
+                    /* LIVE Course: Show Zoom Link Management */
+                    <LiveCourseManagement course={course} onUpdate={fetchCourse} />
+                ) : (
+                    /* RECORDED Course: Show Module Management */
+                    <div className="mb-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-xl font-bold text-gray-900">Course Content</h2>
+                            <button
+                                onClick={() => setShowAddModule(!showAddModule)}
+                                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                            >
+                                <Plus className="h-5 w-5 mr-2" />
+                                Add Module
+                            </button>
                         </div>
-                    ) : (
-                        <div className="space-y-4">
-                            {course.modules.map((module, moduleIndex) => (
-                                <div key={module._id} className="bg-white rounded-lg shadow-md overflow-hidden">
-                                    {/* Module Header */}
-                                    <div className="px-6 py-4 flex items-center justify-between hover:bg-gray-50">
-                                        <button
-                                            onClick={() => toggleModule(module._id)}
-                                            className="flex-1 flex items-center text-left"
-                                        >
-                                            <span className="text-sm font-medium text-gray-500 mr-4">
-                                                Module {module.order}
-                                            </span>
-                                            <h3 className="text-lg font-semibold text-gray-900">
-                                                {module.title}
-                                            </h3>
-                                            <span className="ml-4 text-sm text-gray-500">
-                                                ({module.videos?.length || 0} lessons)
-                                            </span>
-                                            <span className="ml-4">
-                                                {expandedModules.has(module._id) ? (
-                                                    <ChevronUp className="h-5 w-5 text-gray-500" />
-                                                ) : (
-                                                    <ChevronDown className="h-5 w-5 text-gray-500" />
-                                                )}
-                                            </span>
-                                        </button>
 
-                                        {/* Module Actions */}
-                                        <div className="flex items-center space-x-2">
+                        {/* Add Module Form */}
+                        {showAddModule && (
+                            <form onSubmit={handleAddModule} className="bg-white rounded-lg shadow-md p-6 mb-4">
+                                <h3 className="font-semibold text-gray-900 mb-4">New Module</h3>
+                                <input
+                                    type="text"
+                                    value={newModuleTitle}
+                                    onChange={(e) => setNewModuleTitle(e.target.value)}
+                                    required
+                                    placeholder="Module Title (e.g., Introduction to React)"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-4 focus:ring-2 focus:ring-blue-500"
+                                />
+                                <div className="flex justify-end space-x-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowAddModule(false)}
+                                        className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={addingModule}
+                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-300"
+                                    >
+                                        {addingModule ? 'Adding...' : 'Add Module'}
+                                    </button>
+                                </div>
+                            </form>
+                        )}
+
+                        {/* Modules List (Accordion) */}
+                        {course.modules.length === 0 ? (
+                            <div className="bg-white rounded-lg shadow-md p-12 text-center">
+                                <Video className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                                    No modules yet
+                                </h3>
+                                <p className="text-gray-600 mb-4">
+                                    Start by adding your first module
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                {course.modules.map((module, moduleIndex) => (
+                                    <div key={module._id} className="bg-white rounded-lg shadow-md overflow-hidden">
+                                        {/* Module Header */}
+                                        <div className="px-6 py-4 flex items-center justify-between hover:bg-gray-50">
                                             <button
-                                                onClick={() => handleEditModule(moduleIndex)}
-                                                className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                                                title="Edit module"
+                                                onClick={() => toggleModule(module._id)}
+                                                className="flex-1 flex items-center text-left"
                                             >
-                                                <Edit2 className="h-4 w-4" />
+                                                <span className="text-sm font-medium text-gray-500 mr-4">
+                                                    Module {module.order}
+                                                </span>
+                                                <h3 className="text-lg font-semibold text-gray-900">
+                                                    {module.title}
+                                                </h3>
+                                                <span className="ml-4 text-sm text-gray-500">
+                                                    ({module.videos?.length || 0} lessons)
+                                                </span>
+                                                <span className="ml-4">
+                                                    {expandedModules.has(module._id) ? (
+                                                        <ChevronUp className="h-5 w-5 text-gray-500" />
+                                                    ) : (
+                                                        <ChevronDown className="h-5 w-5 text-gray-500" />
+                                                    )}
+                                                </span>
                                             </button>
-                                            <button
-                                                onClick={() => handleDeleteModule(moduleIndex)}
-                                                className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
-                                                title="Delete module"
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </button>
+
+                                            {/* Module Actions */}
+                                            <div className="flex items-center space-x-2">
+                                                <button
+                                                    onClick={() => handleEditModule(moduleIndex)}
+                                                    className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                                    title="Edit module"
+                                                >
+                                                    <Edit2 className="h-4 w-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteModule(moduleIndex)}
+                                                    className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                                    title="Delete module"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    {/* Module Content (Expandable) */}
-                                    {expandedModules.has(module._id) && (
-                                        <div className="px-6 pb-6 border-t">
-                                            {/* Lessons List */}
-                                            {module.videos && module.videos.length > 0 && (
-                                                <div className="mt-4 space-y-3">
-                                                    {module.videos.map((video, videoIndex) => (
-                                                        <div
-                                                            key={video._id}
-                                                            className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
-                                                        >
-                                                            <div className="flex items-center flex-1">
-                                                                <Video className="h-5 w-5 text-gray-400 mr-3" />
-                                                                <div className="flex-1">
-                                                                    <p className="font-medium text-gray-900">
-                                                                        {video.title}
-                                                                    </p>
-                                                                    <p className="text-sm text-gray-600">
-                                                                        {Math.floor(video.duration / 60)}:{(video.duration % 60).toString().padStart(2, '0')} min
-                                                                    </p>
+                                        {/* Module Content (Expandable) */}
+                                        {expandedModules.has(module._id) && (
+                                            <div className="px-6 pb-6 border-t">
+                                                {/* Lessons List */}
+                                                {module.videos && module.videos.length > 0 && (
+                                                    <div className="mt-4 space-y-3">
+                                                        {module.videos.map((video, videoIndex) => (
+                                                            <div
+                                                                key={video._id}
+                                                                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                                                            >
+                                                                <div className="flex items-center flex-1">
+                                                                    <Video className="h-5 w-5 text-gray-400 mr-3" />
+                                                                    <div className="flex-1">
+                                                                        <p className="font-medium text-gray-900">
+                                                                            {video.title}
+                                                                        </p>
+                                                                        <p className="text-sm text-gray-600">
+                                                                            {Math.floor(video.duration / 60)}:{(video.duration % 60).toString().padStart(2, '0')} min
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="flex items-center space-x-3">
+                                                                    {video.isFreePreview && (
+                                                                        <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded">
+                                                                            Free Preview
+                                                                        </span>
+                                                                    )}
+                                                                    {getStatusBadge(video.status)}
+                                                                    {video.status === 'rejected' && video.rejectionReason && (
+                                                                        <p className="text-sm text-red-600">
+                                                                            {video.rejectionReason}
+                                                                        </p>
+                                                                    )}
+                                                                    <button
+                                                                        onClick={() => handleDeleteVideo(moduleIndex, videoIndex)}
+                                                                        className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                                                        title="Delete video"
+                                                                    >
+                                                                        <Trash2 className="h-4 w-4" />
+                                                                    </button>
                                                                 </div>
                                                             </div>
-                                                            <div className="flex items-center space-x-3">
-                                                                {video.isFreePreview && (
-                                                                    <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded">
-                                                                        Free Preview
+                                                        ))}
+                                                    </div>
+                                                )}
+
+                                                {/* Add Lesson Button */}
+                                                <button
+                                                    onClick={() => setShowAddLesson(module._id)}
+                                                    className="mt-4 w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-gray-400 hover:text-gray-900 transition-colors"
+                                                >
+                                                    + Add Lesson
+                                                </button>
+
+                                                {/* Video Uploader Modal */}
+                                                {showAddLesson === module._id && (
+                                                    <div className="mt-4 p-6 bg-blue-50 border border-blue-200 rounded-lg">
+                                                        <h4 className="font-semibold text-gray-900 mb-4">
+                                                            Upload New Lesson
+                                                        </h4>
+
+                                                        {/* Free Preview Checkbox (only for paid courses) */}
+                                                        {!course.isFree && (
+                                                            <div className="mb-4 p-4 bg-white rounded-lg">
+                                                                <label className="flex items-center">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        id={`freePreview-${module._id}`}
+                                                                        className="h-4 w-4 text-blue-600 rounded"
+                                                                    />
+                                                                    <span className="ml-3 text-sm text-gray-700">
+                                                                        <strong>Make this a free preview</strong>
+                                                                        <br />
+                                                                        <span className="text-gray-600">
+                                                                            Non-enrolled students can watch this lesson
+                                                                        </span>
                                                                     </span>
-                                                                )}
-                                                                {getStatusBadge(video.status)}
-                                                                {video.status === 'rejected' && video.rejectionReason && (
-                                                                    <p className="text-sm text-red-600">
-                                                                        {video.rejectionReason}
-                                                                    </p>
-                                                                )}
-                                                                <button
-                                                                    onClick={() => handleDeleteVideo(moduleIndex, videoIndex)}
-                                                                    className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
-                                                                    title="Delete video"
-                                                                >
-                                                                    <Trash2 className="h-4 w-4" />
-                                                                </button>
+                                                                </label>
                                                             </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
+                                                        )}
 
-                                            {/* Add Lesson Button */}
-                                            <button
-                                                onClick={() => setShowAddLesson(module._id)}
-                                                className="mt-4 w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-gray-400 hover:text-gray-900 transition-colors"
-                                            >
-                                                + Add Lesson
-                                            </button>
+                                                        <VideoUploader
+                                                            courseId={courseId}
+                                                            moduleIndex={moduleIndex}
+                                                            onSuccess={(data) => handleVideoUploadSuccess(data, moduleIndex)}
+                                                            isFreePreview={
+                                                                course.isFree
+                                                                    ? false
+                                                                    : (document.getElementById(`freePreview-${module._id}`) as HTMLInputElement)?.checked || false
+                                                            }
+                                                        />
 
-                                            {/* Video Uploader Modal */}
-                                            {showAddLesson === module._id && (
-                                                <div className="mt-4 p-6 bg-blue-50 border border-blue-200 rounded-lg">
-                                                    <h4 className="font-semibold text-gray-900 mb-4">
-                                                        Upload New Lesson
-                                                    </h4>
-
-                                                    {/* Free Preview Checkbox (only for paid courses) */}
-                                                    {!course.isFree && (
-                                                        <div className="mb-4 p-4 bg-white rounded-lg">
-                                                            <label className="flex items-center">
-                                                                <input
-                                                                    type="checkbox"
-                                                                    id={`freePreview-${module._id}`}
-                                                                    className="h-4 w-4 text-blue-600 rounded"
-                                                                />
-                                                                <span className="ml-3 text-sm text-gray-700">
-                                                                    <strong>Make this a free preview</strong>
-                                                                    <br />
-                                                                    <span className="text-gray-600">
-                                                                        Non-enrolled students can watch this lesson
-                                                                    </span>
-                                                                </span>
-                                                            </label>
-                                                        </div>
-                                                    )}
-
-                                                    <VideoUploader
-                                                        courseId={courseId}
-                                                        moduleIndex={moduleIndex}
-                                                        onSuccess={(data) => handleVideoUploadSuccess(data, moduleIndex)}
-                                                        isFreePreview={
-                                                            course.isFree
-                                                                ? false
-                                                                : (document.getElementById(`freePreview-${module._id}`) as HTMLInputElement)?.checked || false
-                                                        }
-                                                    />
-
-                                                    <button
-                                                        onClick={() => setShowAddLesson(null)}
-                                                        className="mt-4 text-sm text-gray-600 hover:text-gray-900"
-                                                    >
-                                                        Cancel
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                                                        <button
+                                                            onClick={() => setShowAddLesson(null)}
+                                                            className="mt-4 text-sm text-gray-600 hover:text-gray-900"
+                                                        >
+                                                            Cancel
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     );

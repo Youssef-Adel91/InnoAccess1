@@ -57,12 +57,24 @@ export async function GET(request: NextRequest) {
             ];
         }
 
+        // Special handling for Zoom Meetings category (shows all LIVE courses)
         if (category && category !== 'all') {
-            query.category = category;
+            // Check if this is the Zoom Meetings category by ID
+            const Category = (await import('@/models/Category')).default;
+            const zoomCategory = await Category.findOne({ slug: 'zoom-meetings' });
+
+            if (zoomCategory && category === zoomCategory._id.toString()) {
+                // Filter by courseType instead of categoryId
+                query.courseType = 'LIVE';
+            } else {
+                // Normal category filter
+                query.categoryId = category;
+            }
         }
 
         // Get courses with pagination
         const courses = await Course.find(query)
+            .populate('categoryId', 'name slug')
             .populate('trainerId', 'name email profile')
             .sort({ createdAt: -1 })
             .skip((page - 1) * limit)

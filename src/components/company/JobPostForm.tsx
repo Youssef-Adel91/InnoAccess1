@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
@@ -44,6 +44,28 @@ export default function JobPostForm({ initialData, jobId }: JobPostFormProps) {
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [isLoading, setIsLoading] = useState(false);
     const [uploadingImage, setUploadingImage] = useState(false);
+
+    // Prevent page closure during form editing
+    useEffect(() => {
+        // Check if form has been modified
+        const hasUnsavedChanges =
+            formData.title !== (initialData?.title || '') ||
+            formData.description !== (initialData?.description || '') ||
+            formData.requirements !== (initialData?.requirements?.join('\n') || '');
+
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (hasUnsavedChanges && !isLoading) {
+                e.preventDefault();
+                e.returnValue = ''; // Shows browser warning
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, [formData, initialData, isLoading]);
 
     const handleUploadImage = async (file: File) => {
         // Check if Cloudinary is configured

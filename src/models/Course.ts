@@ -1,4 +1,5 @@
 import mongoose, { Schema, Model, Document, Types } from 'mongoose';
+import { CourseType, ILiveSession } from '@/types/course';
 
 /**
  * Video Status Enum
@@ -48,12 +49,15 @@ export interface ICourse extends Document {
     isFree: boolean; // Is entire course free?
     price: number; // Required if not free (in cents)
     thumbnail?: string; // Cloudinary URL
+    courseType: CourseType; // NEW: RECORDED or LIVE
+    liveSession?: ILiveSession; // NEW: Live Zoom session details
     modules: IModule[];
     enrollmentCount: number;
     rating: number;
     isPublished: boolean;
     isDeleted: boolean; // Soft delete flag
     deletedAt?: Date; // Soft delete timestamp
+    lastReminderSent?: Date; // Timestamp of last workshop reminder email sent
     createdAt: Date;
     updatedAt: Date;
 }
@@ -192,6 +196,47 @@ const CourseSchema = new Schema<ICourse>(
             default: false,
         },
         deletedAt: {
+            type: Date,
+        },
+        courseType: {
+            type: String,
+            enum: Object.values(CourseType),
+            default: CourseType.RECORDED,
+            required: true,
+        },
+        liveSession: {
+            startDate: {
+                type: Date,
+                required: function (this: ICourse) {
+                    return this.courseType === CourseType.LIVE;
+                },
+            },
+            durationMinutes: {
+                type: Number,
+                min: [15, 'Duration must be at least 15 minutes'],
+                max: [480, 'Duration cannot exceed 8 hours (480 minutes)'],
+                required: function (this: ICourse) {
+                    return this.courseType === CourseType.LIVE;
+                },
+            },
+            zoomMeetingLink: {
+                type: String,
+                match: [/^https?:\/\/.+/, 'Please enter a valid URL'],
+                required: function (this: ICourse) {
+                    return this.courseType === CourseType.LIVE;
+                },
+            },
+            zoomRecordingLink: {
+                type: String,
+                match: [/^https?:\/\/.+/, 'Please enter a valid URL'],
+            },
+            instructions: String,
+            isRecordingAvailable: {
+                type: Boolean,
+                default: false,
+            },
+        },
+        lastReminderSent: {
             type: Date,
         },
     },

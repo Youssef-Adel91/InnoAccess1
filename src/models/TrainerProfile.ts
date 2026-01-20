@@ -21,6 +21,7 @@ export interface ITrainerProfile extends Document {
     specialization: string;
     status: TrainerStatus;
     rejectionReason?: string;
+    rejectedAt?: Date; // When the application was rejected (for 24h cooldown)
     createdAt: Date;
     updatedAt: Date;
 }
@@ -73,6 +74,9 @@ const TrainerProfileSchema = new Schema<ITrainerProfile>(
         rejectionReason: {
             type: String,
             maxlength: [500, 'Rejection reason cannot exceed 500 characters'],
+        },
+        rejectedAt: {
+            type: Date,
         },
     },
     {

@@ -31,7 +31,7 @@ export default function CheckoutPage() {
     const [course, setCourse] = useState<Course | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<PaymentTab>('paymob');
+    const [activeTab, setActiveTab] = useState<PaymentTab>('manual');
     const [isEnrolled, setIsEnrolled] = useState(false);
 
     // Manual payment state

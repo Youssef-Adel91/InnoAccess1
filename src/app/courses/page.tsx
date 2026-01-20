@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { GraduationCap, Clock, Users, Star, BookOpen } from 'lucide-react';
+import { GraduationCap, Clock, Users, Star, BookOpen, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 interface Course {
@@ -22,6 +22,11 @@ interface Course {
     enrollmentCount: number;
     rating: number;
     modules: any[];
+    courseType?: 'RECORDED' | 'LIVE';
+    liveSession?: {
+        startDate: string | Date;
+        durationMinutes: number;
+    };
 }
 
 function formatPrice(cents: number): string {
@@ -197,6 +202,16 @@ export default function CoursesPage() {
                                             <BookOpen className="h-16 w-16 text-white opacity-50" />
                                         </div>
                                     )}
+                                    {course.courseType === 'LIVE' && course.liveSession ? (() => {
+                                        const { getSessionState, getLiveBadge } = require('@/lib/sessionUtils');
+                                        const state = getSessionState(course.liveSession.startDate, course.liveSession.durationMinutes);
+                                        const badge = getLiveBadge(state);
+                                        return (
+                                            <span className={`absolute top-3 left-3 px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1 ${badge.className}`}>
+                                                {badge.emoji} {badge.text}
+                                            </span>
+                                        );
+                                    })() : null}
                                     <span className="absolute top-3 right-3 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
                                         {course.isFree ? 'Free' : formatPrice(course.price)}
                                     </span>
@@ -227,15 +242,22 @@ export default function CoursesPage() {
                                             <Users className="mr-1 h-4 w-4" />
                                             {course.enrollmentCount || 0}
                                         </span>
-                                        <span className="flex items-center">
-                                            <BookOpen className="mr-1 h-4 w-4" />
-                                            {course.modules?.length || 0} modules
-                                        </span>
+                                        {course.courseType === 'LIVE' && course.liveSession ? (
+                                            <span className="flex items-center text-red-600 font-medium">
+                                                <Calendar className="mr-1 h-4 w-4" />
+                                                {new Date(course.liveSession.startDate).toLocaleDateString()}
+                                            </span>
+                                        ) : (
+                                            <span className="flex items-center">
+                                                <BookOpen className="mr-1 h-4 w-4" />
+                                                {course.modules?.length || 0} modules
+                                            </span>
+                                        )}
                                     </div>
 
                                     <Link href={`/courses/${course._id}`}>
                                         <Button variant="primary" className="w-full">
-                                            View Course
+                                            {course.courseType === 'LIVE' ? 'View Workshop' : 'View Course'}
                                         </Button>
                                     </Link>
                                 </div>

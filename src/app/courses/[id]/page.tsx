@@ -4,9 +4,11 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
-import { ArrowLeft, BookOpen, Clock, Users, Star, Video, Lock, PlayCircle } from 'lucide-react';
+import { ArrowLeft, BookOpen, Clock, Users, Star, Video, Lock, PlayCircle, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { enrollInCourse, checkEnrollment } from '@/app/actions/enrollment';
+import { LiveSessionAction } from '@/components/courses/LiveSessionAction';
+import LiveCourseLobby from '@/components/courses/LiveCourseLobby';
 
 interface Course {
     _id: string;
@@ -27,6 +29,15 @@ interface Course {
     rating: number;
     modules: Module[];
     isPublished: boolean;
+    courseType: 'RECORDED' | 'LIVE';
+    liveSession?: {
+        startDate: string | Date;
+        durationMinutes: number;
+        zoomMeetingLink: string;
+        zoomRecordingLink?: string;
+        isRecordingAvailable: boolean;
+        instructions?: string;
+    };
 }
 
 interface Module {
@@ -166,6 +177,11 @@ export default function CourseDetailPage() {
     const totalDuration = getTotalDuration();
     const totalLessons = getTotalLessons();
 
+    // 🎯 CRITICAL: Show LIVE Course Lobby for enrolled students in LIVE courses
+    if (isEnrolled && course.courseType === 'LIVE' && course.liveSession) {
+        return <LiveCourseLobby course={course} />;
+    }
+
     return (
         <main className="min-h-screen bg-gray-50">
             {/* Hero Section */}
@@ -179,11 +195,42 @@ export default function CourseDetailPage() {
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         {/* Course Info */}
                         <div className="lg:col-span-2">
-                            <span className="inline-block px-3 py-1 bg-white/20 rounded-full text-sm font-medium mb-4">
-                                {course.categoryId.name}
-                            </span>
+                            <div className="flex items-center gap-3 mb-4">
+                                <span className="inline-block px-3 py-1 bg-white/20 rounded-full text-sm font-medium">
+                                    {course.categoryId.name}
+                                </span>
+                                {course.courseType === 'LIVE' && (
+                                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-red-500 rounded-full text-sm font-bold animate-pulse">
+                                        🔴 LIVE WORKSHOP
+                                    </span>
+                                )}
+                            </div>
                             <h1 className="text-4xl font-bold mb-4">{course.title}</h1>
                             <p className="text-lg text-white/90 mb-6">{course.description}</p>
+
+                            {/* Live Session Info Banner */}
+                            {course.courseType === 'LIVE' && course.liveSession && (
+                                <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-4 mb-6">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Calendar className="h-5 w-5" />
+                                        <span className="font-semibold">Workshop Scheduled:</span>
+                                    </div>
+                                    <p className="text-lg font-bold mb-1">
+                                        {new Date(course.liveSession.startDate).toLocaleString([], {
+                                            dateStyle: 'full',
+                                            timeStyle: 'short'
+                                        })}
+                                    </p>
+                                    <p className="text-sm text-white/80">
+                                        Duration: {course.liveSession.durationMinutes} minutes
+                                    </p>
+                                    {course.liveSession.instructions && (
+                                        <p className="text-sm text-white/90 mt-2 pt-2 border-t border-white/20">
+                                            📋 <strong>Note:</strong> {course.liveSession.instructions}
+                                        </p>
+                                    )}
+                                </div>
+                            )}
 
                             <div className="flex items-center space-x-6 text-sm">
                                 <span className="flex items-center">
@@ -194,10 +241,12 @@ export default function CourseDetailPage() {
                                     <Users className="h-5 w-5 mr-1" />
                                     {course.enrollmentCount || 0} students
                                 </span>
-                                <span className="flex items-center">
-                                    <Clock className="h-5 w-5 mr-1" />
-                                    {Math.floor(totalDuration / 60)} min
-                                </span>
+                                {course.courseType === 'RECORDED' && (
+                                    <span className="flex items-center">
+                                        <Clock className="h-5 w-5 mr-1" />
+                                        {Math.floor(totalDuration / 60)} min
+                                    </span>
+                                )}
                             </div>
 
                             <p className="mt-4 text-white/80">
@@ -231,11 +280,15 @@ export default function CourseDetailPage() {
 
                                 {session ? (
                                     isEnrolled ? (
-                                        <Link href={`/courses/${courseId}/watch`}>
-                                            <Button variant="primary" className="w-full mb-3">
-                                                Continue Learning
-                                            </Button>
-                                        </Link>
+                                        course.courseType === 'LIVE' && course.liveSession ? (
+                                            <LiveSessionAction liveSession={course.liveSession} />
+                                        ) : (
+                                            <Link href={`/courses/${courseId}/watch`}>
+                                                <Button variant="primary" className="w-full mb-3">
+                                                    Continue Learning
+                                                </Button>
+                                            </Link>
+                                        )
                                     ) : course.isFree ? (
                                         <Button
                                             variant="primary"
@@ -285,49 +338,110 @@ export default function CourseDetailPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Main Content */}
                     <div className="lg:col-span-2">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-6">Course Content</h2>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                            {course.courseType === 'LIVE' ? 'Workshop Information' : 'Course Content'}
+                        </h2>
 
-                        <div className="space-y-4">
-                            {course.modules.map((module, index) => (
-                                <div key={module._id} className="bg-white rounded-lg shadow-md overflow-hidden">
-                                    <div className="px-6 py-4 bg-gray-50 border-b">
-                                        <h3 className="font-semibold text-gray-900">
-                                            Module {module.order}: {module.title}
-                                        </h3>
-                                        <p className="text-sm text-gray-600 mt-1">
-                                            {module.videos.filter((v) => v.status === 'approved').length} lessons
+                        {course.courseType === 'LIVE' && course.liveSession ? (
+                            /* LIVE Course Info */<div className="bg-white rounded-lg shadow-md p-8">
+                                <div className="text-center mb-6">
+                                    <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-4">
+                                        <Calendar className="h-8 w-8 text-red-600" />
+                                    </div>
+                                    <h3 className="text-2xl font-bold text-gray-900 mb-2">Live Zoom Workshop</h3>
+                                    <p className="text-gray-600">
+                                        This is a live, interactive workshop session via Zoom
+                                    </p>
+                                </div>
+
+                                <div className="space-y-4 border-t pt-6">
+                                    <div className="flex items-start gap-3">
+                                        <Calendar className="h-5 w-5 text-blue-600 mt-0.5" />
+                                        <div>
+                                            <p className="font-semibold text-gray-900">Scheduled Date & Time</p>
+                                            <p className="text-gray-700">
+                                                {new Date(course.liveSession.startDate).toLocaleString([], {
+                                                    dateStyle: 'full',
+                                                    timeStyle: 'long'
+                                                })}
+                                            </p>
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                (Displayed in your local timezone)
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-start gap-3">
+                                        <Clock className="h-5 w-5 text-blue-600 mt-0.5" />
+                                        <div>
+                                            <p className="font-semibold text-gray-900">Duration</p>
+                                            <p className="text-gray-700">{course.liveSession.durationMinutes} minutes</p>
+                                        </div>
+                                    </div>
+
+                                    {course.liveSession.instructions && (
+                                        <div className="flex items-start gap-3">
+                                            <BookOpen className="h-5 w-5 text-blue-600 mt-0.5" />
+                                            <div>
+                                                <p className="font-semibold text-gray-900">Preparation Instructions</p>
+                                                <p className="text-gray-700">{course.liveSession.instructions}</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {isEnrolled && (
+                                    <div className="mt-6 pt-6 border-t">
+                                        <p className="text-sm text-gray-600 mb-3">
+                                            📧 You will receive email reminders before the workshop starts.
                                         </p>
                                     </div>
+                                )}
+                            </div>
+                        ) : (
+                            /* RECORDED Course Modules */
+                            <div className="space-y-4">
+                                {course.modules.map((module, index) => (
+                                    <div key={module._id} className="bg-white rounded-lg shadow-md overflow-hidden">
+                                        <div className="px-6 py-4 bg-gray-50 border-b">
+                                            <h3 className="font-semibold text-gray-900">
+                                                Module {module.order}: {module.title}
+                                            </h3>
+                                            <p className="text-sm text-gray-600 mt-1">
+                                                {module.videos.filter((v) => v.status === 'approved').length} lessons
+                                            </p>
+                                        </div>
 
-                                    <div className="divide-y">
-                                        {module.videos
-                                            .filter((v) => v.status === 'approved')
-                                            .map((video, videoIndex) => (
-                                                <div key={video._id} className="px-6 py-3 flex items-center justify-between hover:bg-gray-50">
-                                                    <div className="flex items-center flex-1">
-                                                        {video.isFreePreview || course.isFree || isEnrolled ? (
-                                                            <PlayCircle className="h-5 w-5 text-blue-600 mr-3" />
-                                                        ) : (
-                                                            <Lock className="h-5 w-5 text-gray-400 mr-3" />
-                                                        )}
-                                                        <div>
-                                                            <p className="font-medium text-gray-900">{video.title}</p>
-                                                            {video.isFreePreview && !course.isFree && (
-                                                                <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded">
-                                                                    Free Preview
-                                                                </span>
+                                        <div className="divide-y">
+                                            {module.videos
+                                                .filter((v) => v.status === 'approved')
+                                                .map((video, videoIndex) => (
+                                                    <div key={video._id} className="px-6 py-3 flex items-center justify-between hover:bg-gray-50">
+                                                        <div className="flex items-center flex-1">
+                                                            {video.isFreePreview || course.isFree || isEnrolled ? (
+                                                                <PlayCircle className="h-5 w-5 text-blue-600 mr-3" />
+                                                            ) : (
+                                                                <Lock className="h-5 w-5 text-gray-400 mr-3" />
                                                             )}
+                                                            <div>
+                                                                <p className="font-medium text-gray-900">{video.title}</p>
+                                                                {video.isFreePreview && !course.isFree && (
+                                                                    <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded">
+                                                                        Free Preview
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                         </div>
+                                                        <span className="text-sm text-gray-600">
+                                                            {Math.floor(video.duration / 60)}:{(video.duration % 60).toString().padStart(2, '0')}
+                                                        </span>
                                                     </div>
-                                                    <span className="text-sm text-gray-600">
-                                                        {Math.floor(video.duration / 60)}:{(video.duration % 60).toString().padStart(2, '0')}
-                                                    </span>
-                                                </div>
-                                            ))}
+                                                ))}
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     {/* Sidebar */}
