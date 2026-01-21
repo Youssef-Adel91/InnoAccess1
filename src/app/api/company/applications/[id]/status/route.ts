@@ -86,18 +86,49 @@ export async function PATCH(
         application.status = validationResult.data.status as ApplicationStatus;
         await application.save();
 
+        // Create in-app notification for user
+        if (validationResult.data.status === 'accepted' || validationResult.data.status === 'rejected') {
+            try {
+                const { notifyApplicationStatusUpdate } = await import('@/lib/notifications');
+                await notifyApplicationStatusUpdate(
+                    application.userId.toString(),
+                    job.title,
+                    validationResult.data.status as 'accepted' | 'rejected' | 'shortlisted',
+                    job._id.toString()
+                );
+            } catch (notifError) {
+                console.error('Failed to create notification:', notifError);
+                // Continue - don't block status update
+            }
+        }
+
         // Send email notification to candidate
         try {
             const { sendApplicationStatusEmail } = await import('@/lib/email');
-            const user = await import('@/models/User').then(m => m.default);
+            const User = await import('@/models/User').then(m => m.default);
 
-            const candidate = await user.findById(application.userId);
+            const candidate = await User.findById(application.userId);
             if (candidate && (validationResult.data.status === 'accepted' || validationResult.data.status === 'rejected')) {
+                // Fetch company details for contact information (only for accepted applications)
+                let companyName, companyEmail, companyPhone;
+
+                if (validationResult.data.status === 'accepted') {
+                    const company = await User.findById(job.companyId);
+                    if (company) {
+                        companyName = company.profile?.companyName || company.name;
+                        companyEmail = company.email;
+                        companyPhone = company.profile?.phone;
+                    }
+                }
+
                 await sendApplicationStatusEmail(
                     candidate.email,
                     candidate.name,
                     job.title,
-                    validationResult.data.status as 'accepted' | 'rejected'
+                    validationResult.data.status as 'accepted' | 'rejected',
+                    companyName,
+                    companyEmail,
+                    companyPhone
                 );
             }
         } catch (emailError) {

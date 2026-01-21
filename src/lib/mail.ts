@@ -279,3 +279,54 @@ export function getWorkshopReminderEmailTemplate(
     `;
 }
 
+
+/**
+ * Email template for password reset
+ */
+export function getPasswordResetEmailTemplate(userName: string, resetLink: string): string {
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+        .content { background-color: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px; border: 2px solid #3b82f6; }
+        .button { display: inline-block; padding: 15px 40px; background-color: #dc2626; color: white; text-decoration: none; border-radius: 8px; margin: 20px 0; font-weight: bold; font-size: 16px; }
+        .warning-box { background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 5px; }
+        .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div style="font-size: 24px;">🔐</div>
+            <h1>Reset Your Password</h1>
+        </div>
+        <div class="content">
+            <h2>Hi ${userName},</h2>
+            <p>We received a request to reset your password for your InnoAccess account.</p>
+            <div style="text-align: center;">
+                <a href="${resetLink}" class="button">🔐 Reset Password</a>
+            </div>
+            <div class="warning-box">
+                <strong>⚠️ Important:</strong><br>
+                • This link expires in <strong>1 hour</strong><br>
+                • If you didn't request this, ignore this email
+            </div>
+            <p style="margin-top: 30px;">
+                Best regards,<br>
+                <strong>The InnoAccess Team</strong><br>
+                innoaccess2@gmail.com
+            </p>
+        </div>
+        <div class="footer">
+            <p>This is an automated message from InnoAccess Platform</p>
+        </div>
+    </div>
+</body>
+</html>
+    `;
+}
+

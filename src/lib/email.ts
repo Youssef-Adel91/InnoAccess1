@@ -39,7 +39,10 @@ export async function sendApplicationStatusEmail(
     candidateEmail: string,
     candidateName: string,
     jobTitle: string,
-    status: 'accepted' | 'rejected'
+    status: 'accepted' | 'rejected',
+    companyName?: string,
+    companyEmail?: string,
+    companyPhone?: string
 ): Promise<boolean> {
     const isAccepted = status === 'accepted';
 
@@ -47,9 +50,39 @@ export async function sendApplicationStatusEmail(
         ? `Congratulations! Your application for ${jobTitle} has been accepted`
         : `Update on your application for ${jobTitle}`;
 
-    const body = isAccepted
-        ? `Dear ${candidateName},\n\nWe are pleased to inform you that your application for the position of ${jobTitle} has been accepted!\n\nThe company will contact you soon with next steps.\n\nBest regards,\nInnoAccess Team`
-        : `Dear ${candidateName},\n\nThank you for your interest in the position of ${jobTitle}.\n\nAfter careful consideration, we have decided to move forward with other candidates whose qualifications more closely match our current needs.\n\nWe appreciate the time you invested in the application process and wish you the best in your job search.\n\nBest regards,\nInnoAccess Team`;
+    let body: string;
+
+    if (isAccepted) {
+        body = `Dear ${candidateName},
+
+We are pleased to inform you that your application for the position of ${jobTitle} has been accepted!
+
+${companyName ? `Company: ${companyName}` : ''}
+
+Next Steps:
+The company will contact you soon to discuss the next steps. You can also reach out to them directly:
+
+📧 Email: ${companyEmail || 'Will be provided by the company'}
+📞 Phone: ${companyPhone || 'Will be provided by the company'}
+
+We recommend checking your email regularly and responding promptly to any communication from the company.
+
+Congratulations and best of luck with your new opportunity!
+
+Best regards,
+InnoAccess Team`;
+    } else {
+        body = `Dear ${candidateName},
+
+Thank you for your interest in the position of ${jobTitle}.
+
+After careful consideration, we have decided to move forward with other candidates whose qualifications more closely match our current needs.
+
+We appreciate the time you invested in the application process and wish you the best in your job search.
+
+Best regards,
+InnoAccess Team`;
+    }
 
     return sendEmail({
         to: candidateEmail,

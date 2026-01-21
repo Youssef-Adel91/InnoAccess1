@@ -57,8 +57,27 @@ export default function JobDetailsPage() {
             }
         }
 
+        async function checkIfApplied() {
+            if (!session || session.user.role !== 'user') return;
+
+            try {
+                const response = await fetch('/api/user/applications');
+                const data = await response.json();
+
+                if (data.success) {
+                    const hasApplied = data.data.applications.some(
+                        (app: any) => app.jobId._id === params.id
+                    );
+                    setApplied(hasApplied);
+                }
+            } catch (error) {
+                console.error('Failed to check application status:', error);
+            }
+        }
+
         fetchJob();
-    }, [params.id]);
+        checkIfApplied();
+    }, [params.id, session]);
 
     const handleApply = () => {
         if (!session) {

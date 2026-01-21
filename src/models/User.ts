@@ -51,6 +51,8 @@ export interface IUser extends Document {
     accessibilitySettings: IAccessibilitySettings;
     isApproved: boolean; // For company accounts
     isActive: boolean;
+    resetPasswordToken?: string; // For password reset flow
+    resetPasswordExpires?: Date; // Token expiry (1 hour)
     createdAt: Date;
     updatedAt: Date;
 }
@@ -150,6 +152,14 @@ const UserSchema = new Schema<IUser>(
         isActive: {
             type: Boolean,
             default: true,
+        },
+        resetPasswordToken: {
+            type: String,
+            select: false, // Don't return by default
+        },
+        resetPasswordExpires: {
+            type: Date,
+            select: false, // Don't return by default
         },
     },
     {

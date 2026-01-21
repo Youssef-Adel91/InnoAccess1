@@ -5,6 +5,10 @@ import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import { Briefcase, GraduationCap, Bell, User, LogOut, Settings, Menu, FileText, UserCheck, Video, Users } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import useSWR from 'swr';
+
+// Fetcher function for SWR
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export function Header() {
     const pathname = usePathname();
@@ -12,10 +16,29 @@ export function Header() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [pendingCount, setPendingCount] = useState(0);
 
-    const navigation = [
-        { name: 'Jobs', href: '/jobs', icon: Briefcase },
-        { name: 'Courses', href: '/courses', icon: GraduationCap },
-    ];
+    // Fetch unread notifications count with SWR (polls every 60 seconds)
+    const { data: notificationsData } = useSWR(
+        session ? '/api/notifications?unreadOnly=true' : null,
+        fetcher,
+        {
+            refreshInterval: 60000, // Poll every 60 seconds
+            revalidateOnFocus: true, // Refresh when user returns to tab
+        }
+    );
+
+    const unreadNotificationsCount = notificationsData?.data?.unreadCount || 0;
+
+    // Dynamic navigation based on authentication status
+    const navigation = session
+        ? [
+            { name: 'Jobs', href: '/jobs', icon: Briefcase },
+            { name: 'Courses', href: '/courses', icon: GraduationCap },
+        ]
+        : [
+            { name: 'About Us', href: '/about', icon: Users },
+            { name: 'Features', href: '/features', icon: GraduationCap },
+            { name: 'Contact', href: '/contact', icon: Bell },
+        ];
 
     // Fetch pending applications count for users
     useEffect(() => {
@@ -188,9 +211,19 @@ export function Header() {
                                 <Link
                                     href="/notifications"
                                     className="inline-flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
-                                    aria-label="Notifications"
+                                    aria-label={unreadNotificationsCount > 0 ? `Notifications (${unreadNotificationsCount} unread)` : 'Notifications'}
                                 >
-                                    <Bell className="h-4 w-4" aria-hidden="true" />
+                                    <div className="relative">
+                                        <Bell className="h-4 w-4" aria-hidden="true" />
+                                        {unreadNotificationsCount > 0 && (
+                                            <span
+                                                className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-semibold"
+                                                aria-hidden="true"
+                                            >
+                                                {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+                                            </span>
+                                        )}
+                                    </div>
                                 </Link>
                                 <button
                                     onClick={() => signOut({ callbackUrl: '/' })}
