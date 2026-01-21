@@ -5,7 +5,7 @@
 ### Email Service (Gmail SMTP)
 ```env
 GMAIL_USER=innoaccess2@gmail.com
-GMAIL_PASS=euov shwf salv imzy  # Gmail App Password
+GMAIL_PASS=
 ```
 
 > **How to get Gmail App Password:**
@@ -55,7 +55,8 @@ NEXTAUTH_SECRET=your_random_secret_here
 ### MongoDB Connection
 
 ```env
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/database?retryWrites=true&w=majority
+MONGODB_URI=mongodb+srv://<username>:<password>@cluster0...
+retryWrites=true&w=majority
 ```
 
 ---
