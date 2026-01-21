@@ -41,3 +41,34 @@ body {
 .skip-link:focus {
   top: 0;
 }
+
+/* Input Styling: FORCE black text color for user input */
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+textarea,
+select {
+  color: #000000 !important;
+  -webkit-text-fill-color: #000000 !important;
+  /* Safari fix */
+}
+
+/* Placeholder styling */
+input::placeholder,
+textarea::placeholder {
+  color: #9ca3af !important;
+  opacity: 0.6 !important;
+}
+
+/* Force black text on focus */
+input:focus:not([type="checkbox"]):not([type="radio"]),
+textarea:focus,
+select:focus {
+  color: #000000 !important;
+  -webkit-text-fill-color: #000000 !important;
+}
+
+/* Autofill fix - prevent white text on autofill */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #000000 !important;
+}
