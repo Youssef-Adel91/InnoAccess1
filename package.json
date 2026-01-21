@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "seed:admin": "tsx scripts/seed-admin.ts",
-    "clear:db": "tsx scripts/clear-db.ts"
+    "clear:db": "tsx scripts/clear-db.ts",
+    "migrate:verification": "tsx scripts/add-verification-fields.ts"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.4",

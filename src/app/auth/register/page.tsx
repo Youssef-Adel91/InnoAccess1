@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
+import { TurnstileWidget } from '@/components/ui/TurnstileWidget';
 import { Eye, EyeOff } from 'lucide-react';
 
 export default function RegisterPage() {
@@ -25,11 +26,19 @@ export default function RegisterPage() {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [turnstileToken, setTurnstileToken] = useState('');
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
         setSuccess('');
+
+        // CAPTCHA validation
+        const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+        if (siteKey && !turnstileToken) {
+            setError('Please complete the CAPTCHA verification');
+            return;
+        }
 
         // Validation
         if (formData.password !== formData.confirmPassword) {
@@ -69,6 +78,7 @@ export default function RegisterPage() {
                     role: formData.role,
                     companyName: formData.role === 'company' ? formData.companyName : undefined,
                     companyBio: formData.role === 'company' ? formData.companyBio : undefined,
+                    turnstileToken, // Include CAPTCHA token
                     socialMedia: formData.role === 'company' ? {
                         facebook: formData.facebook || undefined,
                         linkedin: formData.linkedin || undefined,
@@ -84,8 +94,9 @@ export default function RegisterPage() {
                 setError(data.error?.message || 'Registration failed');
             } else {
                 setSuccess(data.data?.message || 'Registration successful!');
+                // Redirect to verification page with email
                 setTimeout(() => {
-                    router.push('/auth/signin');
+                    router.push(`/auth/verify-email?email=${encodeURIComponent(formData.email)}`);
                 }, 2000);
             }
         } catch (err: any) {
@@ -353,6 +364,26 @@ export default function RegisterPage() {
                                 aria-required="true"
                             />
                         </div>
+
+                        {/* CAPTCHA Widget */}
+                        {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
+                            <div className="flex justify-center">
+                                <TurnstileWidget
+                                    siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+                                    onVerify={setTurnstileToken}
+                                    onError={() => {
+                                        setTurnstileToken('');
+                                        setError('CAPTCHA verification failed. Please try again.');
+                                    }}
+                                    onExpire={() => {
+                                        setTurnstileToken('');
+                                        setError('CAPTCHA expired. Please verify again.');
+                                    }}
+                                    theme="light"
+                                    size="normal"
+                                />
+                            </div>
+                        )}
 
                         <Button
                             type="submit"

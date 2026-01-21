@@ -51,6 +51,9 @@ export interface IUser extends Document {
     accessibilitySettings: IAccessibilitySettings;
     isApproved: boolean; // For company accounts
     isActive: boolean;
+    isVerified: boolean; // Email verification status
+    verificationToken?: string; // Hashed OTP for email verification
+    verificationTokenExpiry?: Date; // OTP expiry (15 minutes)
     resetPasswordToken?: string; // For password reset flow
     resetPasswordExpires?: Date; // Token expiry (1 hour)
     createdAt: Date;
@@ -153,6 +156,18 @@ const UserSchema = new Schema<IUser>(
             type: Boolean,
             default: true,
         },
+        isVerified: {
+            type: Boolean,
+            default: false,
+        },
+        verificationToken: {
+            type: String,
+            select: false, // Don't return by default
+        },
+        verificationTokenExpiry: {
+            type: Date,
+            select: false, // Don't return by default
+        },
         resetPasswordToken: {
             type: String,
             select: false, // Don't return by default
@@ -171,6 +186,7 @@ const UserSchema = new Schema<IUser>(
 // Note: email index is automatically created by unique: true constraint
 UserSchema.index({ role: 1 });
 UserSchema.index({ isApproved: 1, role: 1 });
+UserSchema.index({ verificationToken: 1 });
 
 // Prevent returning password in JSON
 UserSchema.methods.toJSON = function () {

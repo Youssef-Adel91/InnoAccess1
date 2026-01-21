@@ -38,6 +38,11 @@ export const authOptions: NextAuthOptions = {
                         throw new Error('Invalid email or password');
                     }
 
+                    // Check if email is verified
+                    if (!user.isVerified) {
+                        throw new Error('Please verify your email before signing in. Check your inbox for the verification code.');
+                    }
+
                     // Check if user is active
                     if (!user.isActive) {
                         throw new Error('Your account has been deactivated');
