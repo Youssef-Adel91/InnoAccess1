@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
-import { TurnstileWidget } from '@/components/ui/TurnstileWidget';
+import TurnstileWidget from '@/components/ui/TurnstileWidget';
 import { Eye, EyeOff } from 'lucide-react';
 
 export default function RegisterPage() {
@@ -369,18 +369,7 @@ export default function RegisterPage() {
                         {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
                             <div className="flex justify-center">
                                 <TurnstileWidget
-                                    siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
                                     onVerify={setTurnstileToken}
-                                    onError={() => {
-                                        setTurnstileToken('');
-                                        setError('CAPTCHA verification failed. Please try again.');
-                                    }}
-                                    onExpire={() => {
-                                        setTurnstileToken('');
-                                        setError('CAPTCHA expired. Please verify again.');
-                                    }}
-                                    theme="light"
-                                    size="normal"
                                 />
                             </div>
                         )}

@@ -5,85 +5,82 @@ import { useEffect, useRef } from 'react';
 declare global {
     interface Window {
         turnstile?: {
-            render: (container: string | HTMLElement, options: TurnstileOptions) => string;
-            reset: (widgetId?: string) => void;
-            remove: (widgetId?: string) => void;
+            render: (container: HTMLElement, options: {
+                sitekey: string;
+                callback: (token: string) => void;
+            }) => void;
         };
-        onTurnstileLoad?: () => void;
+        __turnstileRendered?: boolean;
     }
 }
 
-interface TurnstileOptions {
-    sitekey: string;
-    callback?: (token: string) => void;
-    'error-callback'?: () => void;
-    'expired-callback'?: () => void;
-    theme?: 'light' | 'dark' | 'auto';
-    size?: 'normal' | 'compact';
-    language?: string;
-}
-
-interface TurnstileWidgetProps {
-    siteKey: string;
+interface TurnstileProps {
     onVerify: (token: string) => void;
-    onError?: () => void;
-    onExpire?: () => void;
-    theme?: 'light' | 'dark' | 'auto';
-    size?: 'normal' | 'compact';
 }
 
-export function TurnstileWidget({
-    siteKey,
-    onVerify,
-    onError,
-    onExpire,
-    theme = 'light',
-    size = 'normal',
-}: TurnstileWidgetProps) {
+export default function TurnstileWidget({ onVerify }: TurnstileProps) {
     const containerRef = useRef<HTMLDivElement>(null);
-    const widgetIdRef = useRef<string | null>(null);
 
     useEffect(() => {
-        // Load Turnstile script
-        const scriptId = 'turnstile-script';
-        let script = document.getElementById(scriptId) as HTMLScriptElement;
+        // Global flag to prevent duplicate renders across all instances
+        if (window.__turnstileRendered) {
+            console.log('⏭️ Turnstile already rendered globally, skipping');
+            return;
+        }
 
-        if (!script) {
-            script = document.createElement('script');
-            script.id = scriptId;
+        // Get site key
+        const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+
+        if (!siteKey) {
+            console.error('❌ Turnstile Site Key is missing!');
+            return;
+        }
+
+        console.log('✅ Turnstile Site Key found:', siteKey.substring(0, 10) + '...');
+
+        // Render widget
+        const renderWidget = () => {
+            if (window.turnstile && containerRef.current && !window.__turnstileRendered) {
+                console.log('🎨 Rendering Turnstile widget...');
+                try {
+                    window.turnstile.render(containerRef.current, {
+                        sitekey: siteKey,
+                        callback: (token: string) => {
+                            console.log('✅ Turnstile verification successful!');
+                            onVerify(token);
+                        },
+                    });
+                    window.__turnstileRendered = true; // Mark as rendered globally
+                    console.log('✓ Widget rendered successfully');
+                } catch (error) {
+                    console.error('❌ Render error:', error);
+                }
+            }
+        };
+
+        // Load script
+        if (!window.turnstile) {
+            console.log('📥 Loading Turnstile script...');
+            const script = document.createElement('script');
             script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
             script.async = true;
             script.defer = true;
-            document.head.appendChild(script);
-        }
-
-        const renderWidget = () => {
-            if (window.turnstile && containerRef.current && !widgetIdRef.current) {
-                widgetIdRef.current = window.turnstile.render(containerRef.current, {
-                    sitekey: siteKey,
-                    callback: onVerify,
-                    'error-callback': onError,
-                    'expired-callback': onExpire,
-                    theme,
-                    size,
-                });
-            }
-        };
-
-        if (window.turnstile) {
-            renderWidget();
+            script.onload = () => {
+                console.log('✅ Turnstile script loaded');
+                renderWidget();
+            };
+            document.body.appendChild(script);
         } else {
-            script.addEventListener('load', renderWidget);
+            console.log('✓ Script already loaded');
+            renderWidget();
         }
+    }, [onVerify]);
 
-        // Cleanup
-        return () => {
-            if (window.turnstile && widgetIdRef.current) {
-                window.turnstile.remove(widgetIdRef.current);
-                widgetIdRef.current = null;
-            }
-        };
-    }, [siteKey, onVerify, onError, onExpire, theme, size]);
-
-    return <div ref={containerRef} />;
+    return (
+        <div
+            ref={containerRef}
+            className="my-4"
+            style={{ minWidth: '300px', minHeight: '65px' }}
+        />
+    );
 }

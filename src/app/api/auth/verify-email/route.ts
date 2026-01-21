@@ -21,8 +21,12 @@ export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
 
+        // SECURITY: Sanitize input to prevent NoSQL injection
+        const { sanitizeInput } = await import('@/lib/sanitize');
+        const sanitizedBody = sanitizeInput(body);
+
         // Validate request data
-        const validationResult = verificationSchema.safeParse(body);
+        const validationResult = verificationSchema.safeParse(sanitizedBody);
 
         if (!validationResult.success) {
             return NextResponse.json(

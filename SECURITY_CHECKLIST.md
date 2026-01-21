@@ -29,7 +29,7 @@ Add the following:
 ```env
 # Email Service
 GMAIL_USER=innoaccess2@gmail.com
-GMAIL_PASS=euov shwf salv imzy
+GMAIL_PASS=<your_16_char_gmail_app_password>
 
 # Cloudflare Turnstile (CAPTCHA)
 NEXT_PUBLIC_TURNSTILE_SITE_KEY=<get_from_cloudflare>

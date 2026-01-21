@@ -1,41 +1,57 @@
 /**
  * Migration Script: Add Email Verification Fields to Existing Users
- * 
- * This script updates all existing users in the database to mark them as verified.
- * This prevents locking out existing users when the email verification feature is deployed.
- * 
- * Run this ONCE before deploying the email verification feature to production.
- * 
- * Usage: npm run migrate:verification
+ * STANDALONE VERSION - No dependencies on src/ files
  */
 
+// Load environment variables FIRST
 import dotenv from 'dotenv';
-import { connectDB } from '../src/lib/db';
-import User from '../src/models/User';
+import path from 'path';
+import mongoose from 'mongoose';
 
-// Load environment variables
-dotenv.config({ path: '.env.local' });
+// Load .env.local
+dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+
+// Get MongoDB URI
+const MONGODB_URI = process.env.MONGODB_URI;
+
+if (!MONGODB_URI) {
+    console.error('❌ MONGODB_URI not found in .env.local');
+    console.error('   Please make sure .env.local exists and contains MONGODB_URI');
+    process.exit(1);
+}
+
+// Define User schema (simplified for migration)
+const userSchema = new mongoose.Schema({
+    name: String,
+    email: String,
+    isVerified: { type: Boolean, default: false },
+    verificationToken: String,
+    verificationTokenExpiry: Date,
+}, { timestamps: true });
+
+const User = mongoose.models.User || mongoose.model('User', userSchema);
 
 async function migrateUsers() {
     try {
         console.log('🔄 Starting migration: Adding email verification fields to existing users...\n');
 
-        // Connect to database
-        await connectDB();
+        // Connect to MongoDB
+        await mongoose.connect(MONGODB_URI);
         console.log('✅ Connected to database\n');
 
-        // Find all users who don't have the isVerified field or it's undefined
-        const usersToUpdate = await User.find({
+        // Find all users who don't have isVerified field
+        const usersToUpdate = await User.countDocuments({
             $or: [
                 { isVerified: { $exists: false } },
                 { isVerified: null },
             ],
         });
 
-        console.log(`📊 Found ${usersToUpdate.length} users to migrate\n`);
+        console.log(`📊 Found ${usersToUpdate} users to migrate\n`);
 
-        if (usersToUpdate.length === 0) {
+        if (usersToUpdate === 0) {
             console.log('✅ No users need migration. All users already have verification fields.');
+            await mongoose.connection.close();
             process.exit(0);
         }
 
@@ -60,9 +76,11 @@ async function migrateUsers() {
         console.log('\n📝 All existing users are now marked as verified.');
         console.log('   New users will need to verify their email before signing in.\n');
 
+        await mongoose.connection.close();
         process.exit(0);
-    } catch (error) {
-        console.error('❌ Migration failed:', error);
+    } catch (error: any) {
+        console.error('❌ Migration failed:', error.message);
+        await mongoose.connection.close();
         process.exit(1);
     }
 }
