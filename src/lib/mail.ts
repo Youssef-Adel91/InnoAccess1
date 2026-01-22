@@ -203,5 +203,52 @@ export async function sendWelcomeEmail({ recipientEmail, recipientName }: Welcom
     return sendEmail({ to: recipientEmail, subject, html });
 }
 
-// Export existing email templates (keep for backwards compatibility)
-export * from './email';
+/**
+ * Missing template functions for backward compatibility
+ */
+export function getTrainerApprovalEmailTemplate(name: string): string {
+    return `
+        <div style="font-family: Arial; max-width: 600px; margin: 0 auto;">
+            <h1 style="color: #667eea;">🎉 Congratulations ${name}!</h1>
+            <p>Your trainer application has been approved.</p>
+            <a href="${process.env.NEXTAUTH_URL}/dashboard/trainer" style="display: inline-block; padding: 12px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px;">Go to Dashboard</a>
+        </div>
+    `;
+}
+
+export function getTrainerRejectionEmailTemplate(name: string): string {
+    return `
+        <div style="font-family: Arial; max-width: 600px; margin: 0 auto;">
+            <h1>Application Update</h1>
+            <p>Hello ${name}, unfortunately we are unable to approve your trainer application at this time.</p>
+        </div>
+    `;
+}
+
+export function getPasswordResetEmailTemplate(resetUrl: string): string {
+    return `
+        <div style="font-family: Arial; max-width: 600px; margin: 0 auto;">
+            <h1>Reset Your Password</h1>
+            <a href="${resetUrl}" style="display: inline-block; padding: 12px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px;">Reset Password</a>
+            <p>This link expires in 1 hour.</p>
+        </div>
+    `;
+}
+
+export function getWorkshopReminderEmailTemplate(userName: string, workshopTitle: string, date: string): string {
+    return `
+        <div style="font-family: Arial; max-width: 600px; margin: 0 auto;">
+            <h1>Workshop Reminder 📅</h1>
+            <p>Hello ${userName}, reminder for: <strong>${workshopTitle}</strong> on ${date}</p>
+        </div>
+    `;
+}
+
+export function getJobAcceptanceEmailTemplate(userName: string, jobTitle: string): string {
+    return `
+        <div style="font-family: Arial; max-width: 600px; margin: 0 auto;">
+            <h1>Congratulations! 🎉</h1>
+            <p>Hello ${userName}, you have been accepted for: <strong>${jobTitle}</strong></p>
+        </div>
+    `;
+}
