@@ -35,41 +35,51 @@ export async function POST(request: NextRequest) {
 
         // Send email to support
         try {
-            const { sendEmail } = await import('@/lib/email');
+            const { sendEmail } = await import('@/lib/mail');
 
-            const emailBody = `
-New Contact Form Submission from InnoAccess
+            const emailHtml = `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <h2 style="color: #2563eb;">New Contact Form Submission</h2>
+                    <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                        <p><strong>From:</strong> ${name}</p>
+                        <p><strong>Email:</strong> ${email}</p>
+                        <p><strong>Subject:</strong> ${subject}</p>
+                    </div>
+                    <div style="background: white; padding: 15px; border: 1px solid #e5e7eb; border-radius: 8px;">
+                        <h3>Message:</h3>
+                        <p style="white-space: pre-wrap;">${message}</p>
+                    </div>
+                    <p style="color: #6b7280; font-size: 12px; margin-top: 20px;">
+                        This is an automated message from the InnoAccess contact form.
+                    </p>
+                </div>
+            `;
 
-From: ${name}
-Email: ${email}
-Subject: ${subject}
-
-Message:
-${message}
-
----
-This is an automated message from the InnoAccess contact form.
-`;
-
+            // Send to company email
             await sendEmail({
                 to: process.env.GMAIL_USER || 'innoaccess2@gmail.com',
                 subject: `[Contact Form] ${subject}`,
-                body: emailBody,
+                html: emailHtml,
             });
 
-            // Also send confirmation to user
+            // Send confirmation to user
+            const confirmationHtml = `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <h2 style="color: #2563eb;">Thank You for Contacting InnoAccess!</h2>
+                    <p>Dear ${name},</p>
+                    <p>We have received your message and will get back to you as soon as possible.</p>
+                    <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                        <h3>Your Message:</h3>
+                        <p style="white-space: pre-wrap;">${message}</p>
+                    </div>
+                    <p>Best regards,<br><strong>The InnoAccess Team</strong></p>
+                </div>
+            `;
+
             await sendEmail({
                 to: email,
                 subject: 'Thank you for contacting InnoAccess',
-                body: `Dear ${name},
-
-Thank you for reaching out to InnoAccess. We have received your message and will get back to you as soon as possible.
-
-Your Message:
-${message}
-
-Best regards,
-InnoAccess Team`,
+                html: confirmationHtml,
             });
 
             return NextResponse.json({
