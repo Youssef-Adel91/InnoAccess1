@@ -1,155 +1,131 @@
 'use client';
 
-import { Suspense, useState, useRef, useEffect } from 'react';
+import { Suspense, useEffect, useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Button } from '@/components/ui/Button';
 
-// Wrap component that uses useSearchParams in Suspense
-function VerifyEmailContent() {
+// 1. Component that uses useSearchParams (MUST be wrapped in Suspense)
+function VerifyEmailForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const emailFromQuery = searchParams.get('email') || '';
+    const email = searchParams.get('email') || '';
 
-    const [email, setEmail] = useState(emailFromQuery);
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const [isResending, setIsResending] = useState(false);
-    const [resendCountdown, setResendCountdown] = useState(0);
+    const [timeLeft, setTimeLeft] = useState(60);
+    const [canResend, setCanResend] = useState(false);
 
     const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-    // Countdown timer for resend button
     useEffect(() => {
-        if (resendCountdown > 0) {
-            const timer = setTimeout(() => setResendCountdown(resendCountdown - 1), 1000);
-            return () => clearTimeout(timer);
-        }
-    }, [resendCountdown]);
+        const timer = setInterval(() => {
+            setTimeLeft((prev) => {
+                if (prev <= 1) {
+                    setCanResend(true);
+                    clearInterval(timer);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
 
-    const handleOTPChange = (index: number, value: string) => {
-        // Only allow numbers
-        if (value && !/^\d$/.test(value)) return;
+        return () => clearInterval(timer);
+    }, []);
 
-
+    const handleChange = (element: HTMLInputElement, index: number) => {
+        if (isNaN(Number(element.value))) return;
         const newOtp = [...otp];
-        newOtp[index] = value;
+        newOtp[index] = element.value;
         setOtp(newOtp);
-
-        // Auto-focus next input
-        if (value && index < 5) {
+        if (element.value && index < 5) {
             inputRefs.current[index + 1]?.focus();
-        }
-
-        // Auto-submit when all 6 digits are entered
-        if (index === 5 && value) {
-            const fullOtp = newOtp.join('');
-            if (fullOtp.length === 6) {
-                handleVerify(fullOtp);
-            }
         }
     };
 
-    const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
         if (e.key === 'Backspace' && !otp[index] && index > 0) {
             inputRefs.current[index - 1]?.focus();
         }
     };
 
-    const handleVerify = async (otpValue?: string) => {
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
         setError('');
         setSuccess('');
 
-        const fullOtp = otpValue || otp.join('');
-
-        if (fullOtp.length !== 6) {
-            setError('Please enter all 6 digits');
+        const code = otp.join('');
+        if (code.length !== 6) {
+            setError('Please enter the complete 6-digit code');
             return;
         }
 
         if (!email) {
-            setError('Please enter your email address');
+            setError('Email address is required');
             return;
         }
 
-        setIsLoading(true);
-
+        setLoading(true);
         try {
-            const response = await fetch('/api/auth/verify-email', {
+            const res = await fetch('/api/auth/verify-email', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email, otp: fullOtp }),
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, otp: code }),
             });
+            const data = await res.json();
 
-            const data = await response.json();
-
-            if (!response.ok) {
-                setError(data.error?.message || 'Verification failed');
-            } else {
-                setSuccess(data.data?.message || 'Email verified successfully!');
-                // Redirect to signin after 2 seconds
-                setTimeout(() => {
-                    router.push('/auth/signin');
-                }, 2000);
+            if (!res.ok) {
+                throw new Error(data.error?.message || 'Verification failed');
             }
-        } catch (err: any) {
-            setError('An unexpected error occurred');
+
+            setSuccess('Email verified successfully! Redirecting...');
+            setTimeout(() => {
+                router.push('/auth/signin');
+            }, 2000);
+        } catch (error: any) {
+            setError(error.message || 'An error occurred');
         } finally {
-            setIsLoading(false);
+            setLoading(false);
         }
     };
 
     const handleResend = async () => {
+        if (!canResend || !email) return;
+
         setError('');
         setSuccess('');
 
-        if (!email) {
-            setError('Please enter your email address');
-            return;
-        }
-
-        setIsResending(true);
-
         try {
-            const response = await fetch('/api/auth/resend-verification', {
+            const res = await fetch('/api/auth/resend-verification', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email }),
             });
+            const data = await res.json();
 
-            const data = await response.json();
-
-            if (!response.ok) {
-                setError(data.error?.message || 'Failed to resend code');
-            } else {
-                setSuccess('New verification code sent! Please check your email.');
-                setResendCountdown(60); // 60 second cooldown
-                setOtp(['', '', '', '', '', '']); // Clear OTP inputs
-                inputRefs.current[0]?.focus();
+            if (!res.ok) {
+                throw new Error(data.error?.message || 'Failed to resend code');
             }
-        } catch (err: any) {
-            setError('An unexpected error occurred');
-        } finally {
-            setIsResending(false);
+
+            setSuccess('Verification code sent! Please check your email.');
+            setTimeLeft(60);
+            setCanResend(false);
+            setOtp(['', '', '', '', '', '']);
+            inputRefs.current[0]?.focus();
+        } catch (error: any) {
+            setError(error.message || 'Failed to resend code');
         }
     };
 
     return (
-        <main id="main-content" className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+        <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
             <div className="sm:mx-auto sm:w-full sm:max-w-md">
                 <div className="text-center">
                     <div className="text-6xl mb-4">🔐</div>
-                    <h1 className="text-3xl font-bold text-gray-900">
-                        Verify Your Email
-                    </h1>
+                    <h2 className="text-3xl font-bold text-gray-900">Verify Your Email</h2>
                     <p className="mt-2 text-sm text-gray-600">
-                        Enter the 6-digit code sent to your email
+                        Enter the 6-digit code sent to <strong>{email}</strong>
                     </p>
                 </div>
             </div>
@@ -157,11 +133,7 @@ function VerifyEmailContent() {
             <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
                 <div className="bg-white py-8 px-4 shadow-2xl sm:rounded-2xl sm:px-10 border border-purple-100">
                     {error && (
-                        <div
-                            className="bg-red-50 border-l-4 border-red-500 text-red-800 rounded-md p-4 mb-6 text-sm"
-                            role="alert"
-                            aria-live="polite"
-                        >
+                        <div className="bg-red-50 border-l-4 border-red-500 text-red-800 rounded-md p-4 mb-6 text-sm" role="alert">
                             <div className="flex items-center">
                                 <span className="text-xl mr-2">❌</span>
                                 <span>{error}</span>
@@ -170,11 +142,7 @@ function VerifyEmailContent() {
                     )}
 
                     {success && (
-                        <div
-                            className="bg-green-50 border-l-4 border-green-500 text-green-800 rounded-md p-4 mb-6"
-                            role="alert"
-                            aria-live="polite"
-                        >
+                        <div className="bg-green-50 border-l-4 border-green-500 text-green-800 rounded-md p-4 mb-6" role="alert">
                             <div className="flex items-center">
                                 <span className="text-xl mr-2">✅</span>
                                 <span>{success}</span>
@@ -182,26 +150,7 @@ function VerifyEmailContent() {
                         </div>
                     )}
 
-                    <div className="space-y-6">
-                        {/* Email Input */}
-                        <div>
-                            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                                Email Address
-                            </label>
-                            <input
-                                id="email"
-                                name="email"
-                                type="email"
-                                required
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                placeholder="your@email.com"
-                                disabled={!!emailFromQuery}
-                            />
-                        </div>
-
-                        {/* OTP Input */}
+                    <form className="space-y-6" onSubmit={handleSubmit}>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                 Verification Code
@@ -215,77 +164,61 @@ function VerifyEmailContent() {
                                         inputMode="numeric"
                                         maxLength={1}
                                         value={digit}
-                                        onChange={(e) => handleOTPChange(index, e.target.value)}
-                                        onKeyDown={(e) => handleKeyDown(index, e)}
+                                        onChange={(e) => handleChange(e.target, index)}
+                                        onKeyDown={(e) => handleKeyDown(e, index)}
                                         className="w-full aspect-square text-center text-2xl font-bold border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
                                         aria-label={`Digit ${index + 1}`}
                                     />
                                 ))}
                             </div>
-                            <p className="mt-2 text-xs text-gray-500">
-                                Code expires in 15 minutes
-                            </p>
+                            <p className="mt-2 text-xs text-gray-500">Code expires in 15 minutes</p>
                         </div>
 
-                        {/* Verify Button */}
-                        <Button
-                            type="button"
-                            variant="primary"
-                            size="lg"
-                            onClick={() => handleVerify()}
-                            isLoading={isLoading}
-                            className="w-full"
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            Verify Email
-                        </Button>
+                            {loading ? 'Verifying...' : 'Verify Email'}
+                        </button>
+                    </form>
 
-                        {/* Resend Code */}
-                        <div className="text-center">
-                            <p className="text-sm text-gray-600 mb-2">
-                                Didn't receive the code?
-                            </p>
-                            <button
-                                type="button"
-                                onClick={handleResend}
-                                disabled={isResending || resendCountdown > 0}
-                                className="text-purple-600 hover:text-purple-800 font-medium text-sm disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
-                            >
-                                {resendCountdown > 0
-                                    ? `Resend in ${resendCountdown}s`
-                                    : isResending
-                                        ? 'Sending...'
-                                        : 'Resend Code'}
-                            </button>
-                        </div>
+                    <div className="mt-6 text-center">
+                        <p className="text-sm text-gray-600 mb-2">Didn't receive the code?</p>
+                        <button
+                            type="button"
+                            onClick={handleResend}
+                            disabled={!canResend}
+                            className={`text-sm font-medium ${canResend ? 'text-purple-600 hover:text-purple-800 cursor-pointer' : 'text-gray-400 cursor-not-allowed'
+                                }`}
+                        >
+                            {canResend ? 'Resend Code' : `Resend in ${timeLeft}s`}
+                        </button>
+                    </div>
 
-                        {/* Back to Sign In */}
-                        <div className="text-center pt-4 border-t border-gray-200">
-                            <Link
-                                href="/auth/signin"
-                                className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
-                            >
-                                ← Back to Sign In
-                            </Link>
-                        </div>
+                    <div className="text-center pt-4 mt-6 border-t border-gray-200">
+                        <Link href="/auth/signin" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
+                            ← Back to Sign In
+                        </Link>
                     </div>
                 </div>
             </div>
-        </main>
+        </div>
     );
 }
 
-// Main page component with Suspense wrapper
+// 2. Main page component with Suspense wrapper (REQUIRED for Next.js 15)
 export default function VerifyEmailPage() {
     return (
         <Suspense fallback={
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
                     <div className="text-6xl mb-4">⏳</div>
-                    <p className="text-gray-600">Loading...</p>
+                    <p className="text-gray-600">Loading verification page...</p>
                 </div>
             </div>
         }>
-            <VerifyEmailContent />
+            <VerifyEmailForm />
         </Suspense>
     );
 }
