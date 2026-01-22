@@ -36,78 +36,114 @@ const createCourseSchema = z.object({
 /**
  * GET /api/courses
  * Get all published courses with filters
+ * 
+ * Includes retry logic for MongoDB cold starts in serverless environment
  */
 export async function GET(request: NextRequest) {
-    try {
-        await connectDB();
+    const maxRetries = 3;
+    let lastError: any;
 
-        const { searchParams } = new URL(request.url);
-        const search = searchParams.get('search');
-        const category = searchParams.get('category');
-        const page = parseInt(searchParams.get('page') || '1');
-        const limit = parseInt(searchParams.get('limit') || '12');
-
-        // Build query
-        const query: any = { isPublished: true };
-
-        if (search) {
-            query.$or = [
-                { title: { $regex: search, $options: 'i' } },
-                { description: { $regex: search, $options: 'i' } },
-            ];
-        }
-
-        // Special handling for Zoom Meetings category (shows all LIVE courses)
-        if (category && category !== 'all') {
-            // Check if this is the Zoom Meetings category by ID
-            const Category = (await import('@/models/Category')).default;
-            const zoomCategory = await Category.findOne({ slug: 'zoom-meetings' });
-
-            if (zoomCategory && category === zoomCategory._id.toString()) {
-                // Filter by courseType instead of categoryId
-                query.courseType = 'LIVE';
-            } else {
-                // Normal category filter
-                query.categoryId = category;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            // Retry connection with exponential backoff
+            if (attempt > 1) {
+                const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+                console.log(`🔄 Retry attempt ${attempt}/${maxRetries} after ${delay}ms`);
+                await new Promise(resolve => setTimeout(resolve, delay));
             }
+
+            await connectDB();
+
+            const { searchParams } = new URL(request.url);
+            const search = searchParams.get('search');
+            const category = searchParams.get('category');
+            const page = parseInt(searchParams.get('page') || '1');
+            const limit = parseInt(searchParams.get('limit') || '12');
+
+            // Build query
+            const query: any = { isPublished: true };
+
+            if (search) {
+                query.$or = [
+                    { title: { $regex: search, $options: 'i' } },
+                    { description: { $regex: search, $options: 'i' } },
+                ];
+            }
+
+            // Special handling for Zoom Meetings category (shows all LIVE courses)
+            if (category && category !== 'all') {
+                // Check if this is the Zoom Meetings category by ID
+                const Category = (await import('@/models/Category')).default;
+                const zoomCategory = await Category.findOne({ slug: 'zoom-meetings' });
+
+                if (zoomCategory && category === zoomCategory._id.toString()) {
+                    // Filter by courseType instead of categoryId
+                    query.courseType = 'LIVE';
+                } else {
+                    // Normal category filter
+                    query.categoryId = category;
+                }
+            }
+
+            // Get courses with pagination
+            const courses = await Course.find(query)
+                .populate('categoryId', 'name slug')
+                .populate('trainerId', 'name email profile')
+                .sort({ createdAt: -1 })
+                .skip((page - 1) * limit)
+                .limit(limit)
+                .lean();
+
+            const total = await Course.countDocuments(query);
+
+            return NextResponse.json({
+                success: true,
+                data: {
+                    courses,
+                    pagination: {
+                        currentPage: page,
+                        totalPages: Math.ceil(total / limit),
+                        totalCourses: total,
+                        limit,
+                    },
+                },
+            });
+        } catch (error: any) {
+            lastError = error;
+            console.error(`❌ Attempt ${attempt}/${maxRetries} failed:`, error.message);
+
+            // If this is not the last attempt, continue to retry
+            if (attempt < maxRetries) {
+                continue;
+            }
+
+            // Last attempt failed, return error
+            console.error('❌ All retry attempts failed:', error);
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: {
+                        message: 'Failed to fetch courses. Please try again.',
+                        code: 'FETCH_ERROR',
+                        details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+                    },
+                },
+                { status: 500 }
+            );
         }
-
-        // Get courses with pagination
-        const courses = await Course.find(query)
-            .populate('categoryId', 'name slug')
-            .populate('trainerId', 'name email profile')
-            .sort({ createdAt: -1 })
-            .skip((page - 1) * limit)
-            .limit(limit)
-            .lean();
-
-        const total = await Course.countDocuments(query);
-
-        return NextResponse.json({
-            success: true,
-            data: {
-                courses,
-                pagination: {
-                    currentPage: page,
-                    totalPages: Math.ceil(total / limit),
-                    totalCourses: total,
-                    limit,
-                },
-            },
-        });
-    } catch (error: any) {
-        console.error('Get courses error:', error);
-        return NextResponse.json(
-            {
-                success: false,
-                error: {
-                    message: 'Failed to fetch courses',
-                    code: 'FETCH_ERROR',
-                },
-            },
-            { status: 500 }
-        );
     }
+
+    // Fallback (should never reach here)
+    return NextResponse.json(
+        {
+            success: false,
+            error: {
+                message: 'Failed to fetch courses',
+                code: 'FETCH_ERROR',
+            },
+        },
+        { status: 500 }
+    );
 }
 
 /**
