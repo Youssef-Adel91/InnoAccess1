@@ -68,13 +68,28 @@ export default function ApplicantsPage() {
             return;
         }
 
+        let rejectionReason = '';
+
+        // Prompt for rejection reason if rejecting
+        if (newStatus === 'rejected') {
+            rejectionReason = prompt(`Please provide a reason for rejecting ${candidateName}:`) || '';
+
+            if (!rejectionReason.trim()) {
+                alert('Rejection reason is required');
+                return;
+            }
+        }
+
         try {
             const response = await fetch(`/api/company/applications/${applicationId}/status`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ status: newStatus }),
+                body: JSON.stringify({
+                    status: newStatus,
+                    rejectionReason: newStatus === 'rejected' ? rejectionReason : undefined
+                }),
             });
 
             const data = await response.json();
@@ -83,7 +98,7 @@ export default function ApplicantsPage() {
                 alert(data.data.message);
                 fetchApplicants(); // Refresh list
             } else {
-                alert('Failed to update status');
+                alert(data.error?.message || 'Failed to update status');
             }
         } catch (error) {
             console.error('Update status error:', error);

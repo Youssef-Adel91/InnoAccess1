@@ -107,16 +107,41 @@ export async function POST(
         });
 
         if (existingApplication) {
-            return NextResponse.json(
-                {
-                    success: false,
-                    error: {
-                        message: 'You have already applied for this job',
-                        code: 'ALREADY_APPLIED',
+            // If rejected, check if 24 hours have passed
+            if (existingApplication.status === ApplicationStatus.REJECTED && existingApplication.rejectedAt) {
+                const hoursSinceRejection = (Date.now() - existingApplication.rejectedAt.getTime()) / (1000 * 60 * 60);
+
+                if (hoursSinceRejection < 24) {
+                    const hoursRemaining = Math.ceil(24 - hoursSinceRejection);
+                    return NextResponse.json(
+                        {
+                            success: false,
+                            error: {
+                                message: `You were rejected for this job. You can reapply in ${hoursRemaining} hour${hoursRemaining > 1 ? 's' : ''}`,
+                                code: 'REJECTED_COOLDOWN',
+                                rejectionReason: existingApplication.rejectionReason,
+                                hoursRemaining,
+                            },
+                        },
+                        { status: 409 }
+                    );
+                }
+
+                // 24 hours passed, delete old application to allow reapplication
+                await Application.deleteOne({ _id: existingApplication._id });
+            } else {
+                // Application is pending, viewed, shortlisted, or accepted
+                return NextResponse.json(
+                    {
+                        success: false,
+                        error: {
+                            message: 'You have already applied for this job',
+                            code: 'ALREADY_APPLIED',
+                        },
                     },
-                },
-                { status: 409 }
-            );
+                    { status: 409 }
+                );
+            }
         }
 
         // Create application

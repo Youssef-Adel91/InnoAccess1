@@ -107,6 +107,17 @@ export default function JobDetailsPage() {
                 setShowCVDialog(false);
                 alert('Application submitted successfully!');
             } else {
+                // Handle rejection cooldown with detailed message
+                if (data.error?.code === 'REJECTED_COOLDOWN') {
+                    let errorMessage = data.error.message;
+
+                    if (data.error.rejectionReason) {
+                        errorMessage += `\n\nPrevious Rejection Reason: ${data.error.rejectionReason}`;
+                    }
+
+                    throw new Error(errorMessage);
+                }
+
                 throw new Error(data.error?.message || 'Failed to apply');
             }
         } catch (error: any) {

@@ -11,6 +11,7 @@ import { authOptions } from '@/lib/auth';
  */
 const updateStatusSchema = z.object({
     status: z.enum(['accepted', 'rejected', 'shortlisted', 'viewed']),
+    rejectionReason: z.string().max(500).optional(), // Required when status is 'rejected'
 });
 
 /**
@@ -82,8 +83,29 @@ export async function PATCH(
             );
         }
 
+        // Validate rejection reason if status is rejected
+        if (validationResult.data.status === 'rejected' && !validationResult.data.rejectionReason) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: {
+                        message: 'Rejection reason is required when rejecting an application',
+                        code: 'VALIDATION_ERROR',
+                    },
+                },
+                { status: 400 }
+            );
+        }
+
         // Update status
         application.status = validationResult.data.status as ApplicationStatus;
+
+        // Save rejection details if status is rejected
+        if (validationResult.data.status === 'rejected') {
+            application.rejectionReason = validationResult.data.rejectionReason;
+            application.rejectedAt = new Date();
+        }
+
         await application.save();
 
         // Create in-app notification for user

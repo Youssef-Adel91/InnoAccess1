@@ -18,6 +18,7 @@ interface Job {
     type: string;
     jobType: string;
     salary: { min: number; max: number; currency: string };
+    companyLogo?: string;
     createdAt: string;
 }
 
@@ -222,7 +223,18 @@ export default function JobsPage() {
                     ) : (
                         jobs.map((job) => (
                             <article key={job._id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-                                <div className="flex flex-col md:flex-row md:items-start md:justify-between">
+                                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                                    {/* Company Logo */}
+                                    {job.companyLogo && (
+                                        <div className="flex-shrink-0">
+                                            <img
+                                                src={job.companyLogo}
+                                                alt={`${job.companyId?.profile?.companyName || job.companyId?.name} logo`}
+                                                className="w-16 h-16 rounded-lg object-cover border border-gray-200"
+                                            />
+                                        </div>
+                                    )}
+
                                     <div className="flex-1">
                                         <h2 className="text-xl font-semibold text-gray-900">
                                             <Link href={`/jobs/${job._id}`} className="hover:text-blue-600">

@@ -20,6 +20,8 @@ export interface IApplication extends Document {
     cvUrl: string; // Cloudinary URL
     coverLetter?: string;
     status: ApplicationStatus;
+    rejectionReason?: string; // Why the application was rejected
+    rejectedAt?: Date; // When rejected (for 24-hour cooldown)
     appliedAt: Date;
     updatedAt: Date;
 }
@@ -52,6 +54,13 @@ const ApplicationSchema = new Schema<IApplication>(
             enum: Object.values(ApplicationStatus),
             default: ApplicationStatus.PENDING,
         },
+        rejectionReason: {
+            type: String,
+            maxlength: [500, 'Rejection reason cannot exceed 500 characters'],
+        },
+        rejectedAt: {
+            type: Date,
+        },
         appliedAt: {
             type: Date,
             default: Date.now,
@@ -62,8 +71,8 @@ const ApplicationSchema = new Schema<IApplication>(
     }
 );
 
-// Compound index to prevent duplicate applications
-ApplicationSchema.index({ userId: 1, jobId: 1 }, { unique: true });
+// Index for queries (removed unique constraint to allow reapplication after rejection + 24h)
+ApplicationSchema.index({ userId: 1, jobId: 1 });
 ApplicationSchema.index({ jobId: 1, status: 1 });
 ApplicationSchema.index({ userId: 1 });
 ApplicationSchema.index({ appliedAt: -1 });
