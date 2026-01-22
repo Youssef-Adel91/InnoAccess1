@@ -270,9 +270,9 @@ export async function rejectTrainer(profileId: string, reason: string) {
         // Update profile status
         profile.status = TrainerStatus.REJECTED;
         profile.rejectionReason = reason;
-        profile.cvUrl = ''; // Clear CV URL since file is deleted
+        profile.cvUrl = undefined as any; // Clear CV URL since file is deleted
         profile.rejectedAt = new Date(); // Set rejection timestamp for 24h cooldown
-        await profile.save();
+        await profile.save({ validateBeforeSave: false }); // Skip validation for rejected profiles
 
         console.log('✅ Trainer rejected:', profile.userId);
 
