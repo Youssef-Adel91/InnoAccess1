@@ -1,11 +1,11 @@
 import nodemailer from 'nodemailer';
 
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_PASS,
-    },
+  service: 'gmail',
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_PASS,
+  },
 });
 
 // ---------------------------------------------------------
@@ -13,7 +13,7 @@ const transporter = nodemailer.createTransport({
 // ---------------------------------------------------------
 
 export async function sendVerificationEmail(email: string, otp: string) {
-    const html = `
+  const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
       <h2 style="color: #2563eb; text-align: center;">Verify Your Email</h2>
       <p style="font-size: 16px; color: #333;">Hello,</p>
@@ -25,16 +25,16 @@ export async function sendVerificationEmail(email: string, otp: string) {
     </div>
   `;
 
-    await transporter.sendMail({
-        from: process.env.GMAIL_USER,
-        to: email,
-        subject: 'Verify Your Email - InnoAccess',
-        html,
-    });
+  await transporter.sendMail({
+    from: process.env.GMAIL_USER,
+    to: email,
+    subject: 'Verify Your Email - InnoAccess',
+    html,
+  });
 }
 
 export async function sendWelcomeEmail(email: string, name: string) {
-    const html = `
+  const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <h2 style="color: #2563eb;">Welcome to InnoAccess! 🚀</h2>
       <p>Hello ${name},</p>
@@ -42,12 +42,12 @@ export async function sendWelcomeEmail(email: string, name: string) {
     </div>
   `;
 
-    await transporter.sendMail({
-        from: process.env.GMAIL_USER,
-        to: email,
-        subject: 'Welcome to InnoAccess',
-        html,
-    });
+  await transporter.sendMail({
+    from: process.env.GMAIL_USER,
+    to: email,
+    subject: 'Welcome to InnoAccess',
+    html,
+  });
 }
 
 // ---------------------------------------------------------
@@ -64,8 +64,9 @@ export const getTrainerRejectionEmailTemplate = (name: string) => `
   <p>Thank you for your interest. Unfortunately, your application was not approved at this time.</p>
 `;
 
-export const getPasswordResetEmailTemplate = (resetUrl: string) => `
+export const getPasswordResetEmailTemplate = (userName: string, resetUrl: string) => `
   <h1>Reset Your Password</h1>
+  <p>Hello ${userName},</p>
   <p>Click <a href="${resetUrl}">here</a> to reset your password. This link expires in 1 hour.</p>
 `;
 
@@ -84,10 +85,10 @@ export const getJobAcceptanceEmailTemplate = (userName: string, jobTitle: string
 // ---------------------------------------------------------
 
 export async function sendEmail(options: { to: string; subject: string; html: string }) {
-    return await transporter.sendMail({
-        from: process.env.GMAIL_USER,
-        to: options.to,
-        subject: options.subject,
-        html: options.html,
-    });
+  return await transporter.sendMail({
+    from: process.env.GMAIL_USER,
+    to: options.to,
+    subject: options.subject,
+    html: options.html,
+  });
 }
