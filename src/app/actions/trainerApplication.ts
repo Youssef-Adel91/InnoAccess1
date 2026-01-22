@@ -307,6 +307,23 @@ export async function rejectTrainer(profileId: string, reason: string) {
             // Don't fail the rejection if email fails
         }
 
+        // Create in-app notification for the user
+        try {
+            const { createNotification } = await import('@/lib/notifications');
+            const { NotificationType } = await import('@/models/Notification');
+            await createNotification({
+                userId: profile.userId.toString(),
+                type: NotificationType.TRAINER_REJECTED,
+                title: 'Trainer Application Rejected',
+                message: `Unfortunately, your trainer application has been rejected. Reason: ${reason}. You can reapply after 24 hours.`,
+                link: '/trainer/apply',
+            });
+            console.log('✅ Rejection notification created');
+        } catch (notifError) {
+            console.error('❌ Error creating rejection notification:', notifError);
+            // Don't fail the rejection if notification fails
+        }
+
         return {
             success: true,
             data: {
