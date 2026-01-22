@@ -70,7 +70,7 @@ const nextConfig = {
                             "img-src 'self' data: https: blob:",
                             "media-src 'self' blob: https://res.cloudinary.com https://video.bunnycdn.com",
                             "connect-src 'self' https://challenges.cloudflare.com https://api.cloudinary.com https://res.cloudinary.com https://upload.cloudinary.com https://video.bunnycdn.com",
-                            "frame-src 'self' https://challenges.cloudflare.com",
+                            "frame-src 'self' https://challenges.cloudflare.com https://iframe.mediadelivery.net",
                         ].join('; '),
                     },
                 ],
