@@ -11,14 +11,14 @@ export function Footer() {
         ],
         company: [
             { name: 'About Us', href: '/about' },
-            { name: 'Accessibility', href: '/accessibility' },
+            // { name: 'Accessibility', href: '/accessibility' }, // TODO: Create page
             { name: 'Contact', href: '/contact' },
-            { name: 'Blog', href: '/blog' },
+            // { name: 'Blog', href: '/blog' }, // TODO: Create page
         ],
         legal: [
-            { name: 'Privacy Policy', href: '/privacy' },
-            { name: 'Terms of Service', href: '/terms' },
-            { name: 'Cookie Policy', href: '/cookies' },
+            // { name: 'Privacy Policy', href: '/privacy' }, // TODO: Create page
+            // { name: 'Terms of Service', href: '/terms' }, // TODO: Create page
+            // { name: 'Cookie Policy', href: '/cookies' }, // TODO: Create page
         ],
     };
 
@@ -80,22 +80,24 @@ export function Footer() {
                         </ul>
                     </div>
 
-                    {/* Legal Links */}
-                    <div>
-                        <h3 className="text-white text-sm font-semibold mb-4">Legal</h3>
-                        <ul className="space-y-2">
-                            {navigation.legal.map((item) => (
-                                <li key={item.name}>
-                                    <Link
-                                        href={item.href}
-                                        className="text-sm hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 rounded"
-                                    >
-                                        {item.name}
-                                    </Link>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
+                    {/* Legal Links - Only show if there are items */}
+                    {navigation.legal.length > 0 && (
+                        <div>
+                            <h3 className="text-white text-sm font-semibold mb-4">Legal</h3>
+                            <ul className="space-y-2">
+                                {navigation.legal.map((item) => (
+                                    <li key={item.name}>
+                                        <Link
+                                            href={item.href}
+                                            className="text-sm hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 rounded"
+                                        >
+                                            {item.name}
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
                 </div>
 
                 {/* Social Media & Copyright */}
