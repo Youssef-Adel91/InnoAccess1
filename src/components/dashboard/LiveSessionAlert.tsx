@@ -22,13 +22,14 @@ function getSessionState(startDate: string, durationMinutes: number): {
     minutesUntilStart: number;
     minutesSinceStart: number;
 } {
-    const now = new Date();
-    const sessionStart = new Date(startDate);
-    const sessionEnd = new Date(sessionStart.getTime() + durationMinutes * 60000);
+    // Use UTC timestamps to avoid timezone inconsistencies between localhost and production
+    const now = Date.now(); // Current UTC timestamp
+    const sessionStart = new Date(startDate).getTime(); // Convert to UTC timestamp
+    const sessionEnd = sessionStart + (durationMinutes * 60000);
 
-    const diffMs = sessionStart.getTime() - now.getTime();
+    const diffMs = sessionStart - now;
     const minutesUntilStart = Math.floor(diffMs / 60000);
-    const minutesSinceStart = Math.floor((now.getTime() - sessionStart.getTime()) / 60000);
+    const minutesSinceStart = Math.floor((now - sessionStart) / 60000);
 
     let state: SessionState;
 
