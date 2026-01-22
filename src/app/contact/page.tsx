@@ -113,7 +113,22 @@ export default function ContactPage() {
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
                         <h2 className="text-2xl font-bold text-gray-900 mb-6">Send us a Message</h2>
 
-                        <form className="space-y-6">
+                        {success && (
+                            <div className="mb-6 bg-green-50 border-l-4 border-green-500 p-4 rounded">
+                                <div className="flex items-center">
+                                    <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
+                                    <p className="text-green-800 font-medium">Message sent successfully! We'll get back to you soon.</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {error && (
+                            <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded">
+                                <p className="text-red-800">{error}</p>
+                            </div>
+                        )}
+
+                        <form className="space-y-6" onSubmit={handleSubmit}>
                             <div>
                                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
                                     Full Name
@@ -121,8 +136,11 @@ export default function ContactPage() {
                                 <input
                                     type="text"
                                     id="name"
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                     className="w-full rounded-md border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     placeholder="Your name"
+                                    required
                                 />
                             </div>
 
@@ -133,8 +151,11 @@ export default function ContactPage() {
                                 <input
                                     type="email"
                                     id="email"
+                                    value={formData.email}
+                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                     className="w-full rounded-md border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     placeholder="your.email@example.com"
+                                    required
                                 />
                             </div>
 
@@ -145,8 +166,11 @@ export default function ContactPage() {
                                 <input
                                     type="text"
                                     id="subject"
+                                    value={formData.subject}
+                                    onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                                     className="w-full rounded-md border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     placeholder="How can we help?"
+                                    required
                                 />
                             </div>
 
@@ -157,17 +181,21 @@ export default function ContactPage() {
                                 <textarea
                                     id="message"
                                     rows={5}
+                                    value={formData.message}
+                                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                                     className="w-full rounded-md border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     placeholder="Your message..."
+                                    required
                                 />
                             </div>
 
                             <button
                                 type="submit"
-                                className="w-full inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                                disabled={loading}
+                                className="w-full inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <MessageSquare className="h-5 w-5 mr-2" aria-hidden="true" />
-                                Send Message
+                                {loading ? 'Sending...' : 'Send Message'}
                             </button>
                         </form>
                     </div>
