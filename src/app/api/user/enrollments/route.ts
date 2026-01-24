@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { connectDB } from '@/lib/db';
 import Enrollment from '@/models/Enrollment';
+import Course from '@/models/Course'; // Required for Mongoose populate to work
 import { authOptions } from '@/lib/auth';
 
 /**
