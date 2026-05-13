@@ -14,12 +14,15 @@
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.4",
     "@types/bcrypt": "^6.0.0",
+    "@upstash/ratelimit": "^2.0.8",
     "@vercel/blob": "^2.0.0",
+    "@vercel/kv": "^3.0.0",
     "axios": "^1.7.9",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "isomorphic-dompurify": "^3.0.0",
     "lucide-react": "^0.468.0",
     "mongoose": "^8.10.1",
     "next": "^15.1.5",
@@ -34,6 +37,8 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.1",
+    "@playwright/test": "^1.58.2",
     "@types/node": "^20",
     "@types/nodemailer": "^7.0.5",
     "@types/react": "^19",

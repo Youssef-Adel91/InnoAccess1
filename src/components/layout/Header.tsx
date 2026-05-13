@@ -253,10 +253,12 @@ export function Header() {
 
                         {/* Mobile menu button */}
                         <button
+                            id="mobile-menu-button"
                             className="md:hidden inline-flex items-center px-2 py-2 rounded-md text-gray-700 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
                             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                             aria-expanded={mobileMenuOpen}
-                            aria-label="Toggle mobile menu"
+                            aria-controls="mobile-menu"
+                            aria-label={mobileMenuOpen ? 'Close mobile menu' : 'Open mobile menu'}
                         >
                             <Menu className="h-6 w-6" aria-hidden="true" />
                         </button>
@@ -265,19 +267,27 @@ export function Header() {
 
                 {/* Mobile menu */}
                 {mobileMenuOpen && (
-                    <div className="md:hidden border-t py-4 space-y-2" role="menu">
+                    <nav
+                        id="mobile-menu"
+                        className="md:hidden border-t py-4 space-y-2"
+                        aria-label="Mobile navigation"
+                    >
+                        {/* sr-only live region so VoiceOver/NVDA announces menu open */}
+                        <p className="sr-only" role="status" aria-live="polite">
+                            Mobile navigation menu open
+                        </p>
                         {navigation.map((item) => {
                             const Icon = item.icon;
                             return (
                                 <Link
                                     key={item.name}
                                     href={item.href}
-                                    className={`flex items-center px-4 py-2 rounded-md text-base font-medium transition-colors ${isActive(item.href)
+                                    className={`flex items-center px-4 py-2 rounded-md text-base font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${isActive(item.href)
                                         ? 'bg-blue-50 text-blue-700'
                                         : 'text-gray-700 hover:bg-gray-100'
                                         }`}
                                     onClick={() => setMobileMenuOpen(false)}
-                                    role="menuitem"
+                                    aria-current={isActive(item.href) ? 'page' : undefined}
                                 >
                                     <Icon className="mr-3 h-5 w-5" aria-hidden="true" />
                                     {item.name}
@@ -289,12 +299,12 @@ export function Header() {
                         {session?.user?.role === 'user' && (
                             <Link
                                 href="/user/applications"
-                                className={`flex items-center justify-between px-4 py-2 rounded-md text-base font-medium transition-colors ${isActive('/user/applications')
+                                className={`flex items-center justify-between px-4 py-2 rounded-md text-base font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${isActive('/user/applications')
                                     ? 'bg-blue-50 text-blue-700'
                                     : 'text-gray-700 hover:bg-gray-100'
                                     }`}
                                 onClick={() => setMobileMenuOpen(false)}
-                                role="menuitem"
+                                aria-current={isActive('/user/applications') ? 'page' : undefined}
                             >
                                 <span className="flex items-center">
                                     <FileText className="mr-3 h-5 w-5" aria-hidden="true" />
@@ -315,12 +325,12 @@ export function Header() {
                         {session?.user?.role === 'user' && (
                             <Link
                                 href="/join-trainer"
-                                className={`flex items-center px-4 py-2 rounded-md text-base font-medium transition-colors ${isActive('/join-trainer')
+                                className={`flex items-center px-4 py-2 rounded-md text-base font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${isActive('/join-trainer')
                                     ? 'bg-blue-50 text-blue-700'
                                     : 'text-gray-700 hover:bg-gray-100'
                                     }`}
                                 onClick={() => setMobileMenuOpen(false)}
-                                role="menuitem"
+                                aria-current={isActive('/join-trainer') ? 'page' : undefined}
                             >
                                 <UserCheck className="mr-3 h-5 w-5" aria-hidden="true" />
                                 Become a Trainer
@@ -331,12 +341,12 @@ export function Header() {
                         {session?.user?.role === 'company' && (
                             <Link
                                 href="/company/jobs"
-                                className={`flex items-center px-4 py-2 rounded-md text-base font-medium transition-colors ${isActive('/company/jobs')
+                                className={`flex items-center px-4 py-2 rounded-md text-base font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${isActive('/company/jobs')
                                     ? 'bg-blue-50 text-blue-700'
                                     : 'text-gray-700 hover:bg-gray-100'
                                     }`}
                                 onClick={() => setMobileMenuOpen(false)}
-                                role="menuitem"
+                                aria-current={isActive('/company/jobs') ? 'page' : undefined}
                             >
                                 <Briefcase className="mr-3 h-5 w-5" aria-hidden="true" />
                                 My Jobs
@@ -347,12 +357,12 @@ export function Header() {
                         {session?.user?.role === 'trainer' && (
                             <Link
                                 href="/trainer/dashboard"
-                                className={`flex items-center px-4 py-2 rounded-md text-base font-medium transition-colors ${isActive('/trainer')
+                                className={`flex items-center px-4 py-2 rounded-md text-base font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${isActive('/trainer')
                                     ? 'bg-blue-50 text-blue-700'
                                     : 'text-gray-700 hover:bg-gray-100'
                                     }`}
                                 onClick={() => setMobileMenuOpen(false)}
-                                role="menuitem"
+                                aria-current={isActive('/trainer') ? 'page' : undefined}
                             >
                                 <GraduationCap className="mr-3 h-5 w-5" aria-hidden="true" />
                                 My Courses
@@ -364,31 +374,31 @@ export function Header() {
                             <>
                                 <Link
                                     href="/admin/trainers/requests"
-                                    className={`flex items-center px-4 py-2 rounded-md text-base font-medium transition-colors ${isActive('/admin/trainers/requests')
+                                    className={`flex items-center px-4 py-2 rounded-md text-base font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${isActive('/admin/trainers/requests')
                                         ? 'bg-blue-50 text-blue-700'
                                         : 'text-gray-700 hover:bg-gray-100'
                                         }`}
                                     onClick={() => setMobileMenuOpen(false)}
-                                    role="menuitem"
+                                    aria-current={isActive('/admin/trainers/requests') ? 'page' : undefined}
                                 >
                                     <Users className="mr-3 h-5 w-5" aria-hidden="true" />
                                     Trainer Requests
                                 </Link>
                                 <Link
                                     href="/admin/approvals"
-                                    className={`flex items-center px-4 py-2 rounded-md text-base font-medium transition-colors ${isActive('/admin/approvals')
+                                    className={`flex items-center px-4 py-2 rounded-md text-base font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${isActive('/admin/approvals')
                                         ? 'bg-blue-50 text-blue-700'
                                         : 'text-gray-700 hover:bg-gray-100'
                                         }`}
                                     onClick={() => setMobileMenuOpen(false)}
-                                    role="menuitem"
+                                    aria-current={isActive('/admin/approvals') ? 'page' : undefined}
                                 >
                                     <Video className="mr-3 h-5 w-5" aria-hidden="true" />
                                     Video Approvals
                                 </Link>
                             </>
                         )}
-                    </div>
+                    </nav>
                 )}
             </nav>
         </header>

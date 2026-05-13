@@ -8,6 +8,7 @@ import {
     getUserTrainerProfile,
 } from '@/app/actions/trainerApplication';
 import { uploadTrainerCV } from '@/app/actions/uploadTrainerCV';
+import TrainerRegistrationForm from '@/components/auth/TrainerRegistrationForm';
 
 export default function JoinTrainerPage() {
     const { data: session, status } = useSession();
@@ -58,25 +59,7 @@ export default function JoinTrainerPage() {
         }
     };
 
-    const handleCvUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
 
-        // Validate file type
-        if (file.type !== 'application/pdf') {
-            setError('Please upload a PDF file');
-            return;
-        }
-
-        // Validate file size (max 5MB)
-        if (file.size > 5 * 1024 * 1024) {
-            setError('CV file size must be less than 5MB');
-            return;
-        }
-
-        setCvFile(file);
-        setError(null);
-    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -270,102 +253,29 @@ export default function JoinTrainerPage() {
                     </p>
 
                     <form onSubmit={handleSubmit}>
-                        {/* Bio */}
-                        <div className="mb-6">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Bio / Professional Summary *
-                            </label>
-                            <textarea
-                                value={bio}
-                                onChange={(e) => setBio(e.target.value)}
-                                required
-                                minLength={50}
-                                maxLength={2000}
-                                rows={6}
-                                placeholder="Tell us about your professional background, expertise, and teaching experience (minimum 50 characters)..."
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            />
-                            <p className="mt-1 text-sm text-gray-500">
-                                {bio.length}/2000 characters (minimum 50)
-                            </p>
-                        </div>
-
-                        {/* Specialization */}
-                        <div className="mb-6">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Specialization *
-                            </label>
-                            <input
-                                type="text"
-                                value={specialization}
-                                onChange={(e) => setSpecialization(e.target.value)}
-                                required
-                                placeholder="e.g., Web Development, Data Science, UI/UX Design"
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            />
-                        </div>
-
-                        {/* LinkedIn URL */}
-                        <div className="mb-6">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                LinkedIn Profile (Optional)
-                            </label>
-                            <input
-                                type="url"
-                                value={linkedInUrl}
-                                onChange={(e) => setLinkedInUrl(e.target.value)}
-                                placeholder="https://linkedin.com/in/yourprofile"
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            />
-                        </div>
-
-                        {/* Website URL */}
-                        <div className="mb-6">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Portfolio / Website (Optional)
-                            </label>
-                            <input
-                                type="url"
-                                value={websiteUrl}
-                                onChange={(e) => setWebsiteUrl(e.target.value)}
-                                placeholder="https://yourwebsite.com"
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            />
-                        </div>
-
-                        {/* CV Upload */}
-                        <div className="mb-6">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                CV / Resume (PDF only) *
-                            </label>
-                            <input
-                                type="file"
-                                accept=".pdf,application/pdf"
-                                onChange={handleCvUpload}
-                                required={!cvUrl}
-                                className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none"
-                            />
-                            {cvFile && (
-                                <p className="mt-2 text-sm text-green-600">
-                                    ✓ Selected: {cvFile.name}
-                                </p>
-                            )}
-                            {cvUrl && !cvFile && (
-                                <p className="mt-2 text-sm text-gray-600">
-                                    Using previously uploaded CV
-                                </p>
-                            )}
-                            <p className="mt-1 text-sm text-gray-500">
-                                Maximum file size: 5MB
-                            </p>
-                        </div>
-
-                        {/* Error Message */}
-                        {error && (
-                            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                                <p className="text-sm text-red-800">{error}</p>
-                            </div>
-                        )}
+                        <TrainerRegistrationForm
+                            data={{
+                                bio,
+                                specialization,
+                                linkedInUrl,
+                                websiteUrl,
+                                cvFile,
+                                cvUrl
+                            }}
+                            onChange={(field, value) => {
+                                switch (field) {
+                                    case 'bio': setBio(value); break;
+                                    case 'specialization': setSpecialization(value); break;
+                                    case 'linkedInUrl': setLinkedInUrl(value); break;
+                                    case 'websiteUrl': setWebsiteUrl(value); break;
+                                    case 'cvFile': setCvFile(value); break;
+                                    case 'cvError': setError(value); break;
+                                }
+                            }}
+                            errors={{
+                                cv: error?.includes('CV') ? error : undefined
+                            }}
+                        />
 
                         {/* Submit Button */}
                         <button

@@ -3,7 +3,7 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import crypto from 'crypto';
-import { VideoStatus } from '@/models/Course';
+import { VideoStatus, VideoType } from '@/models/Course';
 import { Types } from 'mongoose';
 
 /**
@@ -138,9 +138,10 @@ export async function saveLessonVideo(data: {
         const cdnHostname = process.env.BUNNY_CDN_HOSTNAME!;
         const cdnUrl = `https://${cdnHostname}/${videoData.bunnyVideoId}/playlist.m3u8`;
 
-        // Add video to module
+        // Add video to module — videoType must be UPLOAD for Bunny-hosted videos
         const newVideo = {
             ...videoData,
+            videoType: VideoType.UPLOAD,
             url: cdnUrl,
             status,
             uploadedBy: new Types.ObjectId(session.user.id),

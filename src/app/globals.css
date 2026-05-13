@@ -26,20 +26,33 @@ body {
   outline-offset: 2px;
 }
 
-/* Skip to content link for accessibility */
+/* Skip to content link for accessibility (WCAG 2.4.1 Bypass Blocks) */
 .skip-link {
   position: absolute;
-  top: -40px;
-  left: 0;
-  background: #000;
-  color: #fff;
-  padding: 8px;
+  top: -100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1d4ed8;
+  color: #ffffff;
+  padding: 12px 24px;
+  font-weight: 600;
+  font-size: 1rem;
   text-decoration: none;
-  z-index: 100;
+  border-radius: 0 0 8px 8px;
+  z-index: 9999;
+  transition: top 0.15s ease;
+  outline: 3px solid #93c5fd;
+  outline-offset: 2px;
 }
 
 .skip-link:focus {
   top: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skip-link {
+    transition: none;
+  }
 }
 
 /* Input Styling: FORCE black text color for user input */

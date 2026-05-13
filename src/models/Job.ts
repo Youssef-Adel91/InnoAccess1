@@ -1,4 +1,5 @@
 import mongoose, { Schema, Model, Document, Types } from 'mongoose';
+import { sanitizeHtml } from '@/lib/sanitize-html';
 
 /**
  * Job Type Enum
@@ -175,6 +176,18 @@ JobSchema.index({ status: 1 });
 JobSchema.index({ type: 1 });
 JobSchema.index({ createdAt: -1 });
 JobSchema.index({ expiresAt: 1 });
+
+JobSchema.pre('save', function (next) {
+    if (this.isModified('description') && this.description) {
+        this.description = sanitizeHtml(this.description);
+    }
+
+    if (this.isModified('requirements') && this.requirements && this.requirements.length > 0) {
+        this.requirements = this.requirements.map(req => sanitizeHtml(req));
+    }
+
+    next();
+});
 
 /**
  * Job Model

@@ -6,8 +6,9 @@ import { useRouter, useParams } from 'next/navigation';
 import { getCourseForManagement, addModule, publishCourse, deleteModule, deleteVideo, updateModule } from '@/app/actions/courseManagement';
 import { saveLessonVideo } from '@/app/actions/bunnyUpload';
 import { VideoUploader } from '@/components/trainer/VideoUploader';
+import { YouTubeUploader } from '@/components/trainer/YouTubeUploader';
 import LiveCourseManagement from '@/components/trainer/LiveCourseManagement';
-import { ArrowLeft, Plus, ChevronDown, ChevronUp, Video, CheckCircle, Clock, XCircle, Trash2, Edit2 } from 'lucide-react';
+import { ArrowLeft, Plus, ChevronDown, ChevronUp, Video, CheckCircle, Clock, XCircle, Trash2, Edit2, Youtube, Upload } from 'lucide-react';
 import Link from 'next/link';
 
 interface Course {
@@ -44,7 +45,9 @@ interface Module {
 interface VideoLesson {
     _id: string;
     title: string;
-    bunnyVideoId: string;
+    videoType?: 'upload' | 'youtube'; // NEW: video source type
+    bunnyVideoId?: string;
+    youtubeUrl?: string;              // NEW: YouTube URL for youtube-type lessons
     status: 'pending' | 'approved' | 'rejected';
     rejectionReason?: string;
     duration: number;
@@ -61,10 +64,11 @@ export default function ManageCoursePage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // UI State
     const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
     const [showAddModule, setShowAddModule] = useState(false);
     const [showAddLesson, setShowAddLesson] = useState<string | null>(null);
+    // Track which video type (upload or youtube) is selected per module add-lesson panel
+    const [lessonVideoType, setLessonVideoType] = useState<Record<string, 'upload' | 'youtube'>>({});
 
     // Add Module State
     const [newModuleTitle, setNewModuleTitle] = useState('');
@@ -98,9 +102,7 @@ export default function ManageCoursePage() {
 
             setCourse(result.data?.course || null);
             // Expand first module by default
-            if (result.data?.course?.modules?.length > 0) {
-                setExpandedModules(new Set([result.data.course.modules[0]._id]));
-            }
+            setExpandedModules(new Set([result.data?.course?.modules?.[0]?._id ?? ''].filter(Boolean)));
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -228,6 +230,13 @@ export default function ManageCoursePage() {
         }
     };
 
+
+    const getVideoIcon = (video: VideoLesson) => {
+        if (video.videoType === 'youtube') {
+            return <Youtube className="h-5 w-5 text-red-500 mr-3" aria-label="YouTube video" />;
+        }
+        return <Video className="h-5 w-5 text-gray-400 mr-3" aria-label="Uploaded video" />;
+    };
 
     const getStatusBadge = (status: string) => {
         switch (status) {
@@ -436,7 +445,7 @@ export default function ManageCoursePage() {
                                                                 className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
                                                             >
                                                                 <div className="flex items-center flex-1">
-                                                                    <Video className="h-5 w-5 text-gray-400 mr-3" />
+                                                                    {getVideoIcon(video)}
                                                                     <div className="flex-1">
                                                                         <p className="font-medium text-gray-900">
                                                                             {video.title}
@@ -474,19 +483,72 @@ export default function ManageCoursePage() {
                                                 {/* Add Lesson Button */}
                                                 <button
                                                     onClick={() => setShowAddLesson(module._id)}
-                                                    className="mt-4 w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-gray-400 hover:text-gray-900 transition-colors"
+                                                    className="mt-4 w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-400 hover:text-blue-700 transition-colors text-sm font-medium"
+                                                    aria-expanded={showAddLesson === module._id}
+                                                    aria-controls={`lesson-panel-${module._id}`}
                                                 >
                                                     + Add Lesson
                                                 </button>
 
-                                                {/* Video Uploader Modal */}
+                                                {/* Add Lesson Panel */}
                                                 {showAddLesson === module._id && (
-                                                    <div className="mt-4 p-6 bg-blue-50 border border-blue-200 rounded-lg">
-                                                        <h4 className="font-semibold text-gray-900 mb-4">
-                                                            Upload New Lesson
-                                                        </h4>
+                                                    <div
+                                                        id={`lesson-panel-${module._id}`}
+                                                        className="mt-4 p-6 bg-blue-50 border border-blue-200 rounded-lg"
+                                                    >
+                                                        <h4 className="font-semibold text-gray-900 mb-4">Add New Lesson</h4>
 
-                                                        {/* Free Preview Checkbox (only for paid courses) */}
+                                                        {/* ── Video Type Selector ── */}
+                                                        <fieldset className="mb-5">
+                                                            <legend className="block text-sm font-medium text-gray-700 mb-2">
+                                                                Video Source
+                                                            </legend>
+                                                            <div className="flex gap-3" role="radiogroup" aria-label="Choose video source">
+                                                                {/* Upload File radio */}
+                                                                <label
+                                                                    className={`flex-1 flex items-center gap-2 p-3 border-2 rounded-lg cursor-pointer transition-colors ${(lessonVideoType[module._id] ?? 'upload') === 'upload'
+                                                                        ? 'border-blue-600 bg-blue-50'
+                                                                        : 'border-gray-300 bg-white hover:border-gray-400'
+                                                                        }`}
+                                                                >
+                                                                    <input
+                                                                        type="radio"
+                                                                        name={`video-type-${module._id}`}
+                                                                        value="upload"
+                                                                        checked={(lessonVideoType[module._id] ?? 'upload') === 'upload'}
+                                                                        onChange={() =>
+                                                                            setLessonVideoType((prev) => ({ ...prev, [module._id]: 'upload' }))
+                                                                        }
+                                                                        className="h-4 w-4 text-blue-600"
+                                                                    />
+                                                                    <Upload className="h-4 w-4 text-blue-600" aria-hidden="true" />
+                                                                    <span className="text-sm font-medium text-gray-800">Upload File</span>
+                                                                </label>
+
+                                                                {/* YouTube Link radio */}
+                                                                <label
+                                                                    className={`flex-1 flex items-center gap-2 p-3 border-2 rounded-lg cursor-pointer transition-colors ${lessonVideoType[module._id] === 'youtube'
+                                                                        ? 'border-red-500 bg-red-50'
+                                                                        : 'border-gray-300 bg-white hover:border-gray-400'
+                                                                        }`}
+                                                                >
+                                                                    <input
+                                                                        type="radio"
+                                                                        name={`video-type-${module._id}`}
+                                                                        value="youtube"
+                                                                        checked={lessonVideoType[module._id] === 'youtube'}
+                                                                        onChange={() =>
+                                                                            setLessonVideoType((prev) => ({ ...prev, [module._id]: 'youtube' }))
+                                                                        }
+                                                                        className="h-4 w-4 text-red-600"
+                                                                    />
+                                                                    <Youtube className="h-4 w-4 text-red-500" aria-hidden="true" />
+                                                                    <span className="text-sm font-medium text-gray-800">YouTube Link</span>
+                                                                </label>
+                                                            </div>
+                                                        </fieldset>
+
+                                                        {/* Free Preview (paid courses only) */}
                                                         {!course.isFree && (
                                                             <div className="mb-4 p-4 bg-white rounded-lg">
                                                                 <label className="flex items-center">
@@ -506,20 +568,34 @@ export default function ManageCoursePage() {
                                                             </div>
                                                         )}
 
-                                                        <VideoUploader
-                                                            courseId={courseId}
-                                                            moduleIndex={moduleIndex}
-                                                            onSuccess={(data) => handleVideoUploadSuccess(data, moduleIndex)}
-                                                            isFreePreview={
-                                                                course.isFree
-                                                                    ? false
-                                                                    : (document.getElementById(`freePreview-${module._id}`) as HTMLInputElement)?.checked || false
-                                                            }
-                                                        />
+                                                        {/* Conditionally render the appropriate uploader */}
+                                                        {(lessonVideoType[module._id] ?? 'upload') === 'upload' ? (
+                                                            <VideoUploader
+                                                                courseId={courseId}
+                                                                moduleIndex={moduleIndex}
+                                                                onSuccess={(data) => handleVideoUploadSuccess(data, moduleIndex)}
+                                                                isFreePreview={
+                                                                    course.isFree
+                                                                        ? false
+                                                                        : (document.getElementById(`freePreview-${module._id}`) as HTMLInputElement)?.checked || false
+                                                                }
+                                                            />
+                                                        ) : (
+                                                            <YouTubeUploader
+                                                                courseId={courseId}
+                                                                moduleIndex={moduleIndex}
+                                                                onSuccess={(data) => handleVideoUploadSuccess(data, moduleIndex)}
+                                                                isFreePreview={
+                                                                    course.isFree
+                                                                        ? false
+                                                                        : (document.getElementById(`freePreview-${module._id}`) as HTMLInputElement)?.checked || false
+                                                                }
+                                                            />
+                                                        )}
 
                                                         <button
                                                             onClick={() => setShowAddLesson(null)}
-                                                            className="mt-4 text-sm text-gray-600 hover:text-gray-900"
+                                                            className="mt-4 text-sm text-gray-600 hover:text-gray-900 underline"
                                                         >
                                                             Cancel
                                                         </button>

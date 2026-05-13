@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
-import { ArrowLeft, Lock, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Lock, CheckCircle, Youtube, Video } from 'lucide-react';
+import { YouTubePlayer } from '@/components/ui/YouTubePlayer';
 
 interface Course {
     _id: string;
@@ -22,8 +23,10 @@ interface Module {
 interface VideoLesson {
     _id: string;
     title: string;
-    bunnyVideoId: string;
-    url: string;
+    videoType?: 'upload' | 'youtube'; // Source of the video
+    bunnyVideoId?: string;             // Only for upload type
+    youtubeUrl?: string;               // Only for youtube type
+    url?: string;
     duration: number;
     status: string;
     isFreePreview: boolean;
@@ -123,26 +126,45 @@ export default function CoursePlayerPage() {
 
                     {currentVideo ? (
                         <div>
-                            {/* Bunny.net Video Player */}
+                            {/* ── Video Player: YouTube or Bunny.net ── */}
                             <div className="aspect-video bg-black">
-                                <iframe
-                                    src={`https://iframe.mediadelivery.net/embed/${process.env.NEXT_PUBLIC_BUNNY_LIBRARY_ID}/${currentVideo.bunnyVideoId}?autoplay=false&preload=true`}
-                                    loading="lazy"
-                                    style={{
-                                        border: 0,
-                                        width: '100%',
-                                        height: '100%',
-                                    }}
-                                    allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;"
-                                    allowFullScreen
-                                ></iframe>
+                                {currentVideo.videoType === 'youtube' && currentVideo.youtubeUrl ? (
+                                    /* Accessible YouTube player with skip links (WCAG 2.1 AAA) */
+                                    <div className="w-full h-full">
+                                        <YouTubePlayer
+                                            youtubeUrl={currentVideo.youtubeUrl}
+                                            title={currentVideo.title}
+                                        />
+                                    </div>
+                                ) : (
+                                    /* Bunny.net player for uploaded videos */
+                                    <iframe
+                                        src={`https://iframe.mediadelivery.net/embed/${process.env.NEXT_PUBLIC_BUNNY_LIBRARY_ID}/${currentVideo.bunnyVideoId}?autoplay=false&preload=true`}
+                                        title={currentVideo.title}
+                                        loading="lazy"
+                                        style={{ border: 0, width: '100%', height: '100%' }}
+                                        allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;"
+                                        allowFullScreen
+                                    />
+                                )}
                             </div>
 
                             {/* Video Info */}
                             <div className="p-6 bg-gray-900 text-white">
-                                <h1 className="text-2xl font-bold mb-2">{currentVideo.title}</h1>
+                                <div className="flex items-center gap-2 mb-2">
+                                    {currentVideo.videoType === 'youtube' ? (
+                                        <Youtube className="h-5 w-5 text-red-400" aria-label="YouTube video" />
+                                    ) : (
+                                        <Video className="h-5 w-5 text-gray-400" aria-label="Uploaded video" />
+                                    )}
+                                    <h1 className="text-2xl font-bold">{currentVideo.title}</h1>
+                                </div>
                                 <p className="text-gray-400 text-sm mb-4">
-                                    Duration: {Math.floor(currentVideo.duration / 60)}:{(currentVideo.duration % 60).toString().padStart(2, '0')}
+                                    {currentVideo.duration > 0
+                                        ? `Duration: ${Math.floor(currentVideo.duration / 60)}:${(currentVideo.duration % 60).toString().padStart(2, '0')}`
+                                        : currentVideo.videoType === 'youtube'
+                                            ? 'YouTube Video'
+                                            : 'Duration unavailable'}
                                 </p>
 
                                 {/* Transcript */}
@@ -196,7 +218,11 @@ export default function CoursePlayerPage() {
                                                                     {index + 1}. {video.title}
                                                                 </p>
                                                                 <p className="text-xs text-gray-500 mt-1">
-                                                                    {Math.floor(video.duration / 60)}:{(video.duration % 60).toString().padStart(2, '0')}
+                                                                    {video.duration > 0
+                                                                        ? `${Math.floor(video.duration / 60)}:${(video.duration % 60).toString().padStart(2, '0')}`
+                                                                        : video.videoType === 'youtube'
+                                                                            ? '▶ YouTube'
+                                                                            : '—'}
                                                                 </p>
                                                                 {video.isFreePreview && (
                                                                     <span className="inline-block mt-1 text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded">

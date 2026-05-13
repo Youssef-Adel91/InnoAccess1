@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import TurnstileWidget from '@/components/ui/TurnstileWidget';
 import { Eye, EyeOff } from 'lucide-react';
+import TrainerRegistrationForm from '@/components/auth/TrainerRegistrationForm';
 
 export default function RegisterPage() {
     const router = useRouter();
@@ -28,10 +29,25 @@ export default function RegisterPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [turnstileToken, setTurnstileToken] = useState('');
 
+    // Trainer state
+    const [trainerData, setTrainerData] = useState({
+        bio: '',
+        specialization: '',
+        linkedInUrl: '',
+        websiteUrl: '',
+        cvFile: null as File | null,
+    });
+    const [trainerErrors, setTrainerErrors] = useState({
+        bio: '',
+        specialization: '',
+        cv: '',
+    });
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
         setSuccess('');
+        setTrainerErrors({ bio: '', specialization: '', cv: '' });
 
         // CAPTCHA validation
         const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
@@ -63,29 +79,65 @@ export default function RegisterPage() {
             }
         }
 
+        // Trainer-specific validation
+        if (formData.role === 'trainer') {
+            let hasTrainerErrors = false;
+            const newErrors = { bio: '', specialization: '', cv: '' };
+
+            if (!trainerData.bio || trainerData.bio.length < 50) {
+                newErrors.bio = 'Bio must be at least 50 characters';
+                hasTrainerErrors = true;
+            }
+            if (!trainerData.specialization) {
+                newErrors.specialization = 'Specialization is required';
+                hasTrainerErrors = true;
+            }
+            if (!trainerData.cvFile) {
+                newErrors.cv = 'CV upload is required';
+                hasTrainerErrors = true;
+            }
+
+            if (hasTrainerErrors) {
+                setTrainerErrors(newErrors);
+                return;
+            }
+        }
+
         setIsLoading(true);
 
         try {
+            // Create FormData object
+            const submitData = new FormData();
+            submitData.append('name', formData.name);
+            submitData.append('email', formData.email);
+            submitData.append('password', formData.password);
+            submitData.append('role', formData.role);
+
+            if (turnstileToken) {
+                submitData.append('turnstileToken', turnstileToken);
+            }
+
+            if (formData.role === 'company') {
+                submitData.append('companyName', formData.companyName);
+                submitData.append('companyBio', formData.companyBio);
+                if (formData.facebook) submitData.append('socialMedia[facebook]', formData.facebook);
+                if (formData.linkedin) submitData.append('socialMedia[linkedin]', formData.linkedin);
+                if (formData.twitter) submitData.append('socialMedia[twitter]', formData.twitter);
+                if (formData.instagram) submitData.append('socialMedia[instagram]', formData.instagram);
+            }
+
+            if (formData.role === 'trainer') {
+                submitData.append('bio', trainerData.bio);
+                submitData.append('specialization', trainerData.specialization);
+                if (trainerData.linkedInUrl) submitData.append('linkedInUrl', trainerData.linkedInUrl);
+                if (trainerData.websiteUrl) submitData.append('websiteUrl', trainerData.websiteUrl);
+                if (trainerData.cvFile) submitData.append('cv', trainerData.cvFile);
+            }
+
             const response = await fetch('/api/auth/register', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    name: formData.name,
-                    email: formData.email,
-                    password: formData.password,
-                    role: formData.role,
-                    companyName: formData.role === 'company' ? formData.companyName : undefined,
-                    companyBio: formData.role === 'company' ? formData.companyBio : undefined,
-                    turnstileToken, // Include CAPTCHA token
-                    socialMedia: formData.role === 'company' ? {
-                        facebook: formData.facebook || undefined,
-                        linkedin: formData.linkedin || undefined,
-                        twitter: formData.twitter || undefined,
-                        instagram: formData.instagram || undefined,
-                    } : undefined,
-                }),
+                // Content-Type header is automatically set by browser with boundary for FormData
+                body: submitData,
             });
 
             const data = await response.json();
@@ -313,6 +365,29 @@ export default function RegisterPage() {
                                     </div>
                                 </div>
                             </>
+                        )}
+
+
+
+                        {/* Trainer-specific fields */}
+                        {formData.role === 'trainer' && (
+                            <TrainerRegistrationForm
+                                data={trainerData}
+                                onChange={(field, value) => {
+                                    if (field === 'cvError') {
+                                        setTrainerErrors(prev => ({ ...prev, cv: value || '' }));
+                                    } else if (field === 'cvFile') {
+                                        setTrainerData(prev => ({ ...prev, cvFile: value }));
+                                    } else {
+                                        setTrainerData(prev => ({ ...prev, [field]: value }));
+                                    }
+                                }}
+                                errors={{
+                                    bio: trainerErrors.bio,
+                                    specialization: trainerErrors.specialization,
+                                    cv: trainerErrors.cv
+                                }}
+                            />
                         )}
 
                         <div>

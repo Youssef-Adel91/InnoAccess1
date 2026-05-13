@@ -67,10 +67,11 @@ const nextConfig = {
                             "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com",
                             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
                             "font-src 'self' https://fonts.gstatic.com",
-                            "img-src 'self' data: https: blob:",
+                            "img-src 'self' data: https: blob: https://img.youtube.com",
                             "media-src 'self' blob: https://res.cloudinary.com https://video.bunnycdn.com",
                             "connect-src 'self' https://challenges.cloudflare.com https://api.cloudinary.com https://res.cloudinary.com https://upload.cloudinary.com https://video.bunnycdn.com",
-                            "frame-src 'self' https://challenges.cloudflare.com https://iframe.mediadelivery.net",
+                            // Added YouTube domains for embedded video player
+                            "frame-src 'self' https://challenges.cloudflare.com https://iframe.mediadelivery.net https://www.youtube.com https://youtube.com",
                         ].join('; '),
                     },
                 ],

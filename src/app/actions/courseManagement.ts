@@ -557,3 +557,97 @@ export async function updateLiveSessionLinks(
     }
 }
 
+/**
+ * Save a YouTube video lesson to a course module
+ *
+ * This is a server action called by the YouTubeUploader component.
+ * It validates YouTube URL, extracts video ID, and saves to MongoDB.
+ */
+export async function saveYouTubeLesson(data: {
+    courseId: string;
+    moduleIndex: number;
+    videoData: {
+        title: string;
+        youtubeUrl: string;
+        transcript: string;
+        order: number;
+        isFreePreview?: boolean;
+    };
+}) {
+    try {
+        const session = await getServerSession(authOptions);
+
+        if (!session || session.user.role !== 'trainer') {
+            throw new Error('Unauthorized - only trainers can add lessons');
+        }
+
+        await connectDB();
+
+        // Validate YouTube URL using regex
+        const youtubeRegex = /^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+        const match = data.videoData.youtubeUrl.match(youtubeRegex);
+
+        if (!match) {
+            throw new Error('Invalid YouTube URL. Please enter a valid YouTube video link.');
+        }
+
+        const videoId = match[1];
+
+        // Find course and verify ownership
+        const course = await Course.findById(data.courseId);
+
+        if (!course) {
+            throw new Error('Course not found');
+        }
+
+        if (course.trainerId.toString() !== session.user.id) {
+            throw new Error('Unauthorized - you can only modify your own courses');
+        }
+
+        const module = course.modules[data.moduleIndex];
+        if (!module) {
+            throw new Error('Module not found');
+        }
+
+        if (!data.videoData.title) throw new Error('Video title is required');
+        if (!data.videoData.transcript) throw new Error('Transcript is required for accessibility');
+
+        // Build the video object with YouTube type
+        const newVideo = {
+            title: data.videoData.title,
+            videoType: 'youtube', // VideoType.YOUTUBE
+            bunnyVideoId: '',     // Not applicable for YouTube videos
+            youtubeUrl: data.videoData.youtubeUrl,
+            transcript: data.videoData.transcript,
+            duration: 0,          // YouTube video duration not available without YouTube API
+            order: data.videoData.order,
+            status: 'approved',   // YouTube videos auto-approved (no transcoding needed)
+            uploadedBy: new Types.ObjectId(session.user.id),
+            uploadedAt: new Date(),
+            isFreePreview: data.videoData.isFreePreview ?? false,
+        };
+
+        module.videos.push(newVideo as any);
+        await course.save();
+
+        console.log('✅ YouTube lesson saved:', videoId);
+
+        return {
+            success: true,
+            data: {
+                youtubeVideoId: videoId,
+                status: 'approved',
+                message: 'YouTube lesson added successfully',
+            },
+        };
+    } catch (error: any) {
+        console.error('❌ Save YouTube lesson error:', error);
+        return {
+            success: false,
+            error: {
+                message: error.message || 'Failed to save YouTube lesson',
+                code: 'SAVE_YOUTUBE_LESSON_ERROR',
+            },
+        };
+    }
+}

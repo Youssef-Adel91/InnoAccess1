@@ -1,5 +1,15 @@
 import mongoose, { Schema, Model, Document, Types } from 'mongoose';
 import { CourseType, ILiveSession } from '@/types/course';
+import { sanitizeHtml } from '@/lib/sanitize-html';
+
+/**
+ * Video Type Enum
+ * Determines where the video is hosted
+ */
+export enum VideoType {
+    UPLOAD = 'upload',   // Hosted on Bunny.net via direct upload
+    YOUTUBE = 'youtube', // Embedded from YouTube via URL
+}
 
 /**
  * Video Status Enum
@@ -15,16 +25,18 @@ export enum VideoStatus {
  */
 export interface IVideo {
     title: string;
-    bunnyVideoId: string; // Bunny.net video ID
-    url?: string; // Generated Bunny CDN URL (optional, computed from bunnyVideoId)
-    transcript: string; // Required for accessibility
-    duration: number; // in seconds
+    videoType: VideoType;        // NEW: source of the video
+    bunnyVideoId?: string;       // Bunny.net video ID (only for UPLOAD type)
+    url?: string;                // Generated Bunny CDN URL (optional, computed from bunnyVideoId)
+    youtubeUrl?: string;         // Full YouTube URL (only for YOUTUBE type)
+    transcript: string;          // Required for accessibility (WCAG)
+    duration: number;            // in seconds (0 for YouTube videos, set manually)
     order: number;
-    status: VideoStatus; // Approval status
-    rejectionReason?: string; // Admin feedback if rejected
-    uploadedBy: Types.ObjectId; // Trainer who uploaded
+    status: VideoStatus;         // Approval status
+    rejectionReason?: string;    // Admin feedback if rejected
+    uploadedBy: Types.ObjectId;  // Trainer who uploaded
     uploadedAt: Date;
-    isFreePreview: boolean; // Can non-enrolled students watch this? (for paid courses)
+    isFreePreview: boolean;      // Can non-enrolled students watch this? (for paid courses)
 }
 
 /**
@@ -70,13 +82,26 @@ const VideoSchema = new Schema<IVideo>({
         type: String,
         required: [true, 'Video title is required'],
     },
+    // Discriminator: tells us where the video is hosted
+    videoType: {
+        type: String,
+        enum: Object.values(VideoType),
+        default: VideoType.UPLOAD,
+        required: true,
+    },
+    // Only required when videoType === 'upload'
     bunnyVideoId: {
         type: String,
-        required: [true, 'Bunny video ID is required'],
+        required: false,
+        default: '',
     },
     url: {
         type: String,
-        // Optional - can be generated from bunnyVideoId + CDN hostname
+    },
+    // Only required when videoType === 'youtube'
+    youtubeUrl: {
+        type: String,
+        required: false,
     },
     transcript: {
         type: String,
@@ -85,6 +110,7 @@ const VideoSchema = new Schema<IVideo>({
     duration: {
         type: Number,
         required: [true, 'Video duration is required'],
+        default: 0,
     },
     order: {
         type: Number,
@@ -253,6 +279,22 @@ CourseSchema.index({ isPublished: 1 });
 CourseSchema.index({ price: 1 });
 CourseSchema.index({ rating: -1 });
 CourseSchema.index({ enrollmentCount: -1 });
+
+CourseSchema.pre('save', function (next) {
+    if (this.isModified('description') && this.description) {
+        this.description = sanitizeHtml(this.description);
+    }
+
+    if (this.isModified('modules') && this.modules && this.modules.length > 0) {
+        this.modules.forEach(module => {
+            if (module.description) {
+                module.description = sanitizeHtml(module.description);
+            }
+        });
+    }
+
+    next();
+});
 
 /**
  * Course Model
