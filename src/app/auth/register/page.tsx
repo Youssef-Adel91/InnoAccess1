@@ -419,7 +419,7 @@ export default function RegisterPage() {
                                 </button>
                             </div>
                             <p id="password-requirements" className="mt-1 text-xs text-gray-500">
-                                Must be at least 8 characters with uppercase, lowercase, and number
+                                Must be at least 8 characters with uppercase, lowercase, number, and a special character (e.g. @, #, _, !)
                             </p>
                         </div>
 

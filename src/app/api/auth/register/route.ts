@@ -4,7 +4,8 @@ import { connectDB } from '@/lib/db';
 import User, { UserRole } from '@/models/User';
 import { hashPassword, validatePassword, validateEmail } from '@/lib/auth-utils';
 
-const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+// Accepts any printable ASCII special character so passwords like ML_pas1@# work
+const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`])[A-Za-z\d!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]{8,}$/;
 
 /**
  * Registration Request Schema
@@ -16,7 +17,7 @@ const registerSchema = z.object({
         .min(8, 'Password must be at least 8 characters')
         .regex(
             passwordRegex,
-            'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&)'
+            'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'
         ),
     role: z.enum([UserRole.USER, UserRole.COMPANY, UserRole.TRAINER]).default(UserRole.USER),
     companyName: z.string().min(2).optional(),

@@ -10,6 +10,18 @@ const globalRateLimit = new Ratelimit({
     analytics: true,
 });
 
+// Public API routes that do NOT require authentication
+const PUBLIC_API_ROUTES = [
+    '/api/jobs',
+    '/api/courses',
+    '/api/categories',
+    '/api/auth',
+    '/api/contact',
+];
+
+const isPublicApiRoute = (path: string) =>
+    PUBLIC_API_ROUTES.some((route) => path.startsWith(route));
+
 export default withAuth(
     async function middleware(req) {
         const token = req.nextauth.token;
@@ -17,23 +29,30 @@ export default withAuth(
         const ip = req.ip ?? '127.0.0.1';
 
         // Global Rate Limiting for all API routes
+        // Wrapped in try/catch so a broken Upstash KV config never crashes the
+        // entire middleware and blocks every API request (fail-open in dev).
         if (path.startsWith('/api')) {
-            const { success, limit, reset, remaining } = await globalRateLimit.limit(
-                `global_api_${ip}`
-            );
-
-            if (!success) {
-                return NextResponse.json(
-                    { error: 'Too many requests. Please try again later.' },
-                    {
-                        status: 429,
-                        headers: {
-                            'X-RateLimit-Limit': limit.toString(),
-                            'X-RateLimit-Remaining': remaining.toString(),
-                            'X-RateLimit-Reset': reset.toString()
-                        }
-                    }
+            try {
+                const { success, limit, reset, remaining } = await globalRateLimit.limit(
+                    `global_api_${ip}`
                 );
+
+                if (!success) {
+                    return NextResponse.json(
+                        { error: 'Too many requests. Please try again later.' },
+                        {
+                            status: 429,
+                            headers: {
+                                'X-RateLimit-Limit': limit.toString(),
+                                'X-RateLimit-Remaining': remaining.toString(),
+                                'X-RateLimit-Reset': reset.toString()
+                            }
+                        }
+                    );
+                }
+            } catch (rateLimitError) {
+                // KV not configured / unreachable — log and continue (fail-open)
+                console.warn('⚠️  Rate limiter unavailable, skipping:', (rateLimitError as Error).message);
             }
         }
 
@@ -65,8 +84,16 @@ export default withAuth(
     {
         callbacks: {
             authorized: ({ token, req }) => {
-                // Allow unauthenticated users to access /api/auth routes
-                if (req.nextUrl.pathname.startsWith('/api/auth')) return true;
+                const path = req.nextUrl.pathname;
+
+                // Always allow /api/auth (NextAuth internals)
+                if (path.startsWith('/api/auth')) return true;
+
+                // Allow public API routes without a session so unauthenticated
+                // visitors can browse jobs, courses, and categories
+                if (isPublicApiRoute(path)) return true;
+
+                // All other matched routes require a valid session
                 return !!token;
             },
         },

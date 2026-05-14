@@ -29,8 +29,8 @@ export async function createCourse(data: {
     try {
         const session = await getServerSession(authOptions);
 
-        if (!session || session.user.role !== 'trainer') {
-            throw new Error('Unauthorized - only trainers can create courses');
+        if (!session || (session.user.role !== 'trainer' && session.user.role !== 'company')) {
+            throw new Error('Unauthorized - only trainers and companies can create courses');
         }
 
         await connectDB();
@@ -116,8 +116,8 @@ export async function addModule(courseId: string, data: {
     try {
         const session = await getServerSession(authOptions);
 
-        if (!session || session.user.role !== 'trainer') {
-            throw new Error('Unauthorized - only trainers can add modules');
+        if (!session || (session.user.role !== 'trainer' && session.user.role !== 'company')) {
+            throw new Error('Unauthorized - only trainers and companies can add modules');
         }
 
         await connectDB();
@@ -174,8 +174,8 @@ export async function getTrainerCourses() {
     try {
         const session = await getServerSession(authOptions);
 
-        if (!session || session.user.role !== 'trainer') {
-            throw new Error('Unauthorized - only trainers can view their courses');
+        if (!session || (session.user.role !== 'trainer' && session.user.role !== 'company')) {
+            throw new Error('Unauthorized - only trainers and companies can view their courses');
         }
 
         await connectDB();
@@ -213,7 +213,7 @@ export async function getCourseForManagement(courseId: string) {
     try {
         const session = await getServerSession(authOptions);
 
-        if (!session || session.user.role !== 'trainer') {
+        if (!session || (session.user.role !== 'trainer' && session.user.role !== 'company')) {
             throw new Error('Unauthorized');
         }
 
@@ -283,7 +283,7 @@ export async function publishCourse(courseId: string, isPublished: boolean) {
     try {
         const session = await getServerSession(authOptions);
 
-        if (!session || session.user.role !== 'trainer') {
+        if (!session || (session.user.role !== 'trainer' && session.user.role !== 'company')) {
             throw new Error('Unauthorized');
         }
 
@@ -329,7 +329,7 @@ export async function deleteModule(courseId: string, moduleIndex: number) {
     try {
         const session = await getServerSession(authOptions);
 
-        if (!session || session.user.role !== 'trainer') {
+        if (!session || (session.user.role !== 'trainer' && session.user.role !== 'company')) {
             throw new Error('Unauthorized');
         }
 
@@ -379,7 +379,7 @@ export async function deleteVideo(courseId: string, moduleIndex: number, videoIn
     try {
         const session = await getServerSession(authOptions);
 
-        if (!session || session.user.role !== 'trainer') {
+        if (!session || (session.user.role !== 'trainer' && session.user.role !== 'company')) {
             throw new Error('Unauthorized');
         }
 
@@ -438,7 +438,7 @@ export async function updateModule(
     try {
         const session = await getServerSession(authOptions);
 
-        if (!session || session.user.role !== 'trainer') {
+        if (!session || (session.user.role !== 'trainer' && session.user.role !== 'company')) {
             throw new Error('Unauthorized');
         }
 
@@ -499,7 +499,7 @@ export async function updateLiveSessionLinks(
     try {
         const session = await getServerSession(authOptions);
 
-        if (!session || session.user.role !== 'trainer') {
+        if (!session || (session.user.role !== 'trainer' && session.user.role !== 'company')) {
             throw new Error('Unauthorized');
         }
 
@@ -577,8 +577,8 @@ export async function saveYouTubeLesson(data: {
     try {
         const session = await getServerSession(authOptions);
 
-        if (!session || session.user.role !== 'trainer') {
-            throw new Error('Unauthorized - only trainers can add lessons');
+        if (!session || (session.user.role !== 'trainer' && session.user.role !== 'company')) {
+            throw new Error('Unauthorized - only trainers and companies can add lessons');
         }
 
         await connectDB();
@@ -650,4 +650,11 @@ export async function saveYouTubeLesson(data: {
             },
         };
     }
+}
+/**
+ * Alias: get courses for the current creator (trainer OR company)
+ * Used by company dashboard so it doesn't need its own separate action.
+ */
+export async function getCreatorCourses() {
+    return getTrainerCourses();
 }

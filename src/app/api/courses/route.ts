@@ -167,12 +167,12 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        if (session.user.role !== 'trainer') {
+        if (session.user.role !== 'trainer' && session.user.role !== 'company') {
             return NextResponse.json(
                 {
                     success: false,
                     error: {
-                        message: 'Only trainers can create courses',
+                        message: 'Only trainers and companies can create courses',
                         code: 'FORBIDDEN',
                     },
                 },
