@@ -113,25 +113,25 @@ export default function CoursesPage() {
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 {/* Header */}
                 <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900">Browse Courses</h1>
-                    <p className="mt-2 text-gray-600">
+                    <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900">Browse Courses</h1>
+                    <p className="mt-2 text-base leading-relaxed text-gray-600">
                         Learn new skills with accessible courses featuring transcripts and keyboard controls
                     </p>
                 </div>
 
                 {/* Filters */}
-                <div className="mb-6 bg-white p-6 rounded-lg shadow-md border border-gray-200">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="mb-6 bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-gray-200">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                         {/* Category Filter */}
                         <div>
-                            <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
+                            <label htmlFor="category" className="block text-sm font-semibold text-gray-700 mb-2">
                                 Category
                             </label>
                             <select
                                 id="category"
                                 value={selectedCategory}
                                 onChange={(e) => setSelectedCategory(e.target.value)}
-                                className="w-full rounded-md border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base min-h-[44px] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
                             >
                                 <option value="all">All Categories</option>
                                 {categories.map((cat) => (
@@ -144,14 +144,14 @@ export default function CoursesPage() {
 
                         {/* Price Filter */}
                         <div>
-                            <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-2">
+                            <label htmlFor="price" className="block text-sm font-semibold text-gray-700 mb-2">
                                 Price
                             </label>
                             <select
                                 id="price"
                                 value={priceFilter}
                                 onChange={(e) => setPriceFilter(e.target.value)}
-                                className="w-full rounded-md border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base min-h-[44px] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
                             >
                                 <option value="all">All Courses</option>
                                 <option value="free">Free Only</option>
@@ -166,7 +166,7 @@ export default function CoursesPage() {
                                     setSelectedCategory('all');
                                     setPriceFilter('all');
                                 }}
-                                className="w-full px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+                                className="w-full min-h-[44px] px-4 py-3 bg-gray-600 text-white rounded-xl hover:bg-gray-700 hover:shadow-md transition-all duration-200 font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-600 focus-visible:ring-offset-2"
                             >
                                 Reset Filters
                             </button>
@@ -183,11 +183,11 @@ export default function CoursesPage() {
 
                 {/* Course Grid */}
                 {courses.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
                         {courses.map((course) => (
                             <article
                                 key={course._id}
-                                className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+                                className="bg-white rounded-2xl shadow-sm overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-gray-100 group"
                             >
                                 {/* Thumbnail */}
                                 <div className="h-48 bg-gradient-to-br from-blue-service to-purple-600 relative">
@@ -256,7 +256,7 @@ export default function CoursesPage() {
                                     </div>
 
                                     <Link href={`/courses/${course._id}`}>
-                                        <Button variant="primary" className="w-full">
+                                        <Button variant="primary" className="w-full min-h-[44px]">
                                             {course.courseType === 'LIVE' ? 'View Workshop' : 'View Course'}
                                         </Button>
                                     </Link>

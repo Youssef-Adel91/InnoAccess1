@@ -84,13 +84,13 @@ export default function JobsPage() {
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 {/* Company Job Management Section */}
                 {isCompany && (
-                    <div className="mb-12 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-8 border border-blue-200">
-                        <div className="flex items-center justify-between mb-6">
+                    <div className="mb-12 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 sm:p-8 border border-blue-100">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                             <div>
                                 <h2 className="text-2xl font-bold text-gray-900">Your Job Management</h2>
                                 <p className="mt-1 text-gray-600">Manage your postings and review applications</p>
                             </div>
-                            <div className="flex gap-3">
+                            <div className="flex flex-col sm:flex-row gap-3">
                                 <Link href="/company/jobs?status=draft">
                                     <button
                                         className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-600"
@@ -176,28 +176,28 @@ export default function JobsPage() {
 
                 {/* Header */}
                 <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900">
+                    <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900">
                         {isCompany ? 'Browse All Available Jobs' : 'Find Your Next Opportunity'}
                     </h1>
-                    <p className="mt-2 text-gray-600">
+                    <p className="mt-2 text-base leading-relaxed text-gray-600">
                         {isCompany ? 'See what other companies are posting' : 'Discover accessible job opportunities that match your skills'}
                     </p>
                 </div>
 
                 {/* Filters */}
                 <div
-                    className="mb-6 bg-white p-4 rounded-lg shadow-sm border border-gray-200"
+                    className="mb-6 bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-gray-200"
                     role="search"
                     aria-label="Filter job listings"
                 >
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                         <div>
                             <label htmlFor="job-search" className="sr-only">Search jobs by keyword</label>
                             <input
                                 id="job-search"
                                 type="search"
                                 placeholder="Search jobs..."
-                                className="w-full rounded-md border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base min-h-[44px] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
                                 value={filters.search}
                                 onChange={(e) => setFilters({ ...filters, search: e.target.value })}
                                 aria-label="Search jobs by keyword"
@@ -207,7 +207,7 @@ export default function JobsPage() {
                             <label htmlFor="job-location" className="sr-only">Filter by location type</label>
                             <select
                                 id="job-location"
-                                className="w-full rounded-md border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base min-h-[44px] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
                                 value={filters.location}
                                 onChange={(e) => setFilters({ ...filters, location: e.target.value })}
                                 aria-label="Filter by location type"
@@ -222,7 +222,7 @@ export default function JobsPage() {
                             <label htmlFor="job-type" className="sr-only">Filter by job type</label>
                             <select
                                 id="job-type"
-                                className="w-full rounded-md border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base min-h-[44px] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
                                 value={filters.type}
                                 onChange={(e) => setFilters({ ...filters, type: e.target.value })}
                                 aria-label="Filter by job type"
@@ -233,7 +233,7 @@ export default function JobsPage() {
                                 <option value="internship">Internship</option>
                             </select>
                         </div>
-                        <Button variant="primary" onClick={() => fetchJobs()} aria-label="Apply filters and search jobs">Search</Button>
+                        <Button variant="primary" onClick={() => fetchJobs()} aria-label="Apply filters and search jobs" className="w-full">Search</Button>
                     </div>
                 </div>
 
@@ -260,7 +260,7 @@ export default function JobsPage() {
                         </div>
                     ) : (
                         jobs.map((job) => (
-                            <article key={job._id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+                            <article key={job._id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
                                 <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                                     {/* Company Logo */}
                                     {job.companyLogo && (

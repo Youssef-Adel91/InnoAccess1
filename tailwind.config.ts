@@ -13,6 +13,13 @@ export default {
                 background: "var(--background)",
                 foreground: "var(--foreground)",
             },
+            fontFamily: {
+                sans: ["Inter", "system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "sans-serif"],
+            },
+            transitionDuration: {
+                "200": "200ms",
+                "300": "300ms",
+            },
         },
     },
     plugins: [],

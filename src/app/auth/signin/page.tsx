@@ -9,10 +9,7 @@ import { Eye, EyeOff } from 'lucide-react';
 
 export default function SignInPage() {
     const router = useRouter();
-    const [formData, setFormData] = useState({
-        email: '',
-        password: '',
-    });
+    const [formData, setFormData] = useState({ email: '', password: '' });
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -42,29 +39,33 @@ export default function SignInPage() {
         }
     };
 
-    return (
-        <main id="main-content" className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-            <div className="sm:mx-auto sm:w-full sm:max-w-md">
-                <h1 className="text-center text-3xl font-bold text-gray-900">
-                    Sign In to InnoAccess
-                </h1>
-                <p className="mt-2 text-center text-sm text-gray-600">
-                    Or{' '}
-                    <Link
-                        href="/auth/register"
-                        className="font-medium text-blue-600 hover:text-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded"
-                    >
-                        create a new account
-                    </Link>
-                </p>
-            </div>
+    const inputClass =
+        'mt-1 block w-full rounded-xl border border-gray-300 px-4 py-3 text-base shadow-sm min-h-[44px] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200';
+    const labelClass = 'block text-sm font-semibold text-gray-700 mb-0.5';
 
-            <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-                <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-                    <form onSubmit={handleSubmit} className="space-y-6" aria-label="Sign in form">
+    return (
+        <main id="main-content" className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
+            <div className="w-full max-w-md mx-auto">
+                <div className="text-center mb-8">
+                    <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">
+                        Sign In to InnoAccess
+                    </h1>
+                    <p className="mt-2 text-sm text-gray-600">
+                        Or{' '}
+                        <Link
+                            href="/auth/register"
+                            className="font-semibold text-blue-600 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded"
+                        >
+                            create a new account
+                        </Link>
+                    </p>
+                </div>
+
+                <div className="bg-white rounded-2xl shadow-lg ring-1 ring-gray-200 px-6 py-8 sm:px-10">
+                    <form onSubmit={handleSubmit} className="space-y-5" aria-label="Sign in form">
                         {error && (
                             <div
-                                className="bg-red-50 border border-red-200 text-red-800 rounded-md p-4"
+                                className="bg-red-50 border border-red-200 text-red-800 rounded-xl p-4 text-sm"
                                 role="alert"
                                 aria-live="polite"
                             >
@@ -73,7 +74,7 @@ export default function SignInPage() {
                         )}
 
                         <div>
-                            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                            <label htmlFor="email" className={labelClass}>
                                 Email Address
                             </label>
                             <input
@@ -84,16 +85,16 @@ export default function SignInPage() {
                                 required
                                 value={formData.email}
                                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className={inputClass}
                                 aria-required="true"
                             />
                         </div>
 
                         <div>
-                            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                            <label htmlFor="password" className={labelClass}>
                                 Password
                             </label>
-                            <div className="mt-1 relative">
+                            <div className="relative">
                                 <input
                                     id="password"
                                     name="password"
@@ -102,13 +103,13 @@ export default function SignInPage() {
                                     required
                                     value={formData.password}
                                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                    className="block w-full rounded-md border border-gray-300 px-3 py-2 pr-10 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className={`${inputClass} pr-12`}
                                     aria-required="true"
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
+                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-r-xl"
                                     aria-label={showPassword ? 'Hide password' : 'Show password'}
                                     aria-pressed={showPassword}
                                 >
@@ -118,26 +119,23 @@ export default function SignInPage() {
                         </div>
 
                         <div className="flex items-center justify-between">
-                            <div className="flex items-center">
+                            <div className="flex items-center gap-2">
                                 <input
                                     id="remember-me"
                                     name="remember-me"
                                     type="checkbox"
                                     className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                 />
-                                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
+                                <label htmlFor="remember-me" className="text-sm text-gray-700 select-none">
                                     Remember me
                                 </label>
                             </div>
-
-                            <div className="text-sm">
-                                <Link
-                                    href="/auth/forgot-password"
-                                    className="font-medium text-blue-600 hover:text-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded"
-                                >
-                                    Forgot password?
-                                </Link>
-                            </div>
+                            <Link
+                                href="/auth/forgot-password"
+                                className="text-sm font-semibold text-blue-600 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded"
+                            >
+                                Forgot password?
+                            </Link>
                         </div>
 
                         <Button
@@ -145,7 +143,7 @@ export default function SignInPage() {
                             variant="primary"
                             size="lg"
                             isLoading={isLoading}
-                            className="w-full"
+                            className="w-full mt-2"
                         >
                             Sign In
                         </Button>

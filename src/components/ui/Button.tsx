@@ -17,20 +17,23 @@ export function Button({
     ...props
 }: ButtonProps) {
     const baseStyles =
-        'inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50';
+        'inline-flex items-center justify-center rounded-xl font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98] min-h-[44px]';
 
     const variants = {
-        primary: 'bg-blue-600 text-white hover:bg-blue-700 focus-visible:ring-blue-600',
-        secondary: 'bg-gray-200 text-gray-900 hover:bg-gray-300 focus-visible:ring-gray-400',
-        outline: 'border-2 border-gray-300 bg-transparent hover:bg-gray-100 focus-visible:ring-gray-400',
+        primary:
+            'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-md hover:shadow-blue-500/20 focus-visible:ring-blue-600',
+        secondary:
+            'bg-gray-100 text-gray-900 hover:bg-gray-200 hover:shadow-md focus-visible:ring-gray-400',
+        outline:
+            'border-2 border-gray-300 bg-transparent hover:bg-gray-50 hover:border-gray-400 hover:shadow-sm focus-visible:ring-gray-400',
         ghost: 'hover:bg-gray-100 focus-visible:ring-gray-400',
-        danger: 'bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-600',
+        danger: 'bg-red-600 text-white hover:bg-red-700 hover:shadow-md hover:shadow-red-500/20 focus-visible:ring-red-600',
     };
 
     const sizes = {
-        sm: 'h-9 px-3 text-sm',
-        md: 'h-11 px-6 text-base',
-        lg: 'h-13 px-8 text-lg',
+        sm: 'px-4 py-2 text-sm',
+        md: 'px-6 py-2.5 text-sm',
+        lg: 'px-8 py-3 text-base',
     };
 
     return (

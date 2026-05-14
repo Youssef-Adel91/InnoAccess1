@@ -159,25 +159,25 @@ export default function RegisterPage() {
     };
 
     return (
-        <main id="main-content" className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-            <div className="sm:mx-auto sm:w-full sm:max-w-md">
-                <h1 className="text-center text-3xl font-bold text-gray-900">
-                    Create Your Account
-                </h1>
-                <p className="mt-2 text-center text-sm text-gray-600">
-                    Already have an account?{' '}
-                    <Link
-                        href="/auth/signin"
-                        className="font-medium text-blue-600 hover:text-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded"
-                    >
-                        Sign in
-                    </Link>
-                </p>
-            </div>
+        <main id="main-content" className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
+            <div className="w-full max-w-lg mx-auto">
+                <div className="text-center mb-8">
+                    <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">
+                        Create Your Account
+                    </h1>
+                    <p className="mt-2 text-sm text-gray-600">
+                        Already have an account?{' '}
+                        <Link
+                            href="/auth/signin"
+                            className="font-semibold text-blue-600 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded"
+                        >
+                            Sign in
+                        </Link>
+                    </p>
+                </div>
 
-            <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-                <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-                    <form onSubmit={handleSubmit} className="space-y-6" aria-label="Registration form">
+            <div className="bg-white rounded-2xl shadow-lg ring-1 ring-gray-200 px-6 py-8 sm:px-10">
+                    <form onSubmit={handleSubmit} className="space-y-5" aria-label="Registration form">
                         {error && (
                             <div
                                 className="bg-red-50 border border-red-200 text-red-800 rounded-md p-4 text-sm"
@@ -199,7 +199,7 @@ export default function RegisterPage() {
                         )}
 
                         <div>
-                            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                            <label htmlFor="name" className="block text-sm font-semibold text-gray-700 mb-0.5">
                                 Full Name
                             </label>
                             <input
@@ -211,13 +211,13 @@ export default function RegisterPage() {
                                 minLength={2}
                                 value={formData.name}
                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="mt-1 block w-full rounded-xl border border-gray-300 px-4 py-3 text-base shadow-sm min-h-[44px] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
                                 aria-required="true"
                             />
                         </div>
 
                         <div>
-                            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                            <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-0.5">
                                 Email Address
                             </label>
                             <input
@@ -228,7 +228,7 @@ export default function RegisterPage() {
                                 required
                                 value={formData.email}
                                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="mt-1 block w-full rounded-xl border border-gray-300 px-4 py-3 text-base shadow-sm min-h-[44px] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
                                 aria-required="true"
                             />
                             <p className="mt-1 text-xs text-gray-500">
@@ -237,7 +237,7 @@ export default function RegisterPage() {
                         </div>
 
                         <div>
-                            <label htmlFor="role" className="block text-sm font-medium text-gray-700">
+                            <label htmlFor="role" className="block text-sm font-semibold text-gray-700 mb-0.5">
                                 I am a...
                             </label>
                             <select
@@ -245,7 +245,7 @@ export default function RegisterPage() {
                                 name="role"
                                 value={formData.role}
                                 onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="mt-1 block w-full rounded-xl border border-gray-300 px-4 py-3 text-base shadow-sm min-h-[44px] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
                                 aria-required="true"
                             >
                                 <option value="user">Job Seeker / Learner</option>
@@ -263,7 +263,7 @@ export default function RegisterPage() {
                         {formData.role === 'company' && (
                             <>
                                 <div>
-                                    <label htmlFor="companyName" className="block text-sm font-medium text-gray-700">
+                                    <label htmlFor="companyName" className="block text-sm font-semibold text-gray-700 mb-0.5">
                                         Company Name *
                                     </label>
                                     <input
@@ -274,13 +274,13 @@ export default function RegisterPage() {
                                         minLength={2}
                                         value={formData.companyName}
                                         onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-                                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="mt-1 block w-full rounded-xl border border-gray-300 px-4 py-3 text-base shadow-sm min-h-[44px] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
                                         placeholder="e.g., TechCorp Egypt"
                                     />
                                 </div>
 
                                 <div>
-                                    <label htmlFor="companyBio" className="block text-sm font-medium text-gray-700">
+                                    <label htmlFor="companyBio" className="block text-sm font-semibold text-gray-700 mb-0.5">
                                         Company Description * (Min. 50 characters)
                                     </label>
                                     <textarea
@@ -291,7 +291,7 @@ export default function RegisterPage() {
                                         rows={4}
                                         value={formData.companyBio}
                                         onChange={(e) => setFormData({ ...formData, companyBio: e.target.value })}
-                                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="mt-1 block w-full rounded-xl border border-gray-300 px-4 py-3 text-base shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
                                         placeholder="Describe your business, mission, and why you want to hire inclusive talent..."
                                     />
                                     <p className="mt-1 text-xs text-gray-500">
@@ -391,7 +391,7 @@ export default function RegisterPage() {
                         )}
 
                         <div>
-                            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                            <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-0.5">
                                 Password
                             </label>
                             <div className="mt-1 relative">
@@ -404,14 +404,14 @@ export default function RegisterPage() {
                                     minLength={8}
                                     value={formData.password}
                                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                    className="block w-full rounded-md border border-gray-300 px-3 py-2 pr-10 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="block w-full rounded-xl border border-gray-300 px-4 py-3 pr-12 text-base shadow-sm min-h-[44px] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
                                     aria-required="true"
                                     aria-describedby="password-requirements"
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
+                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-r-xl"
                                     aria-label={showPassword ? 'Hide password' : 'Show password'}
                                     aria-pressed={showPassword}
                                 >
@@ -424,7 +424,7 @@ export default function RegisterPage() {
                         </div>
 
                         <div>
-                            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                            <label htmlFor="confirmPassword" className="block text-sm font-semibold text-gray-700 mb-0.5">
                                 Confirm Password
                             </label>
                             <input
@@ -435,7 +435,7 @@ export default function RegisterPage() {
                                 required
                                 value={formData.confirmPassword}
                                 onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="mt-1 block w-full rounded-xl border border-gray-300 px-4 py-3 text-base shadow-sm min-h-[44px] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
                                 aria-required="true"
                             />
                         </div>
