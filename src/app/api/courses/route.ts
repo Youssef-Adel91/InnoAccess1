@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth';
 import { z } from 'zod';
 import { connectDB } from '@/lib/db';
 import Course from '@/models/Course';
+import '@/models/Category';
+import '@/models/User';
 import { authOptions } from '@/lib/auth';
 
 /**

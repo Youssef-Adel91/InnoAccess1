@@ -1,6 +1,18 @@
 import mongoose from 'mongoose';
 import { env } from './env';
 
+// Pre-register all models to prevent "MissingSchemaError" in Next.js Serverless environments
+// when calling .populate() in isolated API routes
+import '@/models/User';
+import '@/models/Category';
+import '@/models/Course';
+import '@/models/Job';
+import '@/models/Application';
+import '@/models/Enrollment';
+import '@/models/Order';
+import '@/models/Notification';
+import '@/models/TrainerProfile';
+
 /**
  * Global connection cache to prevent multiple connections in serverless environments
  * This is necessary because Next.js API routes are stateless and can create

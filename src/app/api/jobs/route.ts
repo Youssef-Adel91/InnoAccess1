@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { z } from 'zod';
 import { connectDB } from '@/lib/db';
 import Job, { JobType, JobStatus } from '@/models/Job';
+import '@/models/User';
 import { authOptions } from '@/lib/auth';
 
 /**
