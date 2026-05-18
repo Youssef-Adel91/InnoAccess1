@@ -278,14 +278,16 @@ export async function POST(request: NextRequest) {
         user.verificationTokenExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
         await user.save();
 
-        // Send verification email (non-blocking)
-        sendVerificationEmail({
-            recipientEmail: user.email,
-            recipientName: user.name,
-            otp,
-        }).catch(error => {
+        // Send verification email
+        try {
+            await sendVerificationEmail({
+                recipientEmail: user.email,
+                recipientName: user.name,
+                otp,
+            });
+        } catch (error) {
             console.error('Failed to send verification email:', error);
-        });
+        }
 
         // Return success response
         let successMessage = 'Registration successful! Please check your email to verify your account before signing in.';
