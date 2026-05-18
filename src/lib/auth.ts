@@ -1,5 +1,6 @@
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
+import GoogleProvider from 'next-auth/providers/google';
 import { connectDB } from './db';
 import User from '@/models/User';
 import { verifyPassword } from './auth-utils';
@@ -9,6 +10,10 @@ import { verifyPassword } from './auth-utils';
  */
 export const authOptions: NextAuthOptions = {
     providers: [
+        GoogleProvider({
+            clientId: process.env.GOOGLE_CLIENT_ID!,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+        }),
         CredentialsProvider({
             name: 'Credentials',
             credentials: {
@@ -68,12 +73,47 @@ export const authOptions: NextAuthOptions = {
         }),
     ],
     callbacks: {
-        async jwt({ token, user }) {
-            // Add user info to token on sign in
+        async signIn({ user, account }) {
+            // Handle Google OAuth sign-in: upsert user in DB
+            if (account?.provider === 'google') {
+                try {
+                    await connectDB();
+                    const existingUser = await User.findOne({ email: user.email });
+                    if (!existingUser) {
+                        await User.create({
+                            name: user.name,
+                            email: user.email,
+                            role: 'user',
+                            isVerified: true,
+                            isActive: true,
+                            isApproved: false,
+                            authProvider: 'google',
+                        });
+                    }
+                    return true;
+                } catch (err) {
+                    console.error('Google sign-in DB upsert failed:', err);
+                    return false;
+                }
+            }
+            return true;
+        },
+        async jwt({ token, user, account }) {
+            // On first sign-in, populate token from DB for both providers
             if (user) {
-                token.id = user.id;
-                token.role = user.role;
-                token.isApproved = user.isApproved;
+                if (account?.provider === 'google') {
+                    await connectDB();
+                    const dbUser = await User.findOne({ email: user.email });
+                    if (dbUser) {
+                        token.id = dbUser._id.toString();
+                        token.role = dbUser.role;
+                        token.isApproved = dbUser.isApproved;
+                    }
+                } else {
+                    token.id = user.id;
+                    token.role = user.role;
+                    token.isApproved = user.isApproved;
+                }
             }
             return token;
         },

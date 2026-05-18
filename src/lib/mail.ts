@@ -64,7 +64,7 @@ export async function sendVerificationEmail(options: VerificationEmailOptions): 
     return true;
   } catch (error) {
     // Non-fatal: the OTP is already in the console / Vercel logs above.
-    console.error('⚠️  SMTP transport failed (OTP still available in logs above):', error);
+    console.error('EMAIL_DISPATCH_FAILED:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
     return false;
   }
 }
