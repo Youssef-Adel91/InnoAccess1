@@ -72,30 +72,67 @@ export default function OnboardingPage() {
         setError('');
 
         try {
-            const res = await fetch('/api/users/onboarding', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ role: selectedRole, phone }),
-            });
-
-            const data = await res.json();
-
-            if (!res.ok) {
-                setError(data.error?.message || 'Something went wrong. Please try again.');
+            // ── Step 1: Call the onboarding API ───────────────────────────────
+            let res: Response;
+            try {
+                res = await fetch('/api/users/onboarding', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ role: selectedRole, phone: phone.trim() || undefined }),
+                });
+            } catch (networkErr: any) {
+                // Covers: no internet, CORS, DNS failure, Vercel cold-start timeout
+                console.error('ONBOARDING_FETCH_ERROR:', networkErr?.message ?? networkErr);
+                setError('Network error — please check your connection and try again.');
                 return;
             }
 
-            // Trigger session refresh so JWT/token picks up new role
-            await update();
+            // ── Step 2: Safe JSON parse (res may return HTML on 500/502) ──────
+            let data: any;
+            try {
+                const text = await res.text(); // always safe
+                data = text ? JSON.parse(text) : {};
+            } catch (parseErr) {
+                console.error('ONBOARDING_JSON_PARSE_ERROR: server returned non-JSON body');
+                setError('Unexpected server response. Please try again or contact support.');
+                return;
+            }
 
-            router.push(data.data?.redirectTo || '/dashboard');
+            // ── Step 3: Check HTTP status AFTER safe parse ────────────────────
+            if (!res.ok) {
+                const msg = data?.error?.message || `Server error (${res.status}). Please try again.`;
+                setError(msg);
+                return;
+            }
+
+            // ── Step 4: Safely refresh the NextAuth session token ─────────────
+            // update() can resolve to null/undefined if the session has expired;
+            // we never let it crash the navigation flow.
+            try {
+                await update();
+            } catch (updateErr) {
+                // Non-fatal: the DB record is already saved. The stale token will
+                // be refreshed on the next page load / navigation.
+                console.warn('ONBOARDING_SESSION_UPDATE_WARN:', updateErr);
+            }
+
+            // ── Step 5: Navigate away ─────────────────────────────────────────
+            const redirectTo: string = data?.data?.redirectTo || '/dashboard';
+            router.push(redirectTo);
             router.refresh();
-        } catch (err) {
-            setError('An unexpected error occurred. Please try again.');
+
+        } catch (unexpectedErr: any) {
+            // Absolute last-resort catch — prevents the React tree from crashing
+            console.error(
+                'ONBOARDING_UNEXPECTED_ERROR:',
+                JSON.stringify(unexpectedErr, Object.getOwnPropertyNames(unexpectedErr), 2)
+            );
+            setError('An unexpected error occurred. Please refresh the page and try again.');
         } finally {
             setIsLoading(false);
         }
     };
+
 
     if (status === 'loading') {
         return (
