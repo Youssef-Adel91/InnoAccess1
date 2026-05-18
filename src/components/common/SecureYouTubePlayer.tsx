@@ -25,6 +25,7 @@ export default function SecureYouTubePlayer({ youtubeUrl }: SecureYouTubePlayerP
                     title="Course Video"
                     className="absolute top-0 left-0 w-full h-full border-0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    sandbox="allow-scripts allow-same-origin allow-presentation"
                     allowFullScreen
                 />
                 
@@ -33,11 +34,6 @@ export default function SecureYouTubePlayer({ youtubeUrl }: SecureYouTubePlayerP
                     onContextMenu={(e) => e.preventDefault()}
                 />
 
-                {/* Bottom-Right Sniper Shield (Blocks "Watch on YouTube" logo) */}
-                <div 
-                    className="absolute bottom-0 right-0 w-[120px] h-[60px] z-10 pointer-events-auto" 
-                    onContextMenu={(e) => e.preventDefault()}
-                />
             </div>
         </div>
     );
