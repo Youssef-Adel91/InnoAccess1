@@ -86,7 +86,6 @@ export default function OnboardingPage() {
                     body: JSON.stringify({ role: selectedRole, phone: phone.trim() || undefined }),
                 });
             } catch (networkErr: any) {
-                // Covers: no internet, CORS, DNS failure, Vercel cold-start timeout
                 console.error('ONBOARDING_FETCH_ERROR:', networkErr?.message ?? networkErr);
                 setError('Network error — please check your connection and try again.');
                 return;
@@ -95,7 +94,7 @@ export default function OnboardingPage() {
             // ── Step 2: Safe JSON parse (res may return HTML on 500/502) ──────
             let data: any;
             try {
-                const text = await res.text(); // always safe
+                const text = await res.text();
                 data = text ? JSON.parse(text) : {};
             } catch (parseErr) {
                 console.error('ONBOARDING_JSON_PARSE_ERROR: server returned non-JSON body');
@@ -111,13 +110,9 @@ export default function OnboardingPage() {
             }
 
             // ── Step 4: Safely refresh the NextAuth session token ─────────────
-            // update() can resolve to null/undefined if the session has expired;
-            // we never let it crash the navigation flow.
             try {
                 await update();
             } catch (updateErr) {
-                // Non-fatal: the DB record is already saved. The stale token will
-                // be refreshed on the next page load / navigation.
                 console.warn('ONBOARDING_SESSION_UPDATE_WARN:', updateErr);
             }
 
@@ -127,7 +122,6 @@ export default function OnboardingPage() {
             router.refresh();
 
         } catch (unexpectedErr: any) {
-            // Absolute last-resort catch — prevents the React tree from crashing
             console.error(
                 'ONBOARDING_UNEXPECTED_ERROR:',
                 JSON.stringify(unexpectedErr, Object.getOwnPropertyNames(unexpectedErr), 2)
@@ -138,7 +132,7 @@ export default function OnboardingPage() {
         }
     };
 
-
+    // ── Loading state: stable DOM wrapper matching main layout tree ────────────
     if (status === 'loading') {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50">
@@ -147,11 +141,13 @@ export default function OnboardingPage() {
         );
     }
 
-    // Still null after loading — useEffect will redirect, but guard the render too
+    // ── Null session guard: stable DOM wrapper, useEffect handles redirect ─────
     if (!session || !session.user) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50">
-                <p className="text-gray-500 text-sm">Redirecting…</p>
+                <div>
+                    <p className="text-gray-500 text-sm"><span>Redirecting…</span></p>
+                </div>
             </div>
         );
     }
@@ -170,12 +166,19 @@ export default function OnboardingPage() {
                     <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-600 shadow-lg mb-4">
                         <UserCheck className="w-8 h-8 text-white" aria-hidden="true" />
                     </div>
+                    {/* All text in h1 wrapped in span — prevents Google Translate removeChild crash */}
                     <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">
-                        Welcome to InnoAccess!
+                        <span>Welcome to InnoAccess!</span>
                     </h1>
+                    {/*
+                        Mixed text + inline elements in one <p> is the most common
+                        Google Translate crash site. Split into distinct <span> nodes
+                        so the browser can mutate each independently without reparenting.
+                    */}
                     <p className="mt-3 text-base text-gray-600 max-w-md mx-auto">
-                        You&apos;re almost there, <strong>{firstName}</strong>.
-                        Tell us how you plan to use the platform so we can personalise your experience.
+                        <span>{"You're almost there, "}</span>
+                        <strong>{firstName}</strong>
+                        <span>{". Tell us how you plan to use the platform so we can personalise your experience."}</span>
                     </p>
                 </div>
 
@@ -184,7 +187,9 @@ export default function OnboardingPage() {
                         {/* Role Selector */}
                         <fieldset>
                             <legend className="block text-base font-semibold text-gray-800 mb-4">
-                                I am joining InnoAccess as a… <span className="text-red-500" aria-hidden="true">*</span>
+                                <span>I am joining InnoAccess as a…</span>
+                                {' '}
+                                <span className="text-red-500" aria-hidden="true">*</span>
                             </legend>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 {ROLE_OPTIONS.map(({ id, label, description, icon: Icon, color, activeColor }) => {
@@ -200,44 +205,57 @@ export default function OnboardingPage() {
                                                 isSelected ? activeColor : `${color} hover:opacity-80`
                                             }`}
                                         >
-                                            {isSelected && (
-                                                <span className="absolute top-3 right-3 flex h-4 w-4 items-center justify-center rounded-full bg-current">
-                                                    <span className="h-2 w-2 rounded-full bg-white" />
-                                                </span>
-                                            )}
+                                            {/* Stable container for the checkmark — always rendered, visibility toggled via opacity */}
+                                            <span
+                                                className={`absolute top-3 right-3 flex h-4 w-4 items-center justify-center rounded-full bg-current transition-opacity duration-150 ${isSelected ? 'opacity-100' : 'opacity-0'}`}
+                                                aria-hidden="true"
+                                            >
+                                                <span className="h-2 w-2 rounded-full bg-white" />
+                                            </span>
                                             <Icon className="w-6 h-6" aria-hidden="true" />
-                                            <span className="font-semibold text-sm">{label}</span>
-                                            <span className="text-xs opacity-80 leading-snug">{description}</span>
+                                            {/* Each text piece in its own span — not bare text nodes */}
+                                            <span className="font-semibold text-sm"><span>{label}</span></span>
+                                            <span className="text-xs opacity-80 leading-snug"><span>{description}</span></span>
                                         </button>
                                     );
                                 })}
                             </div>
                         </fieldset>
 
-                        {/* Trainer note */}
-                        {selectedRole === 'trainer' && (
-                            <div
-                                className="mt-4 p-3 bg-yellow-50 border border-yellow-300 rounded-lg text-sm text-yellow-800"
-                                role="note"
-                            >
-                                📋 <strong>Note:</strong> Instructor accounts require you to submit a full application for admin review after sign-up. You will be redirected to the application form.
-                            </div>
-                        )}
-
-                        {/* Company note */}
-                        {selectedRole === 'company' && (
-                            <div
-                                className="mt-4 p-3 bg-orange-50 border border-orange-300 rounded-lg text-sm text-orange-800"
-                                role="note"
-                            >
-                                🏢 <strong>Note:</strong> Company accounts require admin approval before posting jobs. You can complete your company profile after sign-up.
-                            </div>
-                        )}
+                        {/*
+                            Conditional note panels: always render the container div,
+                            use a stable key and visibility so React doesn't mount/unmount
+                            text nodes during selection changes (avoids removeChild on translation).
+                        */}
+                        <div className="mt-4" aria-live="polite">
+                            {selectedRole === 'trainer' && (
+                                <div
+                                    className="p-3 bg-yellow-50 border border-yellow-300 rounded-lg text-sm text-yellow-800"
+                                    role="note"
+                                >
+                                    <span className="mr-1" aria-hidden="true">📋</span>
+                                    <strong><span>Note:</span></strong>
+                                    <span>{' Instructor accounts require you to submit a full application for admin review after sign-up. You will be redirected to the application form.'}</span>
+                                </div>
+                            )}
+                            {selectedRole === 'company' && (
+                                <div
+                                    className="p-3 bg-orange-50 border border-orange-300 rounded-lg text-sm text-orange-800"
+                                    role="note"
+                                >
+                                    <span className="mr-1" aria-hidden="true">🏢</span>
+                                    <strong><span>Note:</span></strong>
+                                    <span>{' Company accounts require admin approval before posting jobs. You can complete your company profile after sign-up.'}</span>
+                                </div>
+                            )}
+                        </div>
 
                         {/* Optional Phone */}
                         <div className="mt-6">
                             <label htmlFor="phone" className="block text-sm font-semibold text-gray-700 mb-1">
-                                Phone Number <span className="font-normal text-gray-400">(Optional)</span>
+                                <span>Phone Number</span>
+                                {' '}
+                                <span className="font-normal text-gray-400">(Optional)</span>
                             </label>
                             <input
                                 id="phone"
@@ -251,18 +269,22 @@ export default function OnboardingPage() {
                             />
                         </div>
 
-                        {/* Error */}
+                        {/* Error — bare text wrapped in span to prevent text-node removal crash */}
                         {error && (
                             <div
                                 role="alert"
                                 aria-live="polite"
                                 className="mt-4 p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-800"
                             >
-                                {error}
+                                <span>{error}</span>
                             </div>
                         )}
 
-                        {/* Submit */}
+                        {/*
+                            Submit button: replace <> Fragments with a stable <div> container.
+                            Bare text strings inside Fragments are the #1 cause of the
+                            "removeChild" crash when Google Translate rewrites text nodes.
+                        */}
                         <button
                             type="submit"
                             id="onboarding-submit-btn"
@@ -270,17 +292,20 @@ export default function OnboardingPage() {
                             className="mt-6 w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-blue-600 text-white font-semibold text-base hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 transition-all duration-200 min-h-[48px]"
                             aria-label="Complete setup and go to dashboard"
                         >
-                            {isLoading ? (
-                                <>
-                                    <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" aria-hidden="true" />
-                                    Setting up your account…
-                                </>
-                            ) : (
-                                <>
-                                    Complete Setup
-                                    <ChevronRight className="w-5 h-5" aria-hidden="true" />
-                                </>
-                            )}
+                            {/* Stable wrapper div — never a Fragment — prevents removeChild on text swap */}
+                            <div className="flex items-center justify-center gap-2">
+                                {isLoading ? (
+                                    <div className="flex items-center gap-2">
+                                        <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" aria-hidden="true" />
+                                        <span>Setting up your account…</span>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-2">
+                                        <span>Complete Setup</span>
+                                        <ChevronRight className="w-5 h-5" aria-hidden="true" />
+                                    </div>
+                                )}
+                            </div>
                         </button>
                     </form>
 
@@ -293,7 +318,7 @@ export default function OnboardingPage() {
                             aria-label="Sign out and cancel onboarding"
                         >
                             <LogOut className="w-4 h-4" aria-hidden="true" />
-                            Cancel and sign out
+                            <span>Cancel and sign out</span>
                         </button>
                     </div>
                 </div>
