@@ -18,9 +18,9 @@ export default function SecureYouTubePlayer({ youtubeUrl }: SecureYouTubePlayerP
         setIsMounted(true);
     }, []);
 
-    // Extract video ID from url
     const extractVideoId = (url: string) => {
         if (!url) return null;
+        if (/^[a-zA-Z0-9_-]{11}$/.test(url)) return url; // Already an ID
         const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
         const match = url.match(regExp);
         return match && match[7].length === 11 ? match[7] : null;
@@ -52,6 +52,7 @@ export default function SecureYouTubePlayer({ youtubeUrl }: SecureYouTubePlayerP
     };
 
     const onReady: YouTubeProps["onReady"] = (event) => {
+        console.log('API Ready', event.target);
         playerRef.current = event.target;
         setIsMuted(event.target.isMuted());
     };
@@ -118,7 +119,7 @@ export default function SecureYouTubePlayer({ youtubeUrl }: SecureYouTubePlayerP
             </div>
 
             {/* Custom Accessible Controls */}
-            <div className="flex flex-wrap items-center justify-center gap-4 p-4 bg-gray-50 rounded-lg shadow-sm border border-gray-200">
+            <div className="relative z-50 pointer-events-auto flex flex-wrap items-center justify-center gap-4 p-4 bg-gray-50 rounded-lg shadow-sm border border-gray-200">
                 <button
                     onClick={isPlaying ? handlePause : handlePlay}
                     className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white font-semibold rounded-full hover:bg-blue-700 transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 active:bg-blue-800"
