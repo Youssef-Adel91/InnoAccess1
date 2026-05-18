@@ -1,17 +1,13 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import YouTube, { YouTubeProps } from "react-youtube";
-import { Play, Pause, Volume2, VolumeX } from "lucide-react";
 
 interface SecureYouTubePlayerProps {
     youtubeUrl: string;
 }
 
 export default function SecureYouTubePlayer({ youtubeUrl }: SecureYouTubePlayerProps) {
-    const playerRef = useRef<any>(null);
-    const [isPlaying, setIsPlaying] = useState(false);
-    const [isMuted, setIsMuted] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
 
     useEffect(() => {
@@ -41,55 +37,14 @@ export default function SecureYouTubePlayer({ youtubeUrl }: SecureYouTubePlayerP
         width: "100%",
         playerVars: {
             // https://developers.google.com/youtube/player_parameters
+            controls: 1, // Native controls for WCAG accessibility
             modestbranding: 1,
             rel: 0,
-            controls: 0,
             disablekb: 1,
             fs: 0,
             iv_load_policy: 3,
             origin: typeof window !== "undefined" ? window.location.origin : undefined,
         },
-    };
-
-    const onReady: YouTubeProps["onReady"] = (event) => {
-        console.log('API Ready', event.target);
-        playerRef.current = event.target;
-        setIsMuted(event.target.isMuted());
-    };
-
-    const onStateChange: YouTubeProps["onStateChange"] = (event) => {
-        // PlayerState.PLAYING = 1, PlayerState.PAUSED = 2
-        if (event.data === 1) {
-            setIsPlaying(true);
-        } else if (event.data === 2) {
-            setIsPlaying(false);
-        }
-    };
-
-    const handlePlay = () => {
-        if (playerRef.current) {
-            playerRef.current.playVideo();
-            setIsPlaying(true);
-        }
-    };
-
-    const handlePause = () => {
-        if (playerRef.current) {
-            playerRef.current.pauseVideo();
-            setIsPlaying(false);
-        }
-    };
-
-    const toggleMute = () => {
-        if (playerRef.current) {
-            if (isMuted) {
-                playerRef.current.unMute();
-                setIsMuted(false);
-            } else {
-                playerRef.current.mute();
-                setIsMuted(true);
-            }
-        }
     };
 
     return (
@@ -103,60 +58,14 @@ export default function SecureYouTubePlayer({ youtubeUrl }: SecureYouTubePlayerP
                 <YouTube
                     videoId={videoId}
                     opts={opts}
-                    onReady={onReady}
-                    onStateChange={onStateChange}
                     className="absolute inset-0 w-full h-full"
                     iframeClassName="w-full h-full border-0"
                 />
 
                 {/* Top Glass Shield (Blocks Title / Share) */}
-                <div className="absolute top-0 left-0 right-0 h-[20%] z-10 bg-transparent cursor-default" />
-
-                {/* Bottom Glass Shield (Blocks YouTube Logo / URL) */}
-                <div className="absolute bottom-0 left-0 right-0 h-[20%] z-10 bg-transparent cursor-default" />
+                <div className="absolute top-0 left-0 right-0 h-1/5 z-10 bg-transparent pointer-events-auto cursor-default" />
                 
-                {/* Notice: The middle 60% is left without a shield so click-to-play still works if needed */}
-            </div>
-
-            {/* Custom Accessible Controls */}
-            <div className="relative z-50 pointer-events-auto flex flex-wrap items-center justify-center gap-4 p-4 bg-gray-50 rounded-lg shadow-sm border border-gray-200">
-                <button
-                    onClick={isPlaying ? handlePause : handlePlay}
-                    className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white font-semibold rounded-full hover:bg-blue-700 transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 active:bg-blue-800"
-                    aria-label={isPlaying ? "Pause Course Video" : "Play Course Video"}
-                    tabIndex={0}
-                >
-                    {isPlaying ? (
-                        <>
-                            <Pause className="w-5 h-5" aria-hidden="true" />
-                            <span>Pause</span>
-                        </>
-                    ) : (
-                        <>
-                            <Play className="w-5 h-5" aria-hidden="true" />
-                            <span>Play</span>
-                        </>
-                    )}
-                </button>
-
-                <button
-                    onClick={toggleMute}
-                    className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-200 text-gray-800 font-semibold rounded-full hover:bg-gray-300 transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-gray-400 active:bg-gray-400"
-                    aria-label={isMuted ? "Unmute Video" : "Mute Video"}
-                    tabIndex={0}
-                >
-                    {isMuted ? (
-                        <>
-                            <VolumeX className="w-5 h-5" aria-hidden="true" />
-                            <span>Unmute</span>
-                        </>
-                    ) : (
-                        <>
-                            <Volume2 className="w-5 h-5" aria-hidden="true" />
-                            <span>Mute</span>
-                        </>
-                    )}
-                </button>
+                {/* Notice: The bottom 80% is left without a shield so click-to-play and native controls work */}
             </div>
         </div>
     );
