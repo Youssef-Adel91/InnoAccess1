@@ -51,7 +51,7 @@ export default function SecureYouTubePlayer({ youtubeUrl }: SecureYouTubePlayerP
         <div className="flex flex-col gap-4 w-full">
             {/* Player Wrapper */}
             <div 
-                className="relative aspect-video w-full overflow-hidden bg-black rounded-lg shadow-lg"
+                className="relative w-full aspect-video overflow-hidden rounded-xl bg-black shadow-lg"
                 onContextMenu={(e) => e.preventDefault()}
             >
                 {/* YouTube Iframe */}
@@ -59,7 +59,7 @@ export default function SecureYouTubePlayer({ youtubeUrl }: SecureYouTubePlayerP
                     videoId={videoId}
                     opts={opts}
                     className="absolute inset-0 w-full h-full"
-                    iframeClassName="w-full h-full border-0"
+                    iframeClassName="w-full h-full absolute top-0 left-0 border-0"
                 />
 
                 {/* Top Glass Shield (Blocks Title / Share) */}
