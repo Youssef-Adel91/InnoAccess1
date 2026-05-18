@@ -80,7 +80,7 @@ export const authOptions: NextAuthOptions = {
                     await connectDB();
                     const existingUser = await User.findOne({ email: user.email });
                     if (!existingUser) {
-                        await User.create({
+                        const newUser = await User.create({
                             name: user.name,
                             email: user.email,
                             role: 'user',
@@ -88,7 +88,14 @@ export const authOptions: NextAuthOptions = {
                             isActive: true,
                             isApproved: false,
                             authProvider: 'google',
+                            needsOnboarding: true,
                         });
+                        // Tag the user object so jwt callback knows this is new
+                        (user as any).needsOnboarding = true;
+                        (user as any).dbId = newUser._id.toString();
+                    } else {
+                        (user as any).needsOnboarding = existingUser.needsOnboarding ?? false;
+                        (user as any).dbId = existingUser._id.toString();
                     }
                     return true;
                 } catch (err) {
@@ -98,14 +105,15 @@ export const authOptions: NextAuthOptions = {
             }
             return true;
         },
-        async jwt({ token, user, account }) {
+        async jwt({ token, user, account, trigger }) {
             // On first sign-in, populate token from DB for both providers
             if (user) {
                 if (account?.provider === 'google') {
+                    token.id = (user as any).dbId;
+                    token.needsOnboarding = (user as any).needsOnboarding ?? false;
                     await connectDB();
-                    const dbUser = await User.findOne({ email: user.email });
+                    const dbUser = await User.findById(token.id);
                     if (dbUser) {
-                        token.id = dbUser._id.toString();
                         token.role = dbUser.role;
                         token.isApproved = dbUser.isApproved;
                     }
@@ -113,6 +121,17 @@ export const authOptions: NextAuthOptions = {
                     token.id = user.id;
                     token.role = user.role;
                     token.isApproved = user.isApproved;
+                    token.needsOnboarding = false;
+                }
+            }
+            // Allow session update trigger to refresh onboarding flag
+            if (trigger === 'update' && token.id) {
+                await connectDB();
+                const dbUser = await User.findById(token.id);
+                if (dbUser) {
+                    token.role = dbUser.role;
+                    token.needsOnboarding = dbUser.needsOnboarding ?? false;
+                    token.isApproved = dbUser.isApproved;
                 }
             }
             return token;
@@ -123,6 +142,7 @@ export const authOptions: NextAuthOptions = {
                 session.user.id = token.id as string;
                 session.user.role = token.role as string;
                 session.user.isApproved = token.isApproved as boolean;
+                (session.user as any).needsOnboarding = token.needsOnboarding as boolean;
             }
             return session;
         },

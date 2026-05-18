@@ -53,6 +53,7 @@ export interface IUser extends Document {
     isApproved: boolean; // For company accounts
     isActive: boolean;
     isVerified: boolean; // Email verification status
+    needsOnboarding: boolean; // True for new Google OAuth users until role is selected
     verificationToken?: string; // Hashed OTP for email verification
     verificationTokenExpiry?: Date; // OTP expiry (15 minutes)
     resetPasswordToken?: string; // For password reset flow
@@ -158,6 +159,10 @@ const UserSchema = new Schema<IUser>(
             default: true,
         },
         isVerified: {
+            type: Boolean,
+            default: false,
+        },
+        needsOnboarding: {
             type: Boolean,
             default: false,
         },

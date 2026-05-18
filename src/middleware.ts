@@ -56,6 +56,11 @@ export default withAuth(
             }
         }
 
+        // Force new Google OAuth users through onboarding before accessing the app
+        if (token?.needsOnboarding && path !== '/auth/onboarding') {
+            return NextResponse.redirect(new URL('/auth/onboarding', req.url));
+        }
+
         // Protect admin routes
         if (path.startsWith('/admin') && token?.role !== 'admin') {
             return NextResponse.redirect(new URL('/', req.url));
