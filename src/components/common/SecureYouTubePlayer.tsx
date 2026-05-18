@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import YouTube, { YouTubeProps } from "react-youtube";
 import { Play, Pause, Volume2, VolumeX } from "lucide-react";
 
@@ -9,7 +9,7 @@ interface SecureYouTubePlayerProps {
 }
 
 export default function SecureYouTubePlayer({ youtubeUrl }: SecureYouTubePlayerProps) {
-    const [player, setPlayer] = useState<any>(null);
+    const playerRef = useRef<any>(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [isMuted, setIsMuted] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
@@ -52,7 +52,7 @@ export default function SecureYouTubePlayer({ youtubeUrl }: SecureYouTubePlayerP
     };
 
     const onReady: YouTubeProps["onReady"] = (event) => {
-        setPlayer(event.target);
+        playerRef.current = event.target;
         setIsMuted(event.target.isMuted());
     };
 
@@ -66,26 +66,26 @@ export default function SecureYouTubePlayer({ youtubeUrl }: SecureYouTubePlayerP
     };
 
     const handlePlay = () => {
-        if (player) {
-            player.playVideo();
+        if (playerRef.current) {
+            playerRef.current.playVideo();
             setIsPlaying(true);
         }
     };
 
     const handlePause = () => {
-        if (player) {
-            player.pauseVideo();
+        if (playerRef.current) {
+            playerRef.current.pauseVideo();
             setIsPlaying(false);
         }
     };
 
     const toggleMute = () => {
-        if (player) {
+        if (playerRef.current) {
             if (isMuted) {
-                player.unMute();
+                playerRef.current.unMute();
                 setIsMuted(false);
             } else {
-                player.mute();
+                playerRef.current.mute();
                 setIsMuted(true);
             }
         }
