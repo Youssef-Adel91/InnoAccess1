@@ -67,16 +67,30 @@ export async function GET(request: NextRequest) {
 
             // Build query
             const query: any = { isPublished: true };
+            query.$and = [];
 
             if (userRole !== 'admin') {
-                query.allowedRoles = userRole;
+                query.$and.push({
+                    $or: [
+                        { allowedRoles: userRole },
+                        { allowedRoles: { $exists: false } },
+                        { allowedRoles: { $size: 0 } }
+                    ]
+                });
             }
 
             if (search) {
-                query.$or = [
-                    { title: { $regex: search, $options: 'i' } },
-                    { description: { $regex: search, $options: 'i' } },
-                ];
+                query.$and.push({
+                    $or: [
+                        { title: { $regex: search, $options: 'i' } },
+                        { description: { $regex: search, $options: 'i' } },
+                    ]
+                });
+            }
+
+            // Clean up $and if empty
+            if (query.$and.length === 0) {
+                delete query.$and;
             }
 
             // Special handling for Zoom Meetings category (shows all LIVE courses)

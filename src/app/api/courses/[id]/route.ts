@@ -63,7 +63,9 @@ export async function GET(
 
         // RBAC Check
         const userRole = session?.user?.role || 'user';
-        const allowedRoles = course.allowedRoles || ['user', 'company', 'trainer', 'admin', 'volunteer'];
+        const allowedRoles = Array.isArray(course.allowedRoles) && course.allowedRoles.length > 0
+            ? course.allowedRoles 
+            : ['user', 'company', 'trainer', 'admin', 'volunteer'];
         
         if (!isOwner && !isAdmin && !allowedRoles.includes(userRole)) {
             return NextResponse.json(
