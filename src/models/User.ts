@@ -46,7 +46,8 @@ export interface IUserProfile {
 export interface IUser extends Document {
     name: string;
     email: string;
-    password: string;
+    password?: string; // Optional — not set for Google OAuth users
+    authProvider?: 'credentials' | 'google'; // Auth method
     role: UserRole;
     profile?: IUserProfile;
     accessibilitySettings: IAccessibilitySettings;
@@ -117,7 +118,7 @@ const UserSchema = new Schema<IUser>(
             type: String,
             required: [true, 'Name is required'],
             trim: true,
-            minlength: [2, 'Name must be at least 2 characters'],
+            minlength: [1, 'Name must be at least 1 character'], // Relaxed: Google may return short names
             maxlength: [100, 'Name cannot exceed 100 characters'],
         },
         email: {
@@ -130,9 +131,17 @@ const UserSchema = new Schema<IUser>(
         },
         password: {
             type: String,
-            required: [true, 'Password is required'],
+            // Only required for credential-based users, NOT for Google OAuth
+            required: function (this: IUser) {
+                return this.authProvider === 'credentials' || this.authProvider == null;
+            },
             minlength: [8, 'Password must be at least 8 characters'],
             select: false, // Don't return password by default
+        },
+        authProvider: {
+            type: String,
+            enum: ['credentials', 'google'],
+            default: 'credentials',
         },
         role: {
             type: String,

@@ -80,14 +80,17 @@ export const authOptions: NextAuthOptions = {
                     await connectDB();
                     const existingUser = await User.findOne({ email: user.email });
                     if (!existingUser) {
+                        // Sanitize name: Google may return very short display names
+                        const safeName = (user.name || user.email?.split('@')[0] || 'User').trim();
+
                         const newUser = await User.create({
-                            name: user.name,
+                            name: safeName,
                             email: user.email,
+                            authProvider: 'google', // ← Tells schema NOT to require password
                             role: 'user',
                             isVerified: true,
                             isActive: true,
                             isApproved: false,
-                            authProvider: 'google',
                             needsOnboarding: true,
                         });
                         // Tag the user object so jwt callback knows this is new
@@ -98,9 +101,13 @@ export const authOptions: NextAuthOptions = {
                         (user as any).dbId = existingUser._id.toString();
                     }
                     return true;
-                } catch (err) {
-                    console.error('Google sign-in DB upsert failed:', err);
-                    return false;
+                } catch (error: any) {
+                    // Deep log so the full Mongoose/DB error appears in Vercel function logs
+                    console.error(
+                        'OAUTH_SIGNIN_ERROR:',
+                        JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
+                    );
+                    return false; // Returns AccessDenied to the client, but root cause is now in logs
                 }
             }
             return true;
