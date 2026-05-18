@@ -42,7 +42,8 @@ const ROLE_OPTIONS = [
 ];
 
 export default function OnboardingClient() {
-    // update() kept for reference but currently disabled — hard reload refreshes session
+    // update() removed entirely — window.location.href causes a hard reload
+    // which fetches a fresh session from the server automatically
     const { data: session, status } = useSession();
     // NOTE: useRouter removed — all navigation uses window.location.href
     // to bypass Next.js App Router client transition crashes
@@ -61,7 +62,8 @@ export default function OnboardingClient() {
             return;
         }
 
-        const needsOnboarding = (session.user as any)?.needsOnboarding ?? false;
+        // needsOnboarding is now a properly typed field — no as any cast needed
+        const needsOnboarding: boolean = session.user.needsOnboarding ?? false;
         if (!needsOnboarding) {
             window.location.href = '/dashboard';
         }
@@ -165,8 +167,8 @@ export default function OnboardingClient() {
         );
     }
 
-    // Safe to access session.user from this point onward
-    const firstName = (session.user?.name ?? session.user?.email ?? 'there').split(' ')[0];
+    // All session.user fields are properly typed now — zero as any casts needed
+    const firstName = (session.user.name ?? session.user.email ?? 'there').split(' ')[0];
 
     return (
         <main

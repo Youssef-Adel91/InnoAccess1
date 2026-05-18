@@ -170,46 +170,68 @@ export const authOptions: NextAuthOptions = {
         },
 
         async jwt({ token, user, account, trigger }) {
-            // On first sign-in, populate token from DB for both providers
+            // ── First sign-in: populate token from provider + DB ──────────────
             if (user) {
                 if (account?.provider === 'google') {
-                    token.id = (user as any).dbId;
-                    token.needsOnboarding = (user as any).needsOnboarding ?? false;
-                    await connectDB();
-                    const dbUser = await User.findById(token.id);
-                    if (dbUser) {
-                        token.role = dbUser.role;
-                        token.isApproved = dbUser.isApproved;
+                    // dbId was tagged onto user in the signIn callback
+                    token.id = (user as any).dbId ?? '';
+                    token.needsOnboarding = (user as any).needsOnboarding ?? true;
+
+                    // Fetch authoritative role/approval from DB
+                    if (token.id) {
+                        try {
+                            await connectDB();
+                            const dbUser = await User.findById(token.id).lean();
+                            token.role = dbUser?.role ?? 'user';
+                            token.isApproved = dbUser?.isApproved ?? false;
+                            token.authProvider = 'google';
+                        } catch (e) {
+                            console.error('JWT_CALLBACK_DB_ERROR:', e);
+                            token.role = 'user';
+                            token.isApproved = false;
+                        }
                     }
                 } else {
-                    token.id = user.id;
-                    token.role = user.role;
-                    token.isApproved = user.isApproved;
+                    // Credentials sign-in — all fields come from the authorize() return
+                    token.id = user.id ?? '';
+                    token.role = user.role ?? 'user';
+                    token.isApproved = user.isApproved ?? false;
                     token.needsOnboarding = false;
+                    token.authProvider = 'credentials';
                 }
             }
-            // Allow session update trigger to refresh onboarding flag
+
+            // ── Session update trigger: re-read DB to pick up role/onboarding changes ──
             if (trigger === 'update' && token.id) {
-                await connectDB();
-                const dbUser = await User.findById(token.id);
-                if (dbUser) {
-                    token.role = dbUser.role;
-                    token.needsOnboarding = dbUser.needsOnboarding ?? false;
-                    token.isApproved = dbUser.isApproved;
+                try {
+                    await connectDB();
+                    const dbUser = await User.findById(token.id).lean();
+                    if (dbUser) {
+                        token.role = dbUser.role ?? 'user';
+                        token.needsOnboarding = dbUser.needsOnboarding ?? false;
+                        token.isApproved = dbUser.isApproved ?? false;
+                    }
+                } catch (e) {
+                    console.error('JWT_UPDATE_TRIGGER_ERROR:', e);
                 }
             }
+
             return token;
         },
+
         async session({ session, token }) {
-            // Add user info to session
+            // Map every typed JWT field → session.user with safe ?? fallbacks
             if (session.user) {
-                session.user.id = token.id as string;
-                session.user.role = token.role as string;
-                session.user.isApproved = token.isApproved as boolean;
-                (session.user as any).needsOnboarding = token.needsOnboarding as boolean;
+                session.user.id          = token.id            ?? '';
+                session.user.role        = token.role           ?? 'user';
+                session.user.isApproved  = token.isApproved     ?? false;
+                // needsOnboarding is now a declared type — no as any cast needed
+                session.user.needsOnboarding = token.needsOnboarding ?? false;
+                session.user.authProvider    = token.authProvider;
             }
             return session;
         },
+
     },
     pages: {
         signIn: '/auth/signin',
