@@ -1,19 +1,21 @@
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import GoogleProvider from 'next-auth/providers/google';
 import { connectDB } from './db';
 import User from '@/models/User';
 import { verifyPassword } from './auth-utils';
 
 /**
- * NextAuth Configuration
+ * NextAuth Configuration — Credentials-only (Google OAuth disabled)
+ *
+ * Google OAuth was removed due to persistent Vercel production edge-cases
+ * (hydration mismatches, session serialization bugs, E11000 collisions).
+ * Authentication now uses the stable, self-contained CredentialsProvider
+ * backed directly by our MongoDB User collection.
+ *
+ * Role is captured upfront at registration — no post-login onboarding needed.
  */
 export const authOptions: NextAuthOptions = {
     providers: [
-        GoogleProvider({
-            clientId: process.env.GOOGLE_CLIENT_ID!,
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-        }),
         CredentialsProvider({
             name: 'Credentials',
             credentials: {
@@ -26,7 +28,6 @@ export const authOptions: NextAuthOptions = {
                 }
 
                 try {
-                    // Connect to database
                     await connectDB();
 
                     // Find user by email (include password for verification)
@@ -36,9 +37,9 @@ export const authOptions: NextAuthOptions = {
                         throw new Error('Invalid email or password');
                     }
 
-                    // Account was linked to Google — no password exists
+                    // Account has no password (was a Google-only account)
                     if (!user.password) {
-                        throw new Error('This account uses Google Sign-In. Please click "Continue with Google" instead.');
+                        throw new Error('This account was created via a different sign-in method. Please contact support.');
                     }
 
                     // Verify password
@@ -63,13 +64,13 @@ export const authOptions: NextAuthOptions = {
                         throw new Error('Your company account is pending admin approval');
                     }
 
-                    // Return user object (password will be excluded by toJSON)
                     return {
                         id: user._id.toString(),
                         email: user.email,
                         name: user.name,
                         role: user.role,
                         isApproved: user.isApproved,
+                        needsOnboarding: false, // Credentials users always have a role at signup
                     };
                 } catch (error: any) {
                     throw new Error(error.message || 'Authentication failed');
@@ -77,139 +78,27 @@ export const authOptions: NextAuthOptions = {
             },
         }),
     ],
+
     callbacks: {
-        async signIn({ user, account }) {
-            // Handle Google OAuth sign-in: upsert user in DB
-            if (account?.provider === 'google') {
-                try {
-                    await connectDB();
-
-                    // ── Safe defaults from Google profile ────────────────────
-                    const safeEmail = user.email?.toLowerCase().trim();
-                    const safeName = (
-                        user.name?.trim() ||
-                        safeEmail?.split('@')[0] ||
-                        'User'
-                    );
-
-                    if (!safeEmail) {
-                        console.error('OAUTH_SIGNIN_ERROR: Google did not return an email address');
-                        return false;
-                    }
-
-                    const existingUser = await User.findOne({ email: safeEmail });
-
-                    if (!existingUser) {
-                        // ── Brand new user: create with Google provider ───────
-                        const newUser = await User.create({
-                            name: safeName,
-                            email: safeEmail,
-                            authProvider: 'google',
-                            role: 'user',
-                            isVerified: true,
-                            isActive: true,
-                            isApproved: false,
-                            needsOnboarding: true,
-                        });
-                        (user as any).needsOnboarding = true;
-                        (user as any).dbId = newUser._id.toString();
-
-                    } else {
-                        // ── Existing user: account collision handling ─────────
-                        // User previously registered with credentials (email+password).
-                        // Instead of crashing with E11000, we safely link Google to
-                        // their existing account and let them sign in.
-                        if (existingUser.authProvider === 'credentials' || !existingUser.authProvider) {
-                            await User.findByIdAndUpdate(existingUser._id, {
-                                $set: {
-                                    // Mark that this account can now also use Google
-                                    authProvider: 'google',
-                                    // Ensure account is active and verified
-                                    isVerified: true,
-                                    isActive: true,
-                                    // Only update name if the DB name is missing/blank
-                                    ...((!existingUser.name || existingUser.name.trim() === '') && { name: safeName }),
-                                },
-                            });
-                            console.log(`OAUTH_SIGNIN: linked Google to existing credentials account: ${safeEmail}`);
-                        }
-
-                        (user as any).needsOnboarding = existingUser.needsOnboarding ?? false;
-                        (user as any).dbId = existingUser._id.toString();
-                    }
-
-                    return true;
-
-                } catch (error: any) {
-                    // ── E11000 duplicate key fallback ─────────────────────────
-                    // If User.create raced with another request and hit a duplicate
-                    // key error, recover gracefully by fetching the existing record.
-                    if (error?.code === 11000) {
-                        console.warn('OAUTH_SIGNIN: E11000 race condition — fetching existing user');
-                        try {
-                            const raceUser = await User.findOne({ email: user.email?.toLowerCase() });
-                            if (raceUser) {
-                                (user as any).needsOnboarding = raceUser.needsOnboarding ?? false;
-                                (user as any).dbId = raceUser._id.toString();
-                                return true;
-                            }
-                        } catch (innerErr) {
-                            console.error('OAUTH_SIGNIN_E11000_RECOVERY_FAILED:', innerErr);
-                        }
-                    }
-
-                    // Deep log so the full Mongoose/DB error appears in Vercel function logs
-                    console.error(
-                        'OAUTH_SIGNIN_ERROR:',
-                        JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
-                    );
-                    return false;
-                }
-            }
-            return true;
-        },
-
-        async jwt({ token, user, account, trigger }) {
-            // ── First sign-in: populate token from provider + DB ──────────────
+        async jwt({ token, user, trigger }) {
+            // ── First sign-in: populate token from authorize() return ──────────
             if (user) {
-                if (account?.provider === 'google') {
-                    // dbId was tagged onto user in the signIn callback
-                    token.id = (user as any).dbId ?? '';
-                    token.needsOnboarding = (user as any).needsOnboarding ?? true;
-
-                    // Fetch authoritative role/approval from DB
-                    if (token.id) {
-                        try {
-                            await connectDB();
-                            const dbUser = await User.findById(token.id).lean();
-                            token.role = dbUser?.role ?? 'user';
-                            token.isApproved = dbUser?.isApproved ?? false;
-                            token.authProvider = 'google';
-                        } catch (e) {
-                            console.error('JWT_CALLBACK_DB_ERROR:', e);
-                            token.role = 'user';
-                            token.isApproved = false;
-                        }
-                    }
-                } else {
-                    // Credentials sign-in — all fields come from the authorize() return
-                    token.id = user.id ?? '';
-                    token.role = user.role ?? 'user';
-                    token.isApproved = user.isApproved ?? false;
-                    token.needsOnboarding = false;
-                    token.authProvider = 'credentials';
-                }
+                token.id             = user.id ?? '';
+                token.role           = user.role ?? 'user';
+                token.isApproved     = user.isApproved ?? false;
+                token.needsOnboarding = false; // Always false for credentials users
+                token.authProvider   = 'credentials';
             }
 
-            // ── Session update trigger: re-read DB to pick up role/onboarding changes ──
+            // ── Session update trigger: re-read DB to pick up role changes ─────
             if (trigger === 'update' && token.id) {
                 try {
                     await connectDB();
                     const dbUser = await User.findById(token.id).lean();
                     if (dbUser) {
-                        token.role = dbUser.role ?? 'user';
+                        token.role           = dbUser.role           ?? 'user';
                         token.needsOnboarding = dbUser.needsOnboarding ?? false;
-                        token.isApproved = dbUser.isApproved ?? false;
+                        token.isApproved     = dbUser.isApproved     ?? false;
                     }
                 } catch (e) {
                     console.error('JWT_UPDATE_TRIGGER_ERROR:', e);
@@ -222,25 +111,26 @@ export const authOptions: NextAuthOptions = {
         async session({ session, token }) {
             // Map every typed JWT field → session.user with safe ?? fallbacks
             if (session.user) {
-                session.user.id          = token.id            ?? '';
-                session.user.role        = token.role           ?? 'user';
-                session.user.isApproved  = token.isApproved     ?? false;
-                // needsOnboarding is now a declared type — no as any cast needed
+                session.user.id              = token.id            ?? '';
+                session.user.role            = token.role           ?? 'user';
+                session.user.isApproved      = token.isApproved     ?? false;
                 session.user.needsOnboarding = token.needsOnboarding ?? false;
                 session.user.authProvider    = token.authProvider;
             }
             return session;
         },
-
     },
+
     pages: {
         signIn: '/auth/signin',
         signOut: '/auth/signout',
         error: '/auth/error',
     },
+
     session: {
         strategy: 'jwt',
         maxAge: 30 * 24 * 60 * 60, // 30 days
     },
+
     secret: process.env.NEXTAUTH_SECRET,
 };
