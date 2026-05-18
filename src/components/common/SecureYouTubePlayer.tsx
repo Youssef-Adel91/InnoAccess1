@@ -19,7 +19,10 @@ export default function SecureYouTubePlayer({ youtubeUrl }: SecureYouTubePlayerP
 
     return (
         <div className="flex flex-col gap-4 w-full">
-            <div className="relative w-full aspect-video overflow-hidden rounded-xl bg-black">
+            <div 
+                className="relative w-full aspect-video overflow-hidden rounded-xl bg-black"
+                onContextMenu={(e) => e.preventDefault()}
+            >
                 <iframe
                     src={`https://www.youtube.com/embed/${videoId}?controls=1&modestbranding=1&rel=0`}
                     title="Course Video"
