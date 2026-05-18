@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+// useRouter intentionally removed — replaced with window.location.href
+// to bypass Next.js App Router transition crashes
 import { UserCheck, Briefcase, BookOpen, Heart, ChevronRight, LogOut } from 'lucide-react';
 
 const ROLE_OPTIONS = [
@@ -41,8 +42,10 @@ const ROLE_OPTIONS = [
 ];
 
 export default function OnboardingClient() {
-    const { data: session, status, update } = useSession();
-    const router = useRouter();
+    // update() kept for reference but currently disabled — hard reload refreshes session
+    const { data: session, status } = useSession();
+    // NOTE: useRouter removed — all navigation uses window.location.href
+    // to bypass Next.js App Router client transition crashes
 
     const [selectedRole, setSelectedRole] = useState('');
     const [phone, setPhone] = useState('');
@@ -53,18 +56,16 @@ export default function OnboardingClient() {
     useEffect(() => {
         if (status === 'loading') return;
 
-        // session or session.user can be null during hydration — guard both
         if (!session || !session.user) {
-            router.replace('/auth/signin');
+            window.location.href = '/auth/signin';
             return;
         }
 
-        // Use optional chaining + nullish fallback
         const needsOnboarding = (session.user as any)?.needsOnboarding ?? false;
         if (!needsOnboarding) {
-            router.replace('/dashboard');
+            window.location.href = '/dashboard';
         }
-    }, [session, status, router]);
+    }, [session, status]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -88,10 +89,11 @@ export default function OnboardingClient() {
             } catch (networkErr: any) {
                 console.error('ONBOARDING_FETCH_ERROR:', networkErr?.message ?? networkErr);
                 setError('Network error — please check your connection and try again.');
+                setIsLoading(false);
                 return;
             }
 
-            // ── Step 2: Safe JSON parse (res may return HTML on 500/502) ─────
+            // ── Step 2: Safe JSON parse ───────────────────────────────────────
             let data: any;
             try {
                 const text = await res.text();
@@ -99,6 +101,7 @@ export default function OnboardingClient() {
             } catch {
                 console.error('ONBOARDING_JSON_PARSE_ERROR: server returned non-JSON body');
                 setError('Unexpected server response. Please try again or contact support.');
+                setIsLoading(false);
                 return;
             }
 
@@ -106,29 +109,38 @@ export default function OnboardingClient() {
             if (!res.ok) {
                 const msg = data?.error?.message || `Server error (${res.status}). Please try again.`;
                 setError(msg);
+                setIsLoading(false);
                 return;
             }
 
-            // ── Step 4: Safely refresh the NextAuth session token ─────────────
-            try {
-                await update();
-            } catch (updateErr) {
-                // Non-fatal — DB record saved; token refreshes on next navigation
-                console.warn('ONBOARDING_SESSION_UPDATE_WARN:', updateErr);
-            }
+            // ── Step 4: session.update() DISABLED ────────────────────────────
+            // The hard reload via window.location.href below forces the browser
+            // to fetch a fresh session from the server, making client-side
+            // update() unnecessary and removing a potential crash source.
+            // await update();
 
-            // ── Step 5: Navigate away ─────────────────────────────────────────
+            // ── Step 5: Navigate with hard reload (bypasses App Router) ──────
             const redirectTo: string = data?.data?.redirectTo || '/dashboard';
-            router.push(redirectTo);
-            router.refresh();
+            window.location.href = redirectTo;
+            // No setIsLoading(false) here — page is navigating away
 
         } catch (unexpectedErr: any) {
+            // ── DIAGNOSTIC: force native alert BEFORE React can crash ─────────
+            // This guarantees we see the raw error string even if the React
+            // tree subsequently crashes. Remove once root cause is identified.
+            const errMsg: string =
+                (unexpectedErr?.message as string) ||
+                JSON.stringify(unexpectedErr, Object.getOwnPropertyNames(unexpectedErr)) ||
+                'Unknown error';
+
+            // eslint-disable-next-line no-alert
+            alert('FATAL ONBOARDING ERROR: ' + errMsg);
+
             console.error(
                 'ONBOARDING_UNEXPECTED_ERROR:',
                 JSON.stringify(unexpectedErr, Object.getOwnPropertyNames(unexpectedErr), 2)
             );
-            setError('An unexpected error occurred. Please refresh the page and try again.');
-        } finally {
+            setError('An unexpected error occurred: ' + errMsg);
             setIsLoading(false);
         }
     };
