@@ -52,11 +52,16 @@ export default function OnboardingPage() {
     // Redirect away if session is loaded and user doesn't need onboarding
     useEffect(() => {
         if (status === 'loading') return;
-        if (!session) {
+
+        // session or session.user can be null during hydration — guard both
+        if (!session || !session.user) {
             router.replace('/auth/signin');
             return;
         }
-        if (!(session.user as any).needsOnboarding) {
+
+        // Use optional chaining + nullish fallback — never access .needsOnboarding directly
+        const needsOnboarding = (session.user as any)?.needsOnboarding ?? false;
+        if (!needsOnboarding) {
             router.replace('/dashboard');
         }
     }, [session, status, router]);
@@ -137,10 +142,22 @@ export default function OnboardingPage() {
     if (status === 'loading') {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" aria-label="Loading your session…" />
             </div>
         );
     }
+
+    // Still null after loading — useEffect will redirect, but guard the render too
+    if (!session || !session.user) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50">
+                <p className="text-gray-500 text-sm">Redirecting…</p>
+            </div>
+        );
+    }
+
+    // Safe to access session.user from this point onward
+    const firstName = (session.user?.name ?? session.user?.email ?? 'there').split(' ')[0];
 
     return (
         <main
@@ -157,7 +174,7 @@ export default function OnboardingPage() {
                         Welcome to InnoAccess!
                     </h1>
                     <p className="mt-3 text-base text-gray-600 max-w-md mx-auto">
-                        You&apos;re almost there, <strong>{session?.user?.name?.split(' ')[0]}</strong>.
+                        You&apos;re almost there, <strong>{firstName}</strong>.
                         Tell us how you plan to use the platform so we can personalise your experience.
                     </p>
                 </div>
