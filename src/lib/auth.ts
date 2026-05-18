@@ -36,6 +36,11 @@ export const authOptions: NextAuthOptions = {
                         throw new Error('Invalid email or password');
                     }
 
+                    // Account was linked to Google — no password exists
+                    if (!user.password) {
+                        throw new Error('This account uses Google Sign-In. Please click "Continue with Google" instead.');
+                    }
+
                     // Verify password
                     const isValid = await verifyPassword(credentials.password, user.password);
 
@@ -78,40 +83,92 @@ export const authOptions: NextAuthOptions = {
             if (account?.provider === 'google') {
                 try {
                     await connectDB();
-                    const existingUser = await User.findOne({ email: user.email });
-                    if (!existingUser) {
-                        // Sanitize name: Google may return very short display names
-                        const safeName = (user.name || user.email?.split('@')[0] || 'User').trim();
 
+                    // ── Safe defaults from Google profile ────────────────────
+                    const safeEmail = user.email?.toLowerCase().trim();
+                    const safeName = (
+                        user.name?.trim() ||
+                        safeEmail?.split('@')[0] ||
+                        'User'
+                    );
+
+                    if (!safeEmail) {
+                        console.error('OAUTH_SIGNIN_ERROR: Google did not return an email address');
+                        return false;
+                    }
+
+                    const existingUser = await User.findOne({ email: safeEmail });
+
+                    if (!existingUser) {
+                        // ── Brand new user: create with Google provider ───────
                         const newUser = await User.create({
                             name: safeName,
-                            email: user.email,
-                            authProvider: 'google', // ← Tells schema NOT to require password
+                            email: safeEmail,
+                            authProvider: 'google',
                             role: 'user',
                             isVerified: true,
                             isActive: true,
                             isApproved: false,
                             needsOnboarding: true,
                         });
-                        // Tag the user object so jwt callback knows this is new
                         (user as any).needsOnboarding = true;
                         (user as any).dbId = newUser._id.toString();
+
                     } else {
+                        // ── Existing user: account collision handling ─────────
+                        // User previously registered with credentials (email+password).
+                        // Instead of crashing with E11000, we safely link Google to
+                        // their existing account and let them sign in.
+                        if (existingUser.authProvider === 'credentials' || !existingUser.authProvider) {
+                            await User.findByIdAndUpdate(existingUser._id, {
+                                $set: {
+                                    // Mark that this account can now also use Google
+                                    authProvider: 'google',
+                                    // Ensure account is active and verified
+                                    isVerified: true,
+                                    isActive: true,
+                                    // Only update name if the DB name is missing/blank
+                                    ...((!existingUser.name || existingUser.name.trim() === '') && { name: safeName }),
+                                },
+                            });
+                            console.log(`OAUTH_SIGNIN: linked Google to existing credentials account: ${safeEmail}`);
+                        }
+
                         (user as any).needsOnboarding = existingUser.needsOnboarding ?? false;
                         (user as any).dbId = existingUser._id.toString();
                     }
+
                     return true;
+
                 } catch (error: any) {
+                    // ── E11000 duplicate key fallback ─────────────────────────
+                    // If User.create raced with another request and hit a duplicate
+                    // key error, recover gracefully by fetching the existing record.
+                    if (error?.code === 11000) {
+                        console.warn('OAUTH_SIGNIN: E11000 race condition — fetching existing user');
+                        try {
+                            const raceUser = await User.findOne({ email: user.email?.toLowerCase() });
+                            if (raceUser) {
+                                (user as any).needsOnboarding = raceUser.needsOnboarding ?? false;
+                                (user as any).dbId = raceUser._id.toString();
+                                return true;
+                            }
+                        } catch (innerErr) {
+                            console.error('OAUTH_SIGNIN_E11000_RECOVERY_FAILED:', innerErr);
+                        }
+                    }
+
                     // Deep log so the full Mongoose/DB error appears in Vercel function logs
                     console.error(
                         'OAUTH_SIGNIN_ERROR:',
                         JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
                     );
-                    return false; // Returns AccessDenied to the client, but root cause is now in logs
+                    return false;
                 }
             }
             return true;
         },
+
         async jwt({ token, user, account, trigger }) {
             // On first sign-in, populate token from DB for both providers
             if (user) {
