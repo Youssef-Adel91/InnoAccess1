@@ -43,14 +43,35 @@ export async function GET(
             );
         }
 
+        const session = await getServerSession(authOptions);
+        const isOwner = session?.user?.id === (course.trainerId as any)?._id?.toString() || session?.user?.id === course.trainerId?.toString();
+        const isAdmin = session?.user?.role === 'admin';
+
         // Only show published courses to non-owners
-        if (!course.isPublished) {
+        if (!course.isPublished && !isOwner && !isAdmin) {
             return NextResponse.json(
                 {
                     success: false,
                     error: {
                         message: 'Course not available',
                         code: 'NOT_PUBLISHED',
+                    },
+                },
+                { status: 403 }
+            );
+        }
+
+        // RBAC Check
+        const userRole = session?.user?.role || 'user';
+        const allowedRoles = course.allowedRoles || ['user', 'company', 'trainer', 'admin', 'volunteer'];
+        
+        if (!isOwner && !isAdmin && !allowedRoles.includes(userRole)) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: {
+                        message: 'You do not have permission to view this course.',
+                        code: 'FORBIDDEN_ROLE',
                     },
                 },
                 { status: 403 }

@@ -62,8 +62,15 @@ export async function GET(request: NextRequest) {
             const page = parseInt(searchParams.get('page') || '1');
             const limit = parseInt(searchParams.get('limit') || '12');
 
+            const session = await getServerSession(authOptions);
+            const userRole = session?.user?.role || 'user';
+
             // Build query
             const query: any = { isPublished: true };
+
+            if (userRole !== 'admin') {
+                query.allowedRoles = userRole;
+            }
 
             if (search) {
                 query.$or = [

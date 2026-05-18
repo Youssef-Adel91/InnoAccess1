@@ -1,5 +1,6 @@
 import mongoose, { Schema, Model, Document, Types } from 'mongoose';
 import { CourseType, ILiveSession } from '@/types/course';
+import { UserRole } from '@/models/User';
 import { sanitizeHtml } from '@/lib/sanitize-html';
 
 /**
@@ -66,6 +67,7 @@ export interface ICourse extends Document {
     modules: IModule[];
     enrollmentCount: number;
     rating: number;
+    allowedRoles: string[];
     isPublished: boolean;
     isDeleted: boolean; // Soft delete flag
     deletedAt?: Date; // Soft delete timestamp
@@ -212,6 +214,11 @@ const CourseSchema = new Schema<ICourse>(
             default: 0,
             min: 0,
             max: 5,
+        },
+        allowedRoles: {
+            type: [String],
+            enum: Object.values(UserRole),
+            default: [UserRole.USER, UserRole.COMPANY, UserRole.TRAINER, UserRole.ADMIN, UserRole.VOLUNTEER],
         },
         isPublished: {
             type: Boolean,

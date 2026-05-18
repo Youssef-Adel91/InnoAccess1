@@ -25,6 +25,7 @@ export async function createCourse(data: {
         zoomMeetingLink: string;
         instructions?: string;
     };
+    allowedRoles?: string[];
 }) {
     try {
         const session = await getServerSession(authOptions);
@@ -82,6 +83,7 @@ export async function createCourse(data: {
             rating: 0,
             isPublished: false,
             isDeleted: false,
+            allowedRoles: data.allowedRoles || ['user', 'company', 'trainer', 'admin', 'volunteer'],
         });
 
         console.log('✅ Course created:', course._id, 'Type:', courseType);

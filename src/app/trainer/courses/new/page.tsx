@@ -41,6 +41,13 @@ export default function CreateCoursePage() {
         zoomMeetingLink: '',
         instructions: '',
     });
+    const [allowedRoles, setAllowedRoles] = useState<string[]>(['user', 'company', 'trainer', 'admin', 'volunteer']);
+
+    const handleRoleToggle = (role: string) => {
+        setAllowedRoles(prev => 
+            prev.includes(role) ? prev.filter(r => r !== role) : [...prev, role]
+        );
+    };
 
     // Check authorization
     useEffect(() => {
@@ -119,6 +126,7 @@ export default function CreateCoursePage() {
                 thumbnail: thumbnailUrl,
                 courseType,
                 liveSession: courseType === CourseType.LIVE ? liveSession : undefined,
+                allowedRoles,
             });
 
             if (!result.success) {
@@ -332,6 +340,26 @@ export default function CreateCoursePage() {
                             </div>
                         </div>
                     )}
+
+                    {/* Allowed Roles */}
+                    <div className="mb-6">
+                        <label className="block text-sm font-medium text-gray-700 mb-3">
+                            Allowed Roles (RBAC) *
+                        </label>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                            {['user', 'company', 'trainer', 'admin', 'volunteer'].map(role => (
+                                <label key={role} className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                                    <input 
+                                        type="checkbox" 
+                                        checked={allowedRoles.includes(role)}
+                                        onChange={() => handleRoleToggle(role)}
+                                        className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                    />
+                                    <span className="text-sm font-medium text-gray-900 capitalize">{role}</span>
+                                </label>
+                            ))}
+                        </div>
+                    </div>
 
                     {/* Pricing Type */}
                     <div className="mb-6">

@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { ArrowLeft, Lock, CheckCircle, Youtube, Video } from 'lucide-react';
-import { YouTubePlayer } from '@/components/ui/YouTubePlayer';
+import SecureYouTubePlayer from '@/components/common/SecureYouTubePlayer';
 
 interface Course {
     _id: string;
@@ -129,11 +129,10 @@ export default function CoursePlayerPage() {
                             {/* ── Video Player: YouTube or Bunny.net ── */}
                             <div className="aspect-video bg-black">
                                 {currentVideo.videoType === 'youtube' && currentVideo.youtubeUrl ? (
-                                    /* Accessible YouTube player with skip links (WCAG 2.1 AAA) */
+                                    /* Accessible YouTube player with strict RBAC and deterrence */
                                     <div className="w-full h-full">
-                                        <YouTubePlayer
+                                        <SecureYouTubePlayer
                                             youtubeUrl={currentVideo.youtubeUrl}
-                                            title={currentVideo.title}
                                         />
                                     </div>
                                 ) : (
