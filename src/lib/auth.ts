@@ -49,10 +49,8 @@ export const authOptions: NextAuthOptions = {
                         throw new Error('Invalid email or password');
                     }
 
-                    // Check if email is verified
-                    if (!user.isVerified) {
-                        throw new Error('Please verify your email before signing in. Check your inbox for the verification code.');
-                    }
+                    // isVerified check removed — all new users are auto-verified at registration.
+                    // Legacy users with isVerified:false can still sign in.
 
                     // Check if user is active
                     if (!user.isActive) {

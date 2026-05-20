@@ -216,12 +216,13 @@ export async function POST(request: NextRequest) {
         // Hash password
         const hashedPassword = await hashPassword(password);
 
-        // Create new user
+        // Create new user (auto-verified — OTP email flow is disabled)
         const userData: any = {
             name,
             email: email.toLowerCase(),
             password: hashedPassword,
             role: role === UserRole.TRAINER ? UserRole.USER : role, // Trainers start as 'user' role until approved
+            isVerified: true, // Auto-verify: bypass OTP to guarantee frictionless onboarding
         };
 
         // Add company profile data if role is company
@@ -266,35 +267,13 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // Generate OTP for email verification
-        const { generateOTP, hashOTP } = await import('@/lib/otp');
-        const { sendVerificationEmail } = await import('@/lib/mail');
-
-        const otp = generateOTP();
-        const hashedOTP = hashOTP(otp);
-
-        // Update user with verification token
-        user.verificationToken = hashedOTP;
-        user.verificationTokenExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
-        await user.save();
-
-        // Send verification email
-        try {
-            await sendVerificationEmail({
-                recipientEmail: user.email,
-                recipientName: user.name,
-                otp,
-            });
-        } catch (error) {
-            console.error('Failed to send verification email:', error);
-        }
-
+        // OTP email verification is DISABLED — users are auto-verified at creation.
         // Return success response
-        let successMessage = 'Registration successful! Please check your email to verify your account before signing in.';
+        let successMessage = 'Account created successfully! You can now sign in.';
         if (role === UserRole.COMPANY) {
-            successMessage = 'Registration successful! Please check your email to verify your account. After verification, your company account will be pending admin approval.';
+            successMessage = 'Account created successfully! Your company account is pending admin approval. You can sign in now and will be notified once approved.';
         } else if (role === UserRole.TRAINER) {
-            successMessage = 'Registration successful! Please check your email to verify your account. After verification, your trainer application will be reviewed by admins.';
+            successMessage = 'Account created successfully! Your trainer application is under review. You can sign in now and will be notified once approved.';
         }
 
         return NextResponse.json(

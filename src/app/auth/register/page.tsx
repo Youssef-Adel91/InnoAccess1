@@ -145,11 +145,11 @@ export default function RegisterPage() {
             if (!response.ok) {
                 setError(data.error?.message || 'Registration failed');
             } else {
-                setSuccess(data.data?.message || 'Registration successful!');
-                // Redirect to verification page with email
+                setSuccess(data.data?.message || 'Account created successfully! Please sign in.');
+                // Redirect directly to sign-in (email verification is auto-approved)
                 setTimeout(() => {
-                    router.push(`/auth/verify-email?email=${encodeURIComponent(formData.email)}`);
-                }, 2000);
+                    router.push('/auth/signin');
+                }, 1500);
             }
         } catch (err: any) {
             setError('An unexpected error occurred');
