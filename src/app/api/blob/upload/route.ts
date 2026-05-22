@@ -1,54 +1,49 @@
-import { handleUpload, type HandleUploadBody } from '@vercel/blob/next';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { put } from '@vercel/blob';
+import { getToken } from 'next-auth/jwt';
 import { NextResponse } from 'next/server';
 
 /**
- * Vercel Blob client-side upload handler.
+ * POST /api/blob/upload?filename=<name>
  *
- * The browser uploads the file DIRECTLY to Vercel Blob using a short-lived
- * token generated here — the file never passes through the serverless function
- * body, so Vercel's 4.5 MB HTTP limit is completely bypassed.
+ * Edge Runtime route — no body-size cap unlike Serverless functions.
+ * Streams the image directly to Vercel Blob without buffering in memory.
  *
- * Flow:
- *  1. Client POSTs a token-request JSON to this route.
- *  2. We validate the session and return a signed upload token.
- *  3. Client uses @vercel/blob/client `upload()` to stream the file to Blob.
+ * Auth: verified via JWT token (Edge-compatible, no Node.js APIs needed).
  */
-export async function POST(request: Request): Promise<Response> {
-    const session = await getServerSession(authOptions);
+export const runtime = 'edge';
 
-    if (!session || !['trainer', 'company', 'admin'].includes(session.user.role)) {
+export async function POST(request: Request): Promise<Response> {
+    // JWT auth — works in Edge Runtime unlike getServerSession
+    const token = await getToken({
+        req: request as any,
+        secret: process.env.NEXTAUTH_SECRET,
+    });
+
+    if (!token || !['trainer', 'company', 'admin'].includes(token.role as string)) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = (await request.json()) as HandleUploadBody;
+    const { searchParams } = new URL(request.url);
+    const filename = searchParams.get('filename');
+
+    if (!filename) {
+        return NextResponse.json({ error: 'filename query param is required' }, { status: 400 });
+    }
+
+    const contentType = request.headers.get('content-type') || 'application/octet-stream';
+    if (!contentType.startsWith('image/')) {
+        return NextResponse.json({ error: 'Only image files are allowed' }, { status: 400 });
+    }
 
     try {
-        const jsonResponse = await handleUpload({
-            body,
-            request,
-            onBeforeGenerateToken: async (pathname) => {
-                return {
-                    allowedContentTypes: [
-                        'image/jpeg',
-                        'image/jpg',
-                        'image/png',
-                        'image/webp',
-                        'image/gif',
-                    ],
-                    maximumSizeInBytes: 10 * 1024 * 1024, // 10 MB
-                    tokenPayload: JSON.stringify({ userId: session.user.id }),
-                };
-            },
-            onUploadCompleted: async ({ blob }) => {
-                console.log('✅ Blob upload completed:', blob.url);
-            },
+        const blob = await put(`course-thumbnails/${Date.now()}-${filename}`, request.body!, {
+            access: 'public',
+            contentType,
         });
 
-        return NextResponse.json(jsonResponse);
+        return NextResponse.json({ url: blob.url });
     } catch (error: any) {
-        console.error('❌ Blob upload handler error:', error);
-        return NextResponse.json({ error: error.message }, { status: 400 });
+        console.error('❌ Blob upload error:', error);
+        return NextResponse.json({ error: error.message || 'Upload failed' }, { status: 500 });
     }
 }

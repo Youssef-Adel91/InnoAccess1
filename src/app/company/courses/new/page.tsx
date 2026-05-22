@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { createCourse, getAllCategories } from '@/app/actions/courseManagement';
-import { upload } from '@vercel/blob/client';
 import { CourseType } from '@/types/course';
 import { ArrowLeft, Upload, DollarSign, Video, Calendar } from 'lucide-react';
 import Link from 'next/link';
@@ -77,17 +76,22 @@ export default function CompanyCreateCoursePage() {
             let thumbnailUrl = '';
             if (thumbnailFile) {
                 setUploadingThumbnail(true);
-                // Client-side upload: file goes directly from browser to Vercel Blob
-                // — bypasses the 4.5 MB serverless body limit entirely.
-                const blob = await upload(
-                    `course-thumbnails/${Date.now()}-${thumbnailFile.name}`,
-                    thumbnailFile,
+                // Upload directly to our Edge API route which streams to Vercel Blob
+                // — no serverless body-size limit applies on the Edge runtime.
+                const res = await fetch(
+                    `/api/blob/upload?filename=${encodeURIComponent(thumbnailFile.name)}`,
                     {
-                        access: 'public',
-                        handleUploadUrl: '/api/blob/upload',
+                        method: 'POST',
+                        headers: { 'Content-Type': thumbnailFile.type },
+                        body: thumbnailFile,
                     }
                 );
-                thumbnailUrl = blob.url;
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Thumbnail upload failed');
+                }
+                const { url } = await res.json();
+                thumbnailUrl = url;
                 setUploadingThumbnail(false);
             }
 
