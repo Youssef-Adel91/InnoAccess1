@@ -103,7 +103,7 @@ export async function GET(
 
 /**
  * DELETE /api/courses/[id]
- * Permanently delete a course (Trainer only)
+ * Permanently delete a course (Trainer or Company who owns it, or Admin)
  */
 export async function DELETE(
     request: NextRequest,
@@ -112,12 +112,12 @@ export async function DELETE(
     try {
         const session = await getServerSession(authOptions);
 
-        if (!session || session.user.role !== 'trainer') {
+        if (!session || !['trainer', 'company', 'admin'].includes(session.user.role)) {
             return NextResponse.json(
                 {
                     success: false,
                     error: {
-                        message: 'Unauthorized - Trainer access required',
+                        message: 'Unauthorized - must be a trainer, company, or admin',
                         code: 'UNAUTHORIZED',
                     },
                 },
