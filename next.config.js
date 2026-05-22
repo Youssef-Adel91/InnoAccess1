@@ -1,6 +1,16 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     reactStrictMode: true,
+    // Fix ERR_REQUIRE_ESM: exclude packages that use ESM internally from the
+    // Next.js serverless bundle so Node.js loads them natively at runtime.
+    serverExternalPackages: [
+        'jsdom',
+        'html-encoding-sniffer',
+        '@exodus/bytes',
+        'isomorphic-dompurify',
+        'bcrypt',
+        'nodemailer',
+    ],
     eslint: {
         // Disable ESLint during builds for Vercel deployment
         ignoreDuringBuilds: true,
