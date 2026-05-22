@@ -62,7 +62,7 @@ export default function CompanyCreateCoursePage() {
         const file = e.target.files?.[0];
         if (!file) return;
         if (!file.type.startsWith('image/')) { setError('Please select an image file'); return; }
-        if (file.size > 2 * 1024 * 1024) { setError('Image must be less than 2MB'); return; }
+        if (file.size > 10 * 1024 * 1024) { setError('Image must be less than 10MB'); return; }
         setThumbnailFile(file);
         setThumbnailPreview(URL.createObjectURL(file));
         setError(null);
@@ -309,7 +309,7 @@ export default function CompanyCreateCoursePage() {
                             <label className="flex-1 flex flex-col items-center px-4 py-6 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 transition">
                                 <Upload className="h-8 w-8 text-gray-400 mb-2" aria-hidden="true" />
                                 <span className="text-sm text-gray-600">{thumbnailFile ? thumbnailFile.name : 'Click to upload image'}</span>
-                                <span className="text-xs text-gray-400 mt-1">PNG, JPG up to 2MB</span>
+                                <span className="text-xs text-gray-400 mt-1">PNG, JPG, WEBP up to 10MB</span>
                                 <input type="file" accept="image/*" onChange={handleThumbnailChange} className="hidden" />
                             </label>
                             {thumbnailPreview && (

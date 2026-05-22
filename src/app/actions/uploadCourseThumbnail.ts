@@ -12,8 +12,8 @@ export async function uploadCourseThumbnail(formData: FormData) {
     try {
         const session = await getServerSession(authOptions);
 
-        if (!session || session.user.role !== 'trainer') {
-            throw new Error('Unauthorized - only trainers can upload thumbnails');
+        if (!session || !['trainer', 'company', 'admin'].includes(session.user.role)) {
+            throw new Error('Unauthorized - only trainers or companies can upload thumbnails');
         }
 
         const file = formData.get('thumbnail') as File;
@@ -27,9 +27,9 @@ export async function uploadCourseThumbnail(formData: FormData) {
             throw new Error('Only image files are allowed');
         }
 
-        // Validate file size (max 2MB)
-        if (file.size > 2 * 1024 * 1024) {
-            throw new Error('File size must be less than 2MB');
+        // Validate file size (max 10MB)
+        if (file.size > 10 * 1024 * 1024) {
+            throw new Error('File size must be less than 10MB');
         }
 
         console.log('📤 Uploading course thumbnail to Vercel Blob...');
