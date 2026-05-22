@@ -17,6 +17,7 @@ const PUBLIC_API_ROUTES = [
     '/api/categories',
     '/api/auth',
     '/api/contact',
+    '/api/blob',
 ];
 
 const isPublicApiRoute = (path: string) =>

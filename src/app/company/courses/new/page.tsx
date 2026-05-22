@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { createCourse, getAllCategories } from '@/app/actions/courseManagement';
-import { uploadCourseThumbnail } from '@/app/actions/uploadCourseThumbnail';
+import { upload } from '@vercel/blob/client';
 import { CourseType } from '@/types/course';
 import { ArrowLeft, Upload, DollarSign, Video, Calendar } from 'lucide-react';
 import Link from 'next/link';
@@ -77,11 +77,17 @@ export default function CompanyCreateCoursePage() {
             let thumbnailUrl = '';
             if (thumbnailFile) {
                 setUploadingThumbnail(true);
-                const fd = new FormData();
-                fd.append('thumbnail', thumbnailFile);
-                const up = await uploadCourseThumbnail(fd);
-                if (!up.success) throw new Error(up.error?.message || 'Thumbnail upload failed');
-                thumbnailUrl = up.data?.url || '';
+                // Client-side upload: file goes directly from browser to Vercel Blob
+                // — bypasses the 4.5 MB serverless body limit entirely.
+                const blob = await upload(
+                    `course-thumbnails/${Date.now()}-${thumbnailFile.name}`,
+                    thumbnailFile,
+                    {
+                        access: 'public',
+                        handleUploadUrl: '/api/blob/upload',
+                    }
+                );
+                thumbnailUrl = blob.url;
                 setUploadingThumbnail(false);
             }
 
