@@ -11,6 +11,12 @@ const nextConfig = {
         'bcrypt',
         'nodemailer',
     ],
+    // Allow larger request bodies for Server Actions (e.g. course thumbnail uploads up to 10MB)
+    experimental: {
+        serverActions: {
+            bodySizeLimit: '10mb',
+        },
+    },
     eslint: {
         // Disable ESLint during builds for Vercel deployment
         ignoreDuringBuilds: true,
