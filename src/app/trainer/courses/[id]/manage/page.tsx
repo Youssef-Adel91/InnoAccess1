@@ -74,17 +74,17 @@ export default function ManageCoursePage() {
     const [newModuleTitle, setNewModuleTitle] = useState('');
     const [addingModule, setAddingModule] = useState(false);
 
-    // Check authorization
+    // Check authorization — both trainer and company can manage their courses
     useEffect(() => {
         if (status === 'loading') return;
-        if (!session || session.user.role !== 'trainer') {
+        if (!session || !['trainer', 'company'].includes(session.user.role)) {
             router.push('/');
         }
     }, [session, status, router]);
 
-    // Fetch course
+    // Fetch course — allowed for trainer and company
     useEffect(() => {
-        if (session?.user.role === 'trainer') {
+        if (session?.user.role === 'trainer' || session?.user.role === 'company') {
             fetchCourse();
         }
     }, [session, courseId]);
@@ -274,7 +274,7 @@ export default function ManageCoursePage() {
         );
     }
 
-    if (!session || session.user.role !== 'trainer' || !course) {
+    if (!session || !['trainer', 'company'].includes(session.user.role) || !course) {
         return null;
     }
 

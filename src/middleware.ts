@@ -66,12 +66,16 @@ export default withAuth(
             return NextResponse.redirect(new URL('/', req.url));
         }
 
-        // Protect trainer routes
-        // Note: TrainerProfile approval updates User.role to 'trainer'
-        // So if role !== 'trainer', they either haven't applied or aren't approved yet
+        // Protect trainer routes — but allow company users to access the
+        // shared course-manage page (they need it after creating a course).
         if (path.startsWith('/trainer') && token?.role !== 'trainer') {
-            // Redirect to application page if not a trainer
-            return NextResponse.redirect(new URL('/join-trainer', req.url));
+            // Company users may access /trainer/courses/[id]/manage only
+            const isManagePath = /^\/trainer\/courses\/[^\/]+\/manage/.test(path);
+            if (isManagePath && token?.role === 'company') {
+                // allow through
+            } else {
+                return NextResponse.redirect(new URL('/join-trainer', req.url));
+            }
         }
 
         // Check company approval
