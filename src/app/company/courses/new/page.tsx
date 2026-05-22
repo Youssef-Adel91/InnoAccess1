@@ -76,22 +76,22 @@ export default function CompanyCreateCoursePage() {
             let thumbnailUrl = '';
             if (thumbnailFile) {
                 setUploadingThumbnail(true);
-                // Upload directly to our Edge API route which streams to Vercel Blob
-                // — no serverless body-size limit applies on the Edge runtime.
-                const res = await fetch(
-                    `/api/blob/upload?filename=${encodeURIComponent(thumbnailFile.name)}`,
-                    {
-                        method: 'POST',
-                        headers: { 'Content-Type': thumbnailFile.type },
-                        body: thumbnailFile,
-                    }
+                // Upload directly from browser to Cloudinary (no server involved)
+                // Uses an unsigned upload preset — zero Vercel body-size limits.
+                const fd = new FormData();
+                fd.append('file', thumbnailFile);
+                fd.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!);
+                fd.append('folder', 'course-thumbnails');
+
+                const cloudRes = await fetch(
+                    `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+                    { method: 'POST', body: fd }
                 );
-                if (!res.ok) {
-                    const err = await res.json();
-                    throw new Error(err.error || 'Thumbnail upload failed');
+                if (!cloudRes.ok) {
+                    throw new Error('Thumbnail upload failed. Please try again.');
                 }
-                const { url } = await res.json();
-                thumbnailUrl = url;
+                const cloudData = await cloudRes.json();
+                thumbnailUrl = cloudData.secure_url;
                 setUploadingThumbnail(false);
             }
 
