@@ -24,6 +24,7 @@ interface Course {
     };
     isFree: boolean;
     price: number;
+    originalPrice?: number;
     thumbnail?: string;
     enrollmentCount: number;
     rating: number;
@@ -270,6 +271,11 @@ export default function CourseDetailPage() {
                                         <p className="text-3xl font-bold text-green-600">Free</p>
                                     ) : (
                                         <div>
+                                            {course.originalPrice && course.originalPrice > course.price && (
+                                                <p className="text-xl font-medium text-gray-400 line-through mb-1">
+                                                    ${(course.originalPrice / 100).toFixed(2)}
+                                                </p>
+                                            )}
                                             <p className="text-3xl font-bold text-gray-900">
                                                 ${(course.price / 100).toFixed(2)}
                                             </p>

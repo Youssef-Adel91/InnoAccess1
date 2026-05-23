@@ -17,6 +17,7 @@ export async function createCourse(data: {
     categoryId: string;
     isFree: boolean;
     price?: number;
+    originalPrice?: number;
     thumbnail?: string;
     courseType?: CourseType;
     liveSession?: {
@@ -69,6 +70,7 @@ export async function createCourse(data: {
             trainerId: new Types.ObjectId(session.user.id),
             isFree: data.isFree,
             price: data.isFree ? 0 : (data.price || 0),
+            originalPrice: data.isFree ? undefined : (data.originalPrice || undefined),
             thumbnail: data.thumbnail,
             courseType,
             liveSession: courseType === CourseType.LIVE && data.liveSession ? {

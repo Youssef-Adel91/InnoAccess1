@@ -29,6 +29,7 @@ export default function CreateCoursePage() {
     const [categoryId, setCategoryId] = useState('');
     const [isFree, setIsFree] = useState(false);
     const [price, setPrice] = useState('');
+    const [originalPrice, setOriginalPrice] = useState('');
     const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
     const [thumbnailPreview, setThumbnailPreview] = useState('');
     const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
@@ -123,6 +124,7 @@ export default function CreateCoursePage() {
                 categoryId,
                 isFree,
                 price: isFree ? 0 : Math.round(parseFloat(price) * 100), // Convert to cents
+                originalPrice: (!isFree && originalPrice) ? Math.round(parseFloat(originalPrice) * 100) : undefined,
                 thumbnail: thumbnailUrl,
                 courseType,
                 liveSession: courseType === CourseType.LIVE ? liveSession : undefined,
@@ -403,24 +405,45 @@ export default function CreateCoursePage() {
 
                     {/* Price (show only if paid) */}
                     {!isFree && (
-                        <div className="mb-6">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Price (USD) *
-                            </label>
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <DollarSign className="h-5 w-5 text-gray-400" />
+                        <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Current Price (USD) *
+                                </label>
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <DollarSign className="h-5 w-5 text-gray-400" />
+                                    </div>
+                                    <input
+                                        type="number"
+                                        value={price}
+                                        onChange={(e) => setPrice(e.target.value)}
+                                        required={!isFree}
+                                        min="0"
+                                        step="0.01"
+                                        placeholder="49.99"
+                                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    />
                                 </div>
-                                <input
-                                    type="number"
-                                    value={price}
-                                    onChange={(e) => setPrice(e.target.value)}
-                                    required={!isFree}
-                                    min="0"
-                                    step="0.01"
-                                    placeholder="49.99"
-                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Original Price (Optional)
+                                </label>
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <DollarSign className="h-5 w-5 text-gray-400" />
+                                    </div>
+                                    <input
+                                        type="number"
+                                        value={originalPrice}
+                                        onChange={(e) => setOriginalPrice(e.target.value)}
+                                        min="0"
+                                        step="0.01"
+                                        placeholder="99.99 (Crossed out)"
+                                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    />
+                                </div>
                             </div>
                         </div>
                     )}

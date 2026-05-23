@@ -61,6 +61,7 @@ export interface ICourse extends Document {
     trainerId: Types.ObjectId;
     isFree: boolean; // Is entire course free?
     price: number; // Required if not free (in cents)
+    originalPrice?: number; // Original price before discount (in cents)
     thumbnail?: string; // Cloudinary URL
     courseType: CourseType; // NEW: RECORDED or LIVE
     liveSession?: ILiveSession; // NEW: Live Zoom session details
@@ -199,6 +200,10 @@ const CourseSchema = new Schema<ICourse>(
             },
             min: [0, 'Price cannot be negative'],
             default: 0,
+        },
+        originalPrice: {
+            type: Number,
+            min: [0, 'Original price cannot be negative'],
         },
         thumbnail: String,
         modules: {

@@ -18,6 +18,7 @@ interface Course {
     };
     isFree: boolean;
     price: number;
+    originalPrice?: number;
     thumbnail?: string;
     enrollmentCount: number;
     rating: number;
@@ -212,8 +213,19 @@ export default function CoursesPage() {
                                             </span>
                                         );
                                     })() : null}
-                                    <span className="absolute top-3 right-3 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
-                                        {course.isFree ? 'Free' : formatPrice(course.price)}
+                                    <span className="absolute top-3 right-3 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-2">
+                                        {course.isFree ? (
+                                            <span>Free</span>
+                                        ) : (
+                                            <>
+                                                {course.originalPrice && course.originalPrice > course.price && (
+                                                    <span className="line-through text-blue-200 text-xs">
+                                                        {formatPrice(course.originalPrice)}
+                                                    </span>
+                                                )}
+                                                <span>{formatPrice(course.price)}</span>
+                                            </>
+                                        )}
                                     </span>
                                 </div>
 
