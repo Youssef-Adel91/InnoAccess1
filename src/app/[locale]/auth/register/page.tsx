@@ -1,13 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/Button';
-import TurnstileWidget, { TurnstileRef } from '@/components/ui/TurnstileWidget';
+import type { TurnstileRef } from '@/components/ui/TurnstileWidget';
 import { Eye, EyeOff } from 'lucide-react';
 import TrainerRegistrationForm from '@/components/auth/TrainerRegistrationForm';
 import { stopBackspacePropagation } from '@/lib/keyboardUtils';
+
+const TurnstileWidget = dynamic(() => import('@/components/ui/TurnstileWidget'), { ssr: false });
 
 export default function RegisterPage() {
     const router = useRouter();
@@ -147,9 +150,7 @@ export default function RegisterPage() {
             if (!response.ok) {
                 setError(data.error?.message || 'Registration failed');
                 // Reset CAPTCHA on failure since tokens are single-use
-                if (turnstileRef.current) {
-                    turnstileRef.current.reset();
-                }
+                turnstileRef.current?.reset?.();
             } else {
                 setSuccess(data.data?.message || 'Account created successfully! Please sign in.');
                 // Redirect directly to sign-in (email verification is auto-approved)
