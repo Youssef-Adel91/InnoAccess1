@@ -14,7 +14,8 @@
             "myCourses": "My Courses",
             "trainersDirectory": "Trainers Directory",
             "trainerRequests": "Trainer Requests",
-            "videoApprovals": "Video Approvals"
+            "videoApprovals": "Video Approvals",
+            "volunteerDashboard": "Volunteer Dashboard"
         },
         "auth": {
             "signIn": "Sign In",
@@ -439,5 +440,10 @@
         "submittedApplications": "Submitted job applications",
         "resumesCreated": "Resumes Created",
         "resumesBuilderUsage": "Using CV Builder"
+    },
+    "CourseDetails": {
+        "generateAffiliateLink": "Generate Affiliate Link",
+        "linkCopied": "Affiliate Link Copied!",
+        "affiliateCopyText": "{description}\n\nEnroll now via my link: {url}"
     }
 }

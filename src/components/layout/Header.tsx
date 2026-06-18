@@ -221,6 +221,12 @@ export function Header({ locale = 'en' }: HeaderProps) {
                                 </Link>
                             </>
                         )}
+                        {session?.user?.role === 'volunteer' && (
+                            <Link href="/volunteer/affiliate" className={navLink('/volunteer/affiliate')} aria-current={isActive('/volunteer/affiliate') ? 'page' : undefined}>
+                                <Briefcase className="mr-2 h-4 w-4" aria-hidden="true" />
+                                {t('nav.volunteerDashboard')}
+                            </Link>
+                        )}
                     </div>
 
                     {/* Right side */}
@@ -365,6 +371,12 @@ export function Header({ locale = 'en' }: HeaderProps) {
                                     {t('nav.videoApprovals')}
                                 </Link>
                             </>
+                        )}
+                        {session?.user?.role === 'volunteer' && (
+                            <Link href="/volunteer/affiliate" className={mobileLink('/volunteer/affiliate')} onClick={() => setMobileMenuOpen(false)} aria-current={isActive('/volunteer/affiliate') ? 'page' : undefined}>
+                                <Briefcase className="mr-3 h-5 w-5 shrink-0" aria-hidden="true" />
+                                {t('nav.volunteerDashboard')}
+                            </Link>
                         )}
 
                         {/* Mobile Auth Buttons */}

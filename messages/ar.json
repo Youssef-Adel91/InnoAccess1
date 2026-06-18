@@ -14,7 +14,8 @@
             "myCourses": "دوراتي",
             "trainersDirectory": "دليل المدربين",
             "trainerRequests": "طلبات المدربين",
-            "videoApprovals": "الموافقة على الفيديوهات"
+            "videoApprovals": "الموافقات على الفيديو",
+            "volunteerDashboard": "لوحة تحكم المتطوعين"
         },
         "auth": {
             "signIn": "تسجيل الدخول",
@@ -439,5 +440,10 @@
         "submittedApplications": "طلبات التوظيف المقدمة",
         "resumesCreated": "السير الذاتية",
         "resumesBuilderUsage": "إنشاء عبر المنشئ"
+    },
+    "CourseDetails": {
+        "generateAffiliateLink": "توليد رابط التسويق",
+        "linkCopied": "تم نسخ رابط التسويق!",
+        "affiliateCopyText": "{description}\n\nسجل الآن عبر الرابط الخاص بي: {url}"
     }
 }

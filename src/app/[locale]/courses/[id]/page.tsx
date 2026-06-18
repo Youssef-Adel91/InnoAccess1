@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
-import { ArrowLeft, BookOpen, Clock, Users, Star, Video, Lock, PlayCircle, Calendar } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import { ArrowLeft, BookOpen, Clock, Users, Star, Video, Lock, PlayCircle, Calendar, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { enrollInCourse, checkEnrollment } from '@/app/actions/enrollment';
 import { LiveSessionAction } from '@/components/courses/LiveSessionAction';
@@ -68,6 +69,10 @@ export default function CourseDetailPage() {
     const [error, setError] = useState<string | null>(null);
     const [isEnrolled, setIsEnrolled] = useState(false);
     const [enrolling, setEnrolling] = useState(false);
+    const [generatingAffiliate, setGeneratingAffiliate] = useState(false);
+    const [copied, setCopied] = useState(false);
+
+    const t = useTranslations('CourseDetails');
 
     useEffect(() => {
         fetchCourse();
@@ -125,6 +130,33 @@ export default function CourseDetailPage() {
             setError(err.message);
         } finally {
             setEnrolling(false);
+        }
+    };
+
+    const handleGenerateAffiliateLink = async () => {
+        setGeneratingAffiliate(true);
+        try {
+            const response = await fetch('/api/volunteer/affiliate-code');
+            const result = await response.json();
+            if (!result.success) throw new Error(result.error?.message);
+
+            const code = result.data.affiliateCode;
+            const baseUrl = window.location.origin;
+            const link = `${baseUrl}/${params.locale}/courses/${courseId}?ref=${code}`;
+            
+            const copyText = t('affiliateCopyText', {
+                description: course?.title || 'Check out this course!',
+                url: link
+            });
+
+            await navigator.clipboard.writeText(copyText);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 3000);
+        } catch (err: any) {
+            console.error('Failed to generate affiliate link:', err);
+            alert('Failed to generate affiliate link. Please try again.');
+        } finally {
+            setGeneratingAffiliate(false);
         }
     };
 
@@ -317,6 +349,29 @@ export default function CourseDetailPage() {
                                             Sign in to Enroll
                                         </Button>
                                     </Link>
+                                )}
+
+                                {/* Volunteer Affiliate Action */}
+                                {session?.user?.role === 'volunteer' && (
+                                    <div className="mt-4 pt-4 border-t border-gray-100">
+                                        <Button
+                                            variant="outline"
+                                            className="w-full mb-3 flex items-center justify-center gap-2 border-dashed border-2 border-blue-300 text-blue-700 hover:bg-blue-50 transition-all duration-200"
+                                            onClick={handleGenerateAffiliateLink}
+                                            disabled={generatingAffiliate}
+                                        >
+                                            {generatingAffiliate ? (
+                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                                            ) : copied ? (
+                                                <span className="text-green-600 font-bold flex items-center gap-1">✓ {t('linkCopied')}</span>
+                                            ) : (
+                                                <>
+                                                    <Copy className="h-4 w-4" />
+                                                    {t('generateAffiliateLink')}
+                                                </>
+                                            )}
+                                        </Button>
+                                    </div>
                                 )}
 
                                 <div className="text-sm text-gray-600 space-y-2">
