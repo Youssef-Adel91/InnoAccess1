@@ -41,6 +41,20 @@ export interface IOrder extends Document {
     reviewedBy?: Types.ObjectId;
     reviewedAt?: Date;
 
+    /**
+     * Affiliate referral code captured from the `innoaccess_ref` cookie
+     * at the moment the checkout is initiated.
+     *
+     * WHY here and not in Enrollment or Commission:
+     *   The Paymob webhook is a server-to-server call — there is no browser
+     *   cookie on that request. By saving the cookie value onto the Order at
+     *   checkout initiation (when the browser IS present), the webhook can
+     *   retrieve it from this field without needing a cookie.
+     *
+     * Null for orders that did not originate from an affiliate link.
+     */
+    affiliateRef?: string;
+
     createdAt: Date;
     updatedAt: Date;
 }
@@ -113,6 +127,15 @@ const OrderSchema = new Schema<IOrder>(
         reviewedAt: {
             type: Date,
         },
+
+        // Affiliate referral code — captured from browser cookie at checkout initiation
+        affiliateRef: {
+            type:      String,
+            uppercase: true,
+            trim:      true,
+            match:     [/^VOL_[A-Z0-9]{6}$/, 'Invalid affiliate code format'],
+            // sparse: true via index below — most orders will not have a ref code
+        },
     },
     {
         timestamps: true,
@@ -124,6 +147,8 @@ OrderSchema.index({ userId: 1, courseId: 1 });
 OrderSchema.index({ status: 1, paymentMethod: 1 });
 OrderSchema.index({ paymobOrderId: 1 }, { sparse: true });
 OrderSchema.index({ createdAt: -1 });
+// Sparse index — only indexes orders that have an affiliate referral
+OrderSchema.index({ affiliateRef: 1 }, { sparse: true });
 
 /**
  * Order Model

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Eye, EyeOff } from 'lucide-react';
+import { stopBackspacePropagation } from '@/lib/keyboardUtils';
 
 export default function SignInPage() {
     const router = useRouter();
@@ -103,6 +104,7 @@ export default function SignInPage() {
                                     required
                                     value={formData.password}
                                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                    onKeyDown={stopBackspacePropagation}
                                     className={`${inputClass} pr-12`}
                                     aria-required="true"
                                 />

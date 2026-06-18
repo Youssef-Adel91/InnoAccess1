@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Eye, EyeOff, Lock, CheckCircle } from 'lucide-react';
+import { stopBackspacePropagation } from '@/lib/keyboardUtils';
 
 function ResetPasswordForm() {
     const router = useRouter();
@@ -139,6 +140,7 @@ function ResetPasswordForm() {
                                     required
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
+                                    onKeyDown={stopBackspacePropagation}
                                     className="block w-full rounded-md border border-gray-300 px-3 py-2 pr-10 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     placeholder="Enter new password"
                                 />
@@ -166,6 +168,7 @@ function ResetPasswordForm() {
                                     required
                                     value={confirmPassword}
                                     onChange={(e) => setConfirmPassword(e.target.value)}
+                                    onKeyDown={stopBackspacePropagation}
                                     className="block w-full rounded-md border border-gray-300 px-3 py-2 pr-10 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     placeholder="Confirm new password"
                                 />

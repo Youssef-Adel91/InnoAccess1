@@ -1,3 +1,13 @@
+const createNextIntlPlugin = require('next-intl/plugin');
+
+/**
+ * next-intl plugin — wraps the Next.js config to enable:
+ *  - Server Component message loading via src/i18n/request.ts
+ *  - Automatic locale detection and routing integration
+ *  - TypeScript type generation for translation keys
+ */
+const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     reactStrictMode: true,
@@ -16,6 +26,9 @@ const nextConfig = {
         serverActions: {
             bodySizeLimit: '10mb',
         },
+        // Enable instrumentation.ts for MongoDB pre-warming on server startup.
+        // instrumentationHook is stable and always enabled in Next.js 15.3+
+        // (no longer needs to be explicitly declared here).
     },
     eslint: {
         // Disable ESLint during builds for Vercel deployment
@@ -96,4 +109,4 @@ const nextConfig = {
     },
 }
 
-module.exports = nextConfig
+module.exports = withNextIntl(nextConfig);

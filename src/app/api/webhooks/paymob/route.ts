@@ -4,6 +4,7 @@ import Order, { OrderStatus, PaymentMethod } from '@/models/Order';
 import Enrollment from '@/models/Enrollment';
 import Course from '@/models/Course';
 import { Types } from 'mongoose';
+import { attributeAffiliateCommission } from '@/lib/affiliateUtils';
 
 /**
  * POST /api/webhooks/paymob
@@ -131,6 +132,21 @@ export async function POST(req: NextRequest) {
                 });
 
                 console.log('✅ Course enrollment count updated');
+
+                // د) Affiliate commission attribution
+                // Wrapped in .catch() so a commission error NEVER causes Paymob
+                // to receive a non-200 response and retry the webhook repeatedly.
+                // The idempotency guard inside attributeAffiliateCommission
+                // ensures this is safe even if the webhook fires more than once.
+                await attributeAffiliateCommission(
+                    order._id as Types.ObjectId,
+                    order.userId as Types.ObjectId,
+                    order.courseId as Types.ObjectId,
+                    order.amount,
+                    order.affiliateRef ?? null
+                ).catch((err) =>
+                    console.error('⚠️ Affiliate commission attribution failed (non-fatal):', err)
+                );
             } else {
                 console.log('ℹ️ Enrollment already exists');
             }

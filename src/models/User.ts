@@ -59,6 +59,17 @@ export interface IUser extends Document {
     verificationTokenExpiry?: Date; // OTP expiry (15 minutes)
     resetPasswordToken?: string; // For password reset flow
     resetPasswordExpires?: Date; // Token expiry (1 hour)
+
+    // ── Affiliate Marketing (Volunteer role only) ────────────────────────────
+    /**
+     * Unique affiliate code in the format VOL_XXXXXX.
+     * Generated lazily on first visit to the affiliate dashboard — NOT at registration.
+     * Null for all non-volunteer users.
+     */
+    affiliateCode?: string;
+    /** Timestamp of when the code was first generated */
+    affiliateCodeGeneratedAt?: Date;
+
     createdAt: Date;
     updatedAt: Date;
 }
@@ -191,6 +202,19 @@ const UserSchema = new Schema<IUser>(
             type: Date,
             select: false, // Don't return by default
         },
+
+        // ── Affiliate Marketing ───────────────────────────────────────────────
+        affiliateCode: {
+            type:      String,
+            uppercase: true,
+            trim:      true,
+            match:     [/^VOL_[A-Z0-9]{6}$/, 'Invalid affiliate code format'],
+            // unique + sparse index defined below
+            // sparse: only volunteers who have generated a code are indexed
+        },
+        affiliateCodeGeneratedAt: {
+            type: Date,
+        },
     },
     {
         timestamps: true,
@@ -202,6 +226,9 @@ const UserSchema = new Schema<IUser>(
 UserSchema.index({ role: 1 });
 UserSchema.index({ isApproved: 1, role: 1 });
 UserSchema.index({ verificationToken: 1 });
+// Affiliate code — sparse so only volunteers with a code are indexed
+// unique ensures no two volunteers can ever share the same code
+UserSchema.index({ affiliateCode: 1 }, { unique: true, sparse: true });
 
 // Prevent returning password in JSON
 UserSchema.methods.toJSON = function () {

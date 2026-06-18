@@ -1,0 +1,151 @@
+{
+    "Header": {
+        "logoLabel": "InnoAccess Home",
+        "nav": {
+            "jobs": "Jobs",
+            "courses": "Courses",
+            "aboutUs": "About Us",
+            "features": "Features",
+            "contact": "Contact",
+            "myApplications": "My Applications",
+            "pendingApplications": "{count} pending applications",
+            "becomeTrainer": "Become a Trainer",
+            "myJobs": "My Jobs",
+            "myCourses": "My Courses",
+            "trainerRequests": "Trainer Requests",
+            "videoApprovals": "Video Approvals"
+        },
+        "auth": {
+            "signIn": "Sign In",
+            "getStarted": "Get Started",
+            "dashboard": "Dashboard",
+            "signOut": "Sign Out",
+            "loading": "Loading user session"
+        },
+        "mobile": {
+            "open": "Open mobile menu",
+            "close": "Close mobile menu",
+            "menuOpen": "Mobile navigation menu open",
+            "getStartedFree": "Get Started — It's Free"
+        },
+        "notifications": {
+            "label": "Notifications",
+            "unreadLabel": "Notifications ({count} unread)"
+        },
+        "languageSwitcher": {
+            "switchToArabic": "العربية",
+            "switchToEnglish": "English",
+            "ariaLabelToAr": "Switch to Arabic",
+            "ariaLabelToEn": "Switch to English"
+        }
+    },
+    "Footer": {
+        "heading": "Footer",
+        "logoLabel": "InnoAccess Home",
+        "tagline": "Egypt's first fully accessible job board and learning platform, designed for visually impaired individuals.",
+        "sections": {
+            "platform": "Platform",
+            "company": "Company",
+            "legal": "Legal"
+        },
+        "links": {
+            "findJobs": "Find Jobs",
+            "browseCourses": "Browse Courses",
+            "postJob": "Post a Job",
+            "teachOnInnoAccess": "Teach on InnoAccess",
+            "aboutUs": "About Us",
+            "contact": "Contact"
+        },
+        "social": {
+            "followLabel": "Follow us on {platform} (opens in new tab)"
+        },
+        "copyright": "© {year} InnoAccess. All rights reserved."
+    },
+    "Landing": {
+        "hero": {
+            "heading": "Empowering Careers Through",
+            "headingAccent": "Accessible Opportunities",
+            "description": "InnoAccess is Egypt's first fully accessible job board and learning platform, designed for visually impaired individuals with complete screen reader support.",
+            "findJobs": "Find Jobs",
+            "findJobsLabel": "Browse available jobs",
+            "browseCourses": "Browse Courses",
+            "browseCoursesLabel": "Explore available courses"
+        },
+        "stats": {
+            "heading": "Platform Statistics",
+            "activeJobs": "Active Jobs",
+            "coursesAvailable": "Courses Available",
+            "platformUsers": "Platform Users",
+            "companies": "Companies"
+        },
+        "features": {
+            "heading": "Built for Accessibility",
+            "subheading": "Every feature is designed with accessibility in mind, ensuring a seamless experience for all users.",
+            "screenReader": {
+                "title": "Screen Reader Optimized",
+                "description": "Full NVDA, JAWS, and VoiceOver compatibility with WCAG 2.1 AAA standards"
+            },
+            "jobBoard": {
+                "title": "Accessible Job Board",
+                "description": "Find inclusive job opportunities with detailed accessibility features"
+            },
+            "lms": {
+                "title": "Learning Platform",
+                "description": "Professional courses with transcripts and keyboard-accessible video players"
+            },
+            "navigation": {
+                "title": "Easy Navigation",
+                "description": "Keyboard-only navigation, skip links, and logical focus management"
+            },
+            "security": {
+                "title": "Secure & Private",
+                "description": "Your data is protected with industry-standard security measures"
+            },
+            "community": {
+                "title": "Inclusive Community",
+                "description": "Connect with employers and trainers who value accessibility"
+            }
+        },
+        "cta": {
+            "heading": "Ready to Get Started?",
+            "description": "Join thousands of users who are finding jobs and learning new skills on InnoAccess.",
+            "createAccount": "Create Free Account"
+        }
+    },
+    "Auth": {
+        "signIn": {
+            "pageTitle": "Sign In to InnoAccess",
+            "noAccount": "Or",
+            "createAccount": "create a new account",
+            "emailLabel": "Email Address",
+            "passwordLabel": "Password",
+            "rememberMe": "Remember me",
+            "forgotPassword": "Forgot password?",
+            "submitButton": "Sign In",
+            "showPassword": "Show password",
+            "hidePassword": "Hide password"
+        },
+        "register": {
+            "pageTitle": "Create Your Account",
+            "alreadyHaveAccount": "Already have an account?",
+            "signInLink": "Sign in"
+        },
+        "resetPassword": {
+            "pageTitle": "Reset Your Password",
+            "newPasswordLabel": "New Password",
+            "confirmPasswordLabel": "Confirm New Password"
+        },
+        "forgotPassword": {
+            "pageTitle": "Forgot Your Password?",
+            "emailLabel": "Email Address",
+            "submitButton": "Send Reset Link"
+        },
+        "errors": {
+            "unexpected": "An unexpected error occurred"
+        }
+    },
+    "Common": {
+        "skipToContent": "Skip to main content",
+        "loading": "Loading..."
+    }
+}

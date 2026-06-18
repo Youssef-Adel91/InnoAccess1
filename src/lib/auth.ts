@@ -15,6 +15,14 @@ import { verifyPassword } from './auth-utils';
  * Role is captured upfront at registration — no post-login onboarding needed.
  */
 export const authOptions: NextAuthOptions = {
+    // ─── Cloudflare / Reverse-Proxy Compatibility ──────────────────────────────
+    // trustHost: true tells NextAuth to honour the X-Forwarded-Host header that
+    // Cloudflare (and Vercel's load balancer) injects.  Without this, NextAuth
+    // compares the Host header (the internal Vercel hostname) against the
+    // NEXTAUTH_URL value (the public domain), sees a mismatch, and either hangs
+    // or returns a 400 "Host mismatch" error — the root cause of the hanging
+    // auth sessions reported behind Cloudflare.
+    trustHost: true,
     providers: [
         CredentialsProvider({
             name: 'Credentials',
@@ -120,9 +128,13 @@ export const authOptions: NextAuthOptions = {
     },
 
     pages: {
-        signIn: '/auth/signin',
-        signOut: '/auth/signout',
-        error: '/auth/error',
+        // Auth pages are now under the [locale] segment (e.g. /en/auth/signin).
+        // We use the default locale prefix here so NextAuth redirects correctly.
+        // When a user with a different locale is redirected, next-intl's middleware
+        // will detect their NEXT_LOCALE cookie and redirect to /ar/auth/signin.
+        signIn: '/en/auth/signin',
+        signOut: '/en/auth/signout',
+        error: '/en/auth/error',
     },
 
     session: {
@@ -131,4 +143,25 @@ export const authOptions: NextAuthOptions = {
     },
 
     secret: process.env.NEXTAUTH_SECRET,
+
+    // ─── Cookie hardening for Cloudflare HTTPS proxy ────────────────────────────
+    // `useSecureCookies` must be true in production so the session cookie
+    // carries the `Secure` attribute.  Cloudflare always terminates TLS, so
+    // requests from CF → Vercel are HTTPS even if Node thinks it's HTTP.
+    // This also ensures the `__Host-` prefix works correctly on the cookie.
+    useSecureCookies: process.env.NODE_ENV === 'production',
+
+    cookies: {
+        sessionToken: {
+            name: process.env.NODE_ENV === 'production'
+                ? '__Secure-next-auth.session-token'
+                : 'next-auth.session-token',
+            options: {
+                httpOnly: true,
+                sameSite: 'lax',
+                path: '/',
+                secure: process.env.NODE_ENV === 'production',
+            },
+        },
+    },
 };

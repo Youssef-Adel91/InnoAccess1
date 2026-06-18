@@ -11,6 +11,8 @@ import { Types } from 'mongoose';
 import { initiateCardPayment, initiateWalletPayment, BillingData } from '@/lib/paymob';
 import { CURRENCY } from '@/lib/payment-constants';
 import { sendEmail } from '@/lib/mail';
+import { cookies } from 'next/headers';
+import { attributeAffiliateCommission } from '@/lib/affiliateUtils';
 
 /**
  * Submit manual payment with receipt screenshot
@@ -85,6 +87,14 @@ export async function submitManualPayment(courseId: string, formData: FormData) 
         // Get phone number from form
         const phoneNumber = formData.get('phoneNumber') as string;
 
+        // ── Affiliate referral: read the httpOnly cookie set by middleware ────
+        // The cookie was set when the user visited any page with ?ref=VOL_XXXX.
+        // We capture it here (while the browser is present) and store it on the
+        // Order so the commission can be attributed at approval time without
+        // needing a browser session.
+        const cookieStore = await cookies();
+        const affiliateRef = cookieStore.get('innoaccess_ref')?.value ?? undefined;
+
         // Create order
         const order = await Order.create({
             userId: new Types.ObjectId(session.user.id),
@@ -95,6 +105,7 @@ export async function submitManualPayment(courseId: string, formData: FormData) 
             paymentMethod: PaymentMethod.MANUAL,
             receiptUrl: blob.url,
             manualTransferNumber: phoneNumber || undefined,
+            affiliateRef,  // undefined if no referral cookie — Mongoose omits undefined fields
         });
 
         console.log('✅ Manual payment submitted:', order._id);
@@ -155,6 +166,12 @@ export async function initPaymobPayment(
             throw new Error('You are already enrolled in this course');
         }
 
+        // ── Affiliate referral: read the httpOnly cookie set by middleware ────
+        // Same pattern as submitManualPayment — capture now while browser is
+        // present. The Paymob webhook fires server-to-server with no cookies.
+        const cookieStore = await cookies();
+        const affiliateRef = cookieStore.get('innoaccess_ref')?.value ?? undefined;
+
         // Create order first
         const order = await Order.create({
             userId: new Types.ObjectId(session.user.id),
@@ -163,6 +180,7 @@ export async function initPaymobPayment(
             currency: CURRENCY,
             status: OrderStatus.PENDING,
             paymentMethod: PaymentMethod.PAYMOB,
+            affiliateRef,  // undefined if no referral cookie
         });
 
         // Prepare billing data
@@ -281,6 +299,18 @@ export async function approveManualPayment(orderId: string) {
             console.warn('⚠️ Could not update course enrollment count:', courseError);
             // Don't fail the approval if course update fails
         }
+
+        // ── Affiliate commission attribution ──────────────────────────────────
+        // Called AFTER the enrollment is confirmed so we never credit a commission
+        // for an order that somehow failed to enroll.
+        // This call is non-throwing — a commission bug cannot fail an approval.
+        await attributeAffiliateCommission(
+            order._id as Types.ObjectId,
+            order.userId as Types.ObjectId,
+            order.courseId as Types.ObjectId,
+            order.amount,
+            order.affiliateRef ?? null
+        );
 
         console.log('📋 Checking email conditions for approval...');
         console.log('userId type:', typeof order.userId);
@@ -595,6 +625,19 @@ export async function verifyPaymentStatus(orderId: string) {
                 });
 
                 console.log('✅ Manual verification: Enrollment created for order:', orderId);
+
+                // ── Affiliate commission (Paymob fallback path) ───────────────
+                // The primary attribution happens in the webhook. This covers the
+                // edge case where the webhook never fires but the admin manually
+                // verifies via the Paymob API. The idempotency check inside
+                // attributeAffiliateCommission guarantees no double-commission.
+                await attributeAffiliateCommission(
+                    order._id as Types.ObjectId,
+                    order.userId as Types.ObjectId,
+                    order.courseId as Types.ObjectId,
+                    order.amount,
+                    order.affiliateRef ?? null
+                );
             }
 
             return {

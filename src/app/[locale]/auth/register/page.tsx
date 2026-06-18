@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import TurnstileWidget from '@/components/ui/TurnstileWidget';
 import { Eye, EyeOff } from 'lucide-react';
 import TrainerRegistrationForm from '@/components/auth/TrainerRegistrationForm';
+import { stopBackspacePropagation } from '@/lib/keyboardUtils';
 
 export default function RegisterPage() {
     const router = useRouter();
@@ -406,6 +407,7 @@ export default function RegisterPage() {
                                     minLength={8}
                                     value={formData.password}
                                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                    onKeyDown={stopBackspacePropagation}
                                     className="block w-full rounded-xl border border-gray-300 px-4 py-3 pr-12 text-base shadow-sm min-h-[44px] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
                                     aria-required="true"
                                     aria-describedby="password-requirements"
@@ -437,6 +439,7 @@ export default function RegisterPage() {
                                 required
                                 value={formData.confirmPassword}
                                 onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                                onKeyDown={stopBackspacePropagation}
                                 className="mt-1 block w-full rounded-xl border border-gray-300 px-4 py-3 text-base shadow-sm min-h-[44px] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
                                 aria-required="true"
                             />

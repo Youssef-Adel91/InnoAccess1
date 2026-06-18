@@ -1,0 +1,151 @@
+{
+    "Header": {
+        "logoLabel": "الرئيسية - إنو أكسس",
+        "nav": {
+            "jobs": "الوظائف",
+            "courses": "الدورات",
+            "aboutUs": "عن المنصة",
+            "features": "المميزات",
+            "contact": "تواصل معنا",
+            "myApplications": "طلباتي",
+            "pendingApplications": "{count} طلبات معلقة",
+            "becomeTrainer": "انضم كمدرب",
+            "myJobs": "وظائفي",
+            "myCourses": "دوراتي",
+            "trainerRequests": "طلبات المدربين",
+            "videoApprovals": "الموافقة على الفيديوهات"
+        },
+        "auth": {
+            "signIn": "تسجيل الدخول",
+            "getStarted": "ابدأ الآن",
+            "dashboard": "لوحة التحكم",
+            "signOut": "تسجيل الخروج",
+            "loading": "جارٍ تحميل بيانات المستخدم"
+        },
+        "mobile": {
+            "open": "فتح القائمة",
+            "close": "إغلاق القائمة",
+            "menuOpen": "القائمة المتنقلة مفتوحة",
+            "getStartedFree": "ابدأ الآن — مجانًا"
+        },
+        "notifications": {
+            "label": "الإشعارات",
+            "unreadLabel": "الإشعارات ({count} غير مقروءة)"
+        },
+        "languageSwitcher": {
+            "switchToArabic": "العربية",
+            "switchToEnglish": "English",
+            "ariaLabelToAr": "التبديل إلى العربية",
+            "ariaLabelToEn": "Switch to English"
+        }
+    },
+    "Footer": {
+        "heading": "تذييل الصفحة",
+        "logoLabel": "الرئيسية - إنو أكسس",
+        "tagline": "أول منصة مصرية للوظائف والتعلم تضمن إمكانية الوصول الكاملة للأفراد ضعاف البصر.",
+        "sections": {
+            "platform": "المنصة",
+            "company": "الشركة",
+            "legal": "القانونية"
+        },
+        "links": {
+            "findJobs": "ابحث عن وظيفة",
+            "browseCourses": "تصفح الدورات",
+            "postJob": "انشر وظيفة",
+            "teachOnInnoAccess": "درّس على إنو أكسس",
+            "aboutUs": "عن المنصة",
+            "contact": "تواصل معنا"
+        },
+        "social": {
+            "followLabel": "تابعنا على {platform} (يفتح في نافذة جديدة)"
+        },
+        "copyright": "© {year} إنو أكسس. جميع الحقوق محفوظة."
+    },
+    "Landing": {
+        "hero": {
+            "heading": "نمكّن المسارات المهنية من خلال",
+            "headingAccent": "فرص قابلة للوصول",
+            "description": "إنو أكسس هي أول منصة مصرية للوظائف والتعلم تضمن إمكانية الوصول الكاملة، مصممة خصيصًا للأفراد ضعاف البصر مع دعم كامل لقارئات الشاشة.",
+            "findJobs": "ابحث عن وظيفة",
+            "findJobsLabel": "تصفح الوظائف المتاحة",
+            "browseCourses": "تصفح الدورات",
+            "browseCoursesLabel": "استكشف الدورات المتاحة"
+        },
+        "stats": {
+            "heading": "إحصاءات المنصة",
+            "activeJobs": "وظيفة نشطة",
+            "coursesAvailable": "دورة متاحة",
+            "platformUsers": "مستخدم نشط",
+            "companies": "شركة"
+        },
+        "features": {
+            "heading": "مبنية من أجل إمكانية الوصول",
+            "subheading": "كل ميزة مصممة مع مراعاة إمكانية الوصول، لضمان تجربة سلسة لجميع المستخدمين.",
+            "screenReader": {
+                "title": "محسّن لقارئات الشاشة",
+                "description": "توافق كامل مع NVDA و JAWS و VoiceOver وفق معايير WCAG 2.1 AAA"
+            },
+            "jobBoard": {
+                "title": "لوحة وظائف متاحة للجميع",
+                "description": "اعثر على فرص عمل شاملة مع تفاصيل ميزات إمكانية الوصول"
+            },
+            "lms": {
+                "title": "منصة التعلم",
+                "description": "دورات احترافية مع نصوص مكتوبة ومشغلات فيديو قابلة للتشغيل بلوحة المفاتيح"
+            },
+            "navigation": {
+                "title": "تصفح سهل",
+                "description": "تنقل بلوحة المفاتيح فقط، وروابط تخطي، وإدارة تركيز منطقية"
+            },
+            "security": {
+                "title": "آمن وخاص",
+                "description": "بياناتك محمية بأحدث معايير الأمان الصناعية"
+            },
+            "community": {
+                "title": "مجتمع شامل",
+                "description": "تواصل مع أصحاب العمل والمدربين الذين يقدرون إمكانية الوصول"
+            }
+        },
+        "cta": {
+            "heading": "هل أنت مستعد للبدء؟",
+            "description": "انضم إلى آلاف المستخدمين الذين يجدون وظائف ويتعلمون مهارات جديدة على إنو أكسس.",
+            "createAccount": "إنشاء حساب مجاني"
+        }
+    },
+    "Auth": {
+        "signIn": {
+            "pageTitle": "تسجيل الدخول إلى إنو أكسس",
+            "noAccount": "أو",
+            "createAccount": "إنشاء حساب جديد",
+            "emailLabel": "البريد الإلكتروني",
+            "passwordLabel": "كلمة المرور",
+            "rememberMe": "تذكرني",
+            "forgotPassword": "نسيت كلمة المرور؟",
+            "submitButton": "تسجيل الدخول",
+            "showPassword": "إظهار كلمة المرور",
+            "hidePassword": "إخفاء كلمة المرور"
+        },
+        "register": {
+            "pageTitle": "إنشاء حسابك",
+            "alreadyHaveAccount": "لديك حساب بالفعل؟",
+            "signInLink": "تسجيل الدخول"
+        },
+        "resetPassword": {
+            "pageTitle": "إعادة تعيين كلمة المرور",
+            "newPasswordLabel": "كلمة المرور الجديدة",
+            "confirmPasswordLabel": "تأكيد كلمة المرور الجديدة"
+        },
+        "forgotPassword": {
+            "pageTitle": "هل نسيت كلمة مرورك؟",
+            "emailLabel": "البريد الإلكتروني",
+            "submitButton": "إرسال رابط الاسترداد"
+        },
+        "errors": {
+            "unexpected": "حدث خطأ غير متوقع"
+        }
+    },
+    "Common": {
+        "skipToContent": "انتقل إلى المحتوى الرئيسي",
+        "loading": "جارٍ التحميل..."
+    }
+}
