@@ -1,22 +1,66 @@
 /**
  * Affiliate Marketing Utilities
  *
- * Contains two exports used throughout the affiliate system:
+ * Contains exports used throughout the affiliate system:
  *
  *  1. generateAffiliateCode()           — creates a unique VOL_XXXXXX code
- *  2. attributeAffiliateCommission()    — the single, canonical function that
+ *  2. getCommissionTier()               — derives the correct tier/rate from total sales
+ *  3. attributeAffiliateCommission()    — the single, canonical function that
  *                                         creates a Commission and updates the
  *                                         Wallet. Called from BOTH payment paths:
  *                                         - Manual order approval (admin)
- *                                         - Paymob webhook (future)
+ *                                         - Paymob webhook
+ *
+ * ── Tiered Commission System ───────────────────────────────────────────────────
+ * Commission rate is based on the volunteer's total historical sales count:
+ *
+ *   Tier 1 (Starter):  0 – 49 sales  → 10%
+ *   Tier 2 (Pro):     50 – 99 sales  → 15%
+ *   Tier 3 (Elite):  100+    sales  → 20% (maximum cap)
+ *
+ * ── Math Bug Fix ──────────────────────────────────────────────────────────────
+ * Order.amount is stored in CENTS (e.g. 20000 for a 200 EGP course).
+ * All commission calculations divide by 100 first to get the EGP value.
  */
 
 import { Types } from 'mongoose';
 
-// ─── Constants ─────────────────────────────────────────────────────────────────
+// ─── Tiered Commission Configuration ──────────────────────────────────────────
 
-/** Commission rate: 10% of the sale amount */
-export const COMMISSION_RATE = 0.10;
+export interface CommissionTier {
+    /** Human-readable tier number (1, 2, or 3) */
+    tier:     1 | 2 | 3;
+    /** Minimum total sales to qualify for this tier */
+    minSales: number;
+    /** Decimal commission rate (e.g. 0.10 = 10%) */
+    rate:     number;
+    /** Human-readable rate label (e.g. "10%") */
+    label:    string;
+    /** Human-readable tier name */
+    name:     string;
+}
+
+/**
+ * Commission tiers, ordered highest-to-lowest so `.find()` returns
+ * the correct (highest qualifying) tier.
+ */
+export const COMMISSION_TIERS: readonly CommissionTier[] = [
+    { tier: 3, minSales: 100, rate: 0.20, label: '20%', name: 'Elite'   },
+    { tier: 2, minSales: 50,  rate: 0.15, label: '15%', name: 'Pro'     },
+    { tier: 1, minSales: 0,   rate: 0.10, label: '10%', name: 'Starter' },
+] as const;
+
+/** Default / baseline tier (Tier 1 — Starter) */
+export const DEFAULT_COMMISSION_TIER = COMMISSION_TIERS[2]; // tier 1 at index 2
+
+/**
+ * Returns the commission tier that applies for the given total-sales count.
+ *
+ * @param totalSales  Number of completed commissions for the volunteer
+ */
+export function getCommissionTier(totalSales: number): CommissionTier {
+    return COMMISSION_TIERS.find((t) => totalSales >= t.minSales) ?? DEFAULT_COMMISSION_TIER;
+}
 
 /** How many days a commission stays locked after a sale (anti-refund hold) */
 export const COMMISSION_LOCK_DAYS = 14;
@@ -31,7 +75,7 @@ export const COMMISSION_LOCK_DAYS = 14;
  * but the caller should still retry on MongoDB unique-index violations.
  */
 export function generateAffiliateCode(): string {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const chars  = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     const suffix = Array.from({ length: 6 }, () =>
         chars[Math.floor(Math.random() * chars.length)]
     ).join('');
@@ -48,6 +92,10 @@ export function generateAffiliateCode(): string {
  *   - Manual order approval:  /api/admin/orders/[id]/approve
  *   - Paymob webhook:         /api/webhooks/paymob
  *
+ * ── IMPORTANT: saleAmount is in CENTS ─────────────────────────────────────────
+ * Order.amount is stored in cents (e.g. 20000 for a 200 EGP course).
+ * This function converts to EGP internally before computing commissions.
+ *
  * Guards in order:
  *   1. Missing / malformed ref code       → skip silently
  *   2. Zero-amount sale (free course)     → skip silently
@@ -59,6 +107,7 @@ export function generateAffiliateCode(): string {
  *   - Creates one Commission document (status: 'pending', locked 14 days)
  *   - Upserts Wallet (auto-creates on first commission) using $inc to avoid
  *     read-modify-write races
+ *   - Commission rate is dynamically derived from volunteer's total sales count
  *
  * This function NEVER throws — it logs errors and returns void so a commission
  * bug cannot fail a payment or an admin approval action.
@@ -66,7 +115,7 @@ export function generateAffiliateCode(): string {
  * @param orderId      MongoDB ObjectId of the Order
  * @param buyerId      MongoDB ObjectId of the buyer (User)
  * @param courseId     MongoDB ObjectId of the Course
- * @param saleAmount   The paid amount in EGP (whole units, not cents)
+ * @param saleAmount   The paid amount in CENTS (e.g. 20000 for 200 EGP)
  * @param refCode      The affiliate code from Order.affiliateRef (may be nullish)
  */
 export async function attributeAffiliateCommission(
@@ -97,8 +146,8 @@ export async function attributeAffiliateCommission(
         // ── Guard 3: Volunteer must exist and have the correct role ───────────
         const volunteer = await User.findOne({
             affiliateCode: refCode,
-            role: 'volunteer',
-            isActive: true,
+            role:          'volunteer',
+            isActive:      true,
         }).select('_id role').lean();
 
         if (!volunteer) {
@@ -119,10 +168,22 @@ export async function attributeAffiliateCommission(
             return;
         }
 
-        // ── Calculate commission ──────────────────────────────────────────────
-        // Use Math.round to avoid floating-point issues (e.g. 500 * 0.10 = 50.00000...1)
-        const commissionAmount = Math.round(saleAmount * COMMISSION_RATE);
-        const unlocksAt = new Date(Date.now() + COMMISSION_LOCK_DAYS * 24 * 60 * 60 * 1000);
+        // ── Determine commission tier from total sales count ──────────────────
+        // Count all existing commissions for this volunteer (all statuses)
+        // to determine their tier BEFORE this new sale.
+        const existingSalesCount = await Commission.countDocuments({
+            volunteerId: volunteer._id,
+        });
+
+        const tier           = getCommissionTier(existingSalesCount);
+        const commissionRate = tier.rate;
+
+        // ── BUG FIX: Convert cents → EGP before computing commission ─────────
+        // Order.amount is stored in cents (e.g. 20000 for 200 EGP).
+        // Divide by 100 to get the EGP value, then apply the rate.
+        const saleAmountEGP    = saleAmount / 100;
+        const commissionAmount = Math.round(saleAmountEGP * commissionRate);
+        const unlocksAt        = new Date(Date.now() + COMMISSION_LOCK_DAYS * 24 * 60 * 60 * 1000);
 
         // ── Create Commission document ────────────────────────────────────────
         await Commission.create({
@@ -131,8 +192,8 @@ export async function attributeAffiliateCommission(
             courseId,
             orderId,
             affiliateCode:    refCode,
-            saleAmount,
-            commissionRate:   COMMISSION_RATE,
+            saleAmount:       saleAmountEGP,   // store in EGP for display/audit
+            commissionRate,
             commissionAmount,
             status:           'pending',
             unlocksAt,
@@ -160,7 +221,8 @@ export async function attributeAffiliateCommission(
 
         console.log(
             `✅ Affiliate commission attributed: ` +
-            `${refCode} → EGP ${commissionAmount} (order ${orderId}), ` +
+            `${refCode} [Tier ${tier.tier} — ${tier.label}] → ` +
+            `EGP ${commissionAmount} on EGP ${saleAmountEGP} sale (order ${orderId}), ` +
             `unlocks ${unlocksAt.toISOString()}`
         );
 

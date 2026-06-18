@@ -217,6 +217,34 @@
             "commissions": "Commission History",
             "wallet": "My Wallet",
             "requestPayout": "Request Payout"
+        },
+        "leaderboard": {
+            "title": "Top Affiliates Leaderboard",
+            "subtitle": "Global rankings by total successful referral sales",
+            "rank": "Rank",
+            "affiliate": "Affiliate",
+            "totalSales": "Total Sales",
+            "currentTier": "Tier",
+            "youLabel": "You",
+            "yourRank": "Your Rank: #{rank}",
+            "noData": "No affiliate sales yet. Be the first!",
+            "salesUnit": "sales",
+            "tierGuide": "Commission Tier Guide"
+        },
+        "gamification": {
+            "yourTier": "Commission Tier",
+            "totalSales": "{count} total sale",
+            "totalSalesPlural": "{count} total sales",
+            "nextTierAt": "Next tier at {count} sales",
+            "moreToGo": "{count} more to go",
+            "maxTier": "Maximum Tier!",
+            "maxTierSub": "You're at the top 🏆",
+            "tier1Name": "Starter",
+            "tier2Name": "Pro",
+            "tier3Name": "Elite",
+            "tier1Range": "0–49 sales",
+            "tier2Range": "50–99 sales",
+            "tier3Range": "100+ sales"
         }
     },
     "Courses": {

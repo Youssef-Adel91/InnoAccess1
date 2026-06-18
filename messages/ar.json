@@ -217,6 +217,34 @@
             "commissions": "سجل العمولات",
             "wallet": "محفظتي",
             "requestPayout": "طلب سحب"
+        },
+        "leaderboard": {
+            "title": "لوحة المتصدرين — أفضل الشركاء",
+            "subtitle": "الترتيب العالمي حسب إجمالي مبيعات الإحالة الناجحة",
+            "rank": "الترتيب",
+            "affiliate": "الشريك",
+            "totalSales": "إجمالي المبيعات",
+            "currentTier": "المستوى",
+            "youLabel": "أنت",
+            "yourRank": "ترتيبك: #{rank}",
+            "noData": "لا توجد مبيعات إحالة بعد. كن الأول!",
+            "salesUnit": "مبيعات",
+            "tierGuide": "دليل مستويات العمولة"
+        },
+        "gamification": {
+            "yourTier": "مستوى العمولة",
+            "totalSales": "{count} مبيعة",
+            "totalSalesPlural": "{count} مبيعة",
+            "nextTierAt": "المستوى التالي عند {count} مبيعة",
+            "moreToGo": "{count} مبيعة للوصول",
+            "maxTier": "أعلى مستوى!",
+            "maxTierSub": "أنت في القمة 🏆",
+            "tier1Name": "مبتدئ",
+            "tier2Name": "محترف",
+            "tier3Name": "نخبة",
+            "tier1Range": "٠–٤٩ مبيعة",
+            "tier2Range": "٥٠–٩٩ مبيعة",
+            "tier3Range": "١٠٠+ مبيعة"
         }
     },
     "Courses": {

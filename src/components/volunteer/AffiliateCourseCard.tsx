@@ -17,8 +17,14 @@ export interface AffiliateCourse {
 }
 
 interface AffiliateCourseCardProps {
-    course:        AffiliateCourse;
-    affiliateCode: string;
+    course:         AffiliateCourse;
+    affiliateCode:  string;
+    /** Current user's commission rate from their tier (e.g. 0.10, 0.15, 0.20) */
+    commissionRate?: number;
+    /** Human-readable tier label (e.g. "10%", "15%", "20%") */
+    tierLabel?:      string;
+    /** Tier name (e.g. "Starter", "Pro", "Elite") */
+    tierName?:       string;
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
@@ -43,7 +49,13 @@ function formatEGP(amount: number): string {
 
 // ─── Component ─────────────────────────────────────────────────────────────────
 
-export default function AffiliateCourseCard({ course, affiliateCode }: AffiliateCourseCardProps) {
+export default function AffiliateCourseCard({
+    course,
+    affiliateCode,
+    commissionRate = 0.10,
+    tierLabel      = '10%',
+    tierName       = 'Starter',
+}: AffiliateCourseCardProps) {
     const [copyState, setCopyState] = useState<'idle' | 'copied' | 'error'>('idle');
     const [announcement, setAnnouncement] = useState('');
 
@@ -173,9 +185,14 @@ export default function AffiliateCourseCard({ course, affiliateCode }: Affiliate
                 {/* Commission note — only for paid courses */}
                 {!course.isFree && (
                     <div className="bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">
-                        <p className="text-xs font-medium text-emerald-700">
-                            💰 You earn <strong>{formatEGP(Math.round(course.price * 0.1))}</strong> per sale
-                        </p>
+                        <div className="flex items-center justify-between gap-2">
+                            <p className="text-xs font-medium text-emerald-700">
+                                💰 You earn <strong>{formatEGP(Math.round(course.price * commissionRate))}</strong> per sale
+                            </p>
+                            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-600 text-white shrink-0">
+                                {tierName} · {tierLabel}
+                            </span>
+                        </div>
                     </div>
                 )}
 

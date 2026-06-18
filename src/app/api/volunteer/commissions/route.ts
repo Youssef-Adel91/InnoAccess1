@@ -5,6 +5,7 @@ import { connectDB } from '@/lib/db';
 import Commission, { CommissionStatus } from '@/models/Commission';
 import Wallet from '@/models/Wallet';
 import { Types } from 'mongoose';
+import { getCommissionTier } from '@/lib/affiliateUtils';
 
 /**
  * GET /api/volunteer/commissions
@@ -94,7 +95,7 @@ export async function GET() {
                     pipeline:     [{ $project: { title: 1, thumbnail: 1 } }],
                 },
             },
-            { $unwind: { path: '$course', preserveNullAndEmpty: true } },
+            { $unwind: { path: '$course', preserveNullAndEmptyArrays: true } },
             {
                 $project: {
                     _id:              1,
@@ -123,9 +124,11 @@ export async function GET() {
         };
 
         // ── Step 4: Compute summary stats ─────────────────────────────────────
-        const totalSales   = commissions.filter((c) => c.status !== 'pending').length
-                           + commissions.filter((c) => c.status === 'pending').length;
+        const totalSales   = commissions.length;
         const pendingCount = commissions.filter((c) => c.status === CommissionStatus.PENDING).length;
+
+        // Current commission tier based on total sales
+        const currentTier = getCommissionTier(totalSales);
 
         // Next unlock date — the soonest pending commission to unlock
         const nextUnlock = commissions
@@ -148,6 +151,12 @@ export async function GET() {
                     pendingCount,
                     nextUnlock,
                     justUnlocked: unlockResult.length, // how many were unlocked this request
+                    currentTier: {
+                        tier:  currentTier.tier,
+                        rate:  currentTier.rate,
+                        label: currentTier.label,
+                        name:  currentTier.name,
+                    },
                 },
             },
         });

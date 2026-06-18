@@ -4,8 +4,17 @@ import { useEffect, useState, useCallback } from 'react';
 import { useSession }   from 'next-auth/react';
 import { redirect }     from 'next/navigation';
 import Link             from 'next/link';
-import { GraduationCap, Search, LayoutGrid, Wallet } from 'lucide-react';
+import { GraduationCap, Search, LayoutGrid, Wallet, TrendingUp } from 'lucide-react';
 import AffiliateCourseCard, { type AffiliateCourse } from '@/components/volunteer/AffiliateCourseCard';
+
+// ─── Types ─────────────────────────────────────────────────────────────────────
+
+interface TierInfo {
+    tier:  1 | 2 | 3;
+    rate:  number;
+    label: string;
+    name:  string;
+}
 
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
@@ -17,6 +26,10 @@ export default function VolunteerCoursesPage() {
     const [searchQuery,   setSearchQuery]   = useState<string>('');
     const [isLoading,     setIsLoading]     = useState(true);
     const [error,         setError]         = useState<string | null>(null);
+    const [currentTier,   setCurrentTier]   = useState<TierInfo>({
+        tier: 1, rate: 0.10, label: '10%', name: 'Starter',
+    });
+    const [totalSales,    setTotalSales]    = useState<number>(0);
 
     // ── Fetch affiliate code (lazy generation) ────────────────────────────────
     const fetchAffiliateCode = useCallback(async () => {
@@ -28,6 +41,20 @@ export default function VolunteerCoursesPage() {
             }
         } catch {
             console.error('Failed to fetch affiliate code');
+        }
+    }, []);
+
+    // ── Fetch commission summary to get current tier ──────────────────────────
+    const fetchTier = useCallback(async () => {
+        try {
+            const res  = await fetch('/api/volunteer/commissions');
+            const data = await res.json();
+            if (data.success && data.data.summary?.currentTier) {
+                setCurrentTier(data.data.summary.currentTier);
+                setTotalSales(data.data.summary.totalSales ?? 0);
+            }
+        } catch {
+            // Non-fatal — defaults to Tier 1
         }
     }, []);
 
@@ -53,8 +80,9 @@ export default function VolunteerCoursesPage() {
         if (session?.user?.role === 'volunteer') {
             fetchAffiliateCode();
             fetchCourses();
+            fetchTier();
         }
-    }, [session, fetchAffiliateCode, fetchCourses]);
+    }, [session, fetchAffiliateCode, fetchCourses, fetchTier]);
 
     // ── Auth guards ───────────────────────────────────────────────────────────
     if (status === 'loading') {
@@ -78,6 +106,10 @@ export default function VolunteerCoursesPage() {
         course.description.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    // ── Next tier progress ────────────────────────────────────────────────────
+    const nextTierThresholds = [50, 100];
+    const nextThreshold = nextTierThresholds.find((t) => totalSales < t);
+
     return (
         <main id="main-content" className="min-h-screen bg-gray-50 py-8">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -85,9 +117,9 @@ export default function VolunteerCoursesPage() {
                 {/* ── Page Header ─────────────────────────────────────────── */}
                 <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-900">Share Courses & Earn</h1>
+                        <h1 className="text-3xl font-bold text-gray-900">Share Courses &amp; Earn</h1>
                         <p className="mt-1 text-gray-600">
-                            Copy any course link — earn <strong>10%</strong> commission on every sale through your link.
+                            Copy any course link — earn commissions on every sale through your link.
                         </p>
                     </div>
                     <div className="flex gap-3 flex-shrink-0">
@@ -101,15 +133,73 @@ export default function VolunteerCoursesPage() {
                     </div>
                 </div>
 
+                {/* ── Gamification Tier Banner ─────────────────────────────── */}
+                <div className="mb-6">
+                    <div className={`rounded-2xl p-5 text-white ${
+                        currentTier.tier === 3
+                            ? 'bg-gradient-to-r from-purple-600 to-pink-600'
+                            : currentTier.tier === 2
+                                ? 'bg-gradient-to-r from-blue-600 to-cyan-600'
+                                : 'bg-gradient-to-r from-blue-600 to-indigo-600'
+                    }`}>
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div className="flex items-center gap-4">
+                                {/* Tier icon */}
+                                <div className="text-4xl" aria-hidden="true">
+                                    {currentTier.tier === 3 ? '👑' : currentTier.tier === 2 ? '🚀' : '⭐'}
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium text-white/80">Your Commission Tier</p>
+                                    <p className="text-2xl font-bold mt-0.5">
+                                        {currentTier.name} · {currentTier.label} Commission
+                                    </p>
+                                    <p className="text-sm text-white/80 mt-0.5">
+                                        {totalSales} total sale{totalSales !== 1 ? 's' : ''}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Progress to next tier */}
+                            {nextThreshold ? (
+                                <div className="bg-white/10 rounded-xl px-4 py-3 min-w-[180px]">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <TrendingUp className="h-4 w-4 text-white/80" aria-hidden="true" />
+                                        <p className="text-xs font-medium text-white/80">Next tier at {nextThreshold} sales</p>
+                                    </div>
+                                    <div className="h-2 bg-white/20 rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full bg-white rounded-full transition-all duration-500"
+                                            style={{ width: `${Math.min(100, (totalSales / nextThreshold) * 100)}%` }}
+                                            role="progressbar"
+                                            aria-valuenow={totalSales}
+                                            aria-valuemin={0}
+                                            aria-valuemax={nextThreshold}
+                                            aria-label={`${totalSales} of ${nextThreshold} sales to next tier`}
+                                        />
+                                    </div>
+                                    <p className="text-xs text-white/80 mt-1 text-right">
+                                        {nextThreshold - totalSales} more to unlock
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="bg-white/10 rounded-xl px-4 py-3 text-center">
+                                    <p className="text-sm font-bold">🏆 Maximum Tier Reached!</p>
+                                    <p className="text-xs text-white/80 mt-0.5">You&apos;re at the top</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
                 {/* ── Affiliate Code Banner ────────────────────────────────── */}
                 {affiliateCode && (
-                    <div className="mb-6 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-5 text-white">
+                    <div className="mb-6 bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                             <div>
-                                <p className="text-sm font-medium text-blue-200">Your Affiliate Code</p>
-                                <p className="text-2xl font-bold tracking-widest mt-0.5">{affiliateCode}</p>
+                                <p className="text-sm font-medium text-gray-500">Your Affiliate Code</p>
+                                <p className="text-2xl font-bold tracking-widest mt-0.5 text-gray-900">{affiliateCode}</p>
                             </div>
-                            <p className="text-sm text-blue-100 max-w-xs">
+                            <p className="text-sm text-gray-500 max-w-xs">
                                 This code is embedded automatically in every link you copy below.
                             </p>
                         </div>
@@ -190,6 +280,9 @@ export default function VolunteerCoursesPage() {
                                     key={course._id}
                                     course={course}
                                     affiliateCode={affiliateCode}
+                                    commissionRate={currentTier.rate}
+                                    tierLabel={currentTier.label}
+                                    tierName={currentTier.name}
                                 />
                             ) : (
                                 // Skeleton while affiliate code loads
