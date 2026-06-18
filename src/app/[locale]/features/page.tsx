@@ -1,42 +1,44 @@
 import { Briefcase, GraduationCap, Users, Zap, Shield, Video } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 
 export default function FeaturesPage() {
+    const t = useTranslations('Features');
     const features = [
         {
             icon: Briefcase,
-            title: 'Inclusive Job Board',
-            description: 'Connect with employers committed to diversity and accessibility',
+            title: t('list.jobsTitle'),
+            description: t('list.jobsDesc'),
             color: 'bg-blue-500',
         },
         {
             icon: GraduationCap,
-            title: 'Professional Courses',
-            description: 'Access recorded courses and live workshops from industry experts',
+            title: t('list.coursesTitle'),
+            description: t('list.coursesDesc'),
             color: 'bg-green-500',
         },
         {
             icon: Video,
-            title: 'Live Workshops',
-            description: 'Join interactive Zoom sessions with real-time Q&A and networking',
+            title: t('list.workshopsTitle'),
+            description: t('list.workshopsDesc'),
             color: 'bg-red-500',
         },
         {
             icon: Users,
-            title: 'Community Network',
-            description: 'Connect with like-minded professionals and mentors',
+            title: t('list.networkTitle'),
+            description: t('list.networkDesc'),
             color: 'bg-purple-500',
         },
         {
             icon: Shield,
-            title: 'Verified Companies',
-            description: 'All companies undergo verification to ensure legitimacy',
+            title: t('list.verifiedTitle'),
+            description: t('list.verifiedDesc'),
             color: 'bg-yellow-600',
         },
         {
             icon: Zap,
-            title: 'Real-time Notifications',
-            description: 'Stay updated on applications, new courses, and opportunities',
+            title: t('list.notificationsTitle'),
+            description: t('list.notificationsDesc'),
             color: 'bg-indigo-500',
         },
     ];
@@ -47,10 +49,10 @@ export default function FeaturesPage() {
                 {/* Header */}
                 <div className="text-center mb-16">
                     <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-                        Platform Features
+                        {t('title')}
                     </h1>
                     <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                        Everything you need to advance your career and skills in one inclusive platform
+                        {t('subtitle')}
                     </p>
                 </div>
 
@@ -79,22 +81,22 @@ export default function FeaturesPage() {
 
                 {/* CTA Section */}
                 <div className="bg-blue-600 rounded-lg shadow-xl p-12 text-center text-white">
-                    <h2 className="text-3xl font-bold mb-4">Ready to Get Started?</h2>
+                    <h2 className="text-3xl font-bold mb-4">{t('cta.title')}</h2>
                     <p className="text-xl mb-8 opacity-90">
-                        Join thousands of professionals already using InnoAccess
+                        {t('cta.subtitle')}
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
                         <Link
                             href="/auth/register"
                             className="inline-flex items-center justify-center px-8 py-3 bg-white text-blue-600 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
                         >
-                            Sign Up Free
+                            {t('cta.signUp')}
                         </Link>
                         <Link
                             href="/auth/signin"
                             className="inline-flex items-center justify-center px-8 py-3 border-2 border-white text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
                         >
-                            Sign In
+                            {t('cta.signIn')}
                         </Link>
                     </div>
                 </div>

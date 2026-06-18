@@ -2,8 +2,10 @@
 
 import { Mail, Phone, MapPin, MessageSquare, CheckCircle } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 export default function ContactPage() {
+    const t = useTranslations('Contact');
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -40,10 +42,10 @@ export default function ContactPage() {
                     message: '',
                 });
             } else {
-                setError(data.error?.message || 'Failed to send message');
+                setError(data.error?.message || t('errors.failed'));
             }
         } catch (err) {
-            setError('An error occurred. Please try again.');
+            setError(t('errors.occurred'));
         } finally {
             setLoading(false);
         }
@@ -53,16 +55,16 @@ export default function ContactPage() {
         <main id="main-content" className="min-h-screen bg-gray-50 py-16">
             <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
                 <div className="text-center mb-12">
-                    <h1 className="text-4xl font-bold text-gray-900 mb-4">Contact Us</h1>
+                    <h1 className="text-4xl font-bold text-gray-900 mb-4">{t('title')}</h1>
                     <p className="text-xl text-gray-600">
-                        Have questions? We'd love to hear from you
+                        {t('subtitle')}
                     </p>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     {/* Contact Information */}
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-6">Get in Touch</h2>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-6">{t('getInTouch')}</h2>
 
                         <div className="space-y-6">
                             <div className="flex items-start">
@@ -70,7 +72,7 @@ export default function ContactPage() {
                                     <Mail className="h-6 w-6 text-blue-600" aria-hidden="true" />
                                 </div>
                                 <div className="ml-4">
-                                    <h3 className="text-sm font-semibold text-gray-900">Email</h3>
+                                    <h3 className="text-sm font-semibold text-gray-900">{t('email')}</h3>
                                     <p className="mt-1 text-gray-600">support@innoaccess.com</p>
                                 </div>
                             </div>
@@ -80,7 +82,7 @@ export default function ContactPage() {
                                     <Phone className="h-6 w-6 text-blue-600" aria-hidden="true" />
                                 </div>
                                 <div className="ml-4">
-                                    <h3 className="text-sm font-semibold text-gray-900">Phone</h3>
+                                    <h3 className="text-sm font-semibold text-gray-900">{t('phone')}</h3>
                                     <p className="mt-1 text-gray-600">+20 123 456 7890</p>
                                 </div>
                             </div>
@@ -90,34 +92,33 @@ export default function ContactPage() {
                                     <MapPin className="h-6 w-6 text-blue-600" aria-hidden="true" />
                                 </div>
                                 <div className="ml-4">
-                                    <h3 className="text-sm font-semibold text-gray-900">Office</h3>
-                                    <p className="mt-1 text-gray-600">
-                                        Cairo, Egypt<br />
-                                        New Cairo District
+                                    <h3 className="text-sm font-semibold text-gray-900">{t('office')}</h3>
+                                    <p className="mt-1 text-gray-600 whitespace-pre-line">
+                                        {t('address')}
                                     </p>
                                 </div>
                             </div>
                         </div>
 
                         <div className="mt-8 pt-8 border-t border-gray-200">
-                            <h3 className="text-sm font-semibold text-gray-900 mb-4">Business Hours</h3>
+                            <h3 className="text-sm font-semibold text-gray-900 mb-4">{t('businessHours')}</h3>
                             <div className="space-y-2 text-sm text-gray-600">
-                                <p>Monday - Friday: 9:00 AM - 6:00 PM</p>
-                                <p>Saturday: 10:00 AM - 4:00 PM</p>
-                                <p>Sunday: Closed</p>
+                                <p>{t('hours.weekdays')}</p>
+                                <p>{t('hours.saturday')}</p>
+                                <p>{t('hours.sunday')}</p>
                             </div>
                         </div>
                     </div>
 
                     {/* Contact Form */}
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-6">Send us a Message</h2>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-6">{t('sendMessage')}</h2>
 
                         {success && (
                             <div className="mb-6 bg-green-50 border-l-4 border-green-500 p-4 rounded">
                                 <div className="flex items-center">
                                     <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                                    <p className="text-green-800 font-medium">Message sent successfully! We'll get back to you soon.</p>
+                                    <p className="text-green-800 font-medium">{t('successMessage')}</p>
                                 </div>
                             </div>
                         )}
@@ -131,7 +132,7 @@ export default function ContactPage() {
                         <form className="space-y-6" onSubmit={handleSubmit}>
                             <div>
                                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                                    Full Name
+                                    {t('form.nameLabel')}
                                 </label>
                                 <input
                                     type="text"
@@ -139,14 +140,14 @@ export default function ContactPage() {
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                     className="w-full rounded-md border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    placeholder="Your name"
+                                    placeholder={t('form.namePlaceholder')}
                                     required
                                 />
                             </div>
 
                             <div>
                                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                                    Email Address
+                                    {t('form.emailLabel')}
                                 </label>
                                 <input
                                     type="email"
@@ -154,14 +155,14 @@ export default function ContactPage() {
                                     value={formData.email}
                                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                     className="w-full rounded-md border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    placeholder="your.email@example.com"
+                                    placeholder={t('form.emailPlaceholder')}
                                     required
                                 />
                             </div>
 
                             <div>
                                 <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-2">
-                                    Subject
+                                    {t('form.subjectLabel')}
                                 </label>
                                 <input
                                     type="text"
@@ -169,14 +170,14 @@ export default function ContactPage() {
                                     value={formData.subject}
                                     onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                                     className="w-full rounded-md border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    placeholder="How can we help?"
+                                    placeholder={t('form.subjectPlaceholder')}
                                     required
                                 />
                             </div>
 
                             <div>
                                 <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
-                                    Message
+                                    {t('form.messageLabel')}
                                 </label>
                                 <textarea
                                     id="message"
@@ -184,7 +185,7 @@ export default function ContactPage() {
                                     value={formData.message}
                                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                                     className="w-full rounded-md border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    placeholder="Your message..."
+                                    placeholder={t('form.messagePlaceholder')}
                                     required
                                 />
                             </div>
@@ -195,7 +196,7 @@ export default function ContactPage() {
                                 className="w-full inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <MessageSquare className="h-5 w-5 mr-2" aria-hidden="true" />
-                                {loading ? 'Sending...' : 'Send Message'}
+                                {loading ? t('form.sending') : t('form.submit')}
                             </button>
                         </form>
                     </div>

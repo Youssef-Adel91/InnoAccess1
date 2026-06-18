@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import {
     submitTrainerApplication,
     getUserTrainerProfile,
@@ -13,6 +14,7 @@ import TrainerRegistrationForm from '@/components/auth/TrainerRegistrationForm';
 export default function JoinTrainerPage() {
     const { data: session, status } = useSession();
     const router = useRouter();
+    const t = useTranslations('JoinTrainer');
 
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
@@ -66,7 +68,7 @@ export default function JoinTrainerPage() {
         setError(null);
 
         if (!cvFile && !cvUrl) {
-            setError('Please upload your CV');
+            setError(t('errorCV'));
             return;
         }
 
@@ -128,7 +130,7 @@ export default function JoinTrainerPage() {
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Loading...</p>
+                    <p className="mt-4 text-gray-600">{t('loading')}</p>
                 </div>
             </div>
         );
@@ -143,22 +145,20 @@ export default function JoinTrainerPage() {
                         <div className="bg-white rounded-lg shadow-md p-8 text-center">
                             <div className="text-6xl mb-4">⏳</div>
                             <h1 className="text-2xl font-bold text-gray-900 mb-4">
-                                Application Under Review
+                                {t('reviewTitle')}
                             </h1>
                             <p className="text-gray-600 mb-6">
-                                Your trainer application has been submitted and is currently being
-                                reviewed by our admin team. You will be notified once a decision
-                                has been made.
+                                {t('reviewText')}
                             </p>
                             <div className="bg-blue-50 rounded-lg p-4 text-left">
                                 <h3 className="font-semibold text-gray-900 mb-2">
-                                    Application Details:
+                                    {t('appDetails')}
                                 </h3>
                                 <p className="text-sm text-gray-600">
-                                    <strong>Specialization:</strong> {profile.specialization}
+                                    <strong>{t('specialization')}</strong> {profile.specialization}
                                 </p>
                                 <p className="text-sm text-gray-600">
-                                    <strong>Submitted:</strong>{' '}
+                                    <strong>{t('submitted')}</strong>{' '}
                                     {new Date(profile.createdAt).toLocaleDateString()}
                                 </p>
                             </div>
@@ -175,17 +175,16 @@ export default function JoinTrainerPage() {
                         <div className="bg-white rounded-lg shadow-md p-8 text-center">
                             <div className="text-6xl mb-4">🎉</div>
                             <h1 className="text-2xl font-bold text-gray-900 mb-4">
-                                Congratulations! You're Approved
+                                {t('approvedTitle')}
                             </h1>
                             <p className="text-gray-600 mb-6">
-                                Your trainer application has been approved. You can now access the
-                                trainer dashboard and start creating courses.
+                                {t('approvedText')}
                             </p>
                             <button
                                 onClick={() => router.push('/trainer/dashboard')}
                                 className="bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 transition-colors"
                             >
-                                Go to Trainer Dashboard
+                                {t('goToDashboard')}
                             </button>
                         </div>
                     </div>
@@ -202,21 +201,21 @@ export default function JoinTrainerPage() {
                             <div className="text-center mb-6">
                                 <div className="text-6xl mb-4">❌</div>
                                 <h1 className="text-2xl font-bold text-gray-900 mb-4">
-                                    Application Rejected
+                                    {t('rejectedTitle')}
                                 </h1>
                             </div>
 
                             {profile.rejectionReason && (
                                 <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
                                     <h3 className="font-semibold text-red-900 mb-2">
-                                        Rejection Reason:
+                                        {t('rejectedReason')}
                                     </h3>
                                     <p className="text-red-800">{profile.rejectionReason}</p>
                                 </div>
                             )}
 
                             <p className="text-gray-600 text-center mb-6">
-                                You can address the feedback above and reapply using the form below.
+                                {t('rejectedText')}
                             </p>
 
                             <button
@@ -230,7 +229,7 @@ export default function JoinTrainerPage() {
                                 }}
                                 className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors"
                             >
-                                Reapply as Trainer
+                                {t('reapply')}
                             </button>
                         </div>
                     </div>
@@ -245,11 +244,10 @@ export default function JoinTrainerPage() {
             <div className="max-w-3xl mx-auto px-4">
                 <div className="bg-white rounded-lg shadow-md p-8">
                     <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                        Become a Trainer
+                        {t('title')}
                     </h1>
                     <p className="text-gray-600 mb-8">
-                        Fill out the application form below to join InnoAccess as a trainer. Your
-                        application will be reviewed by our admin team.
+                        {t('subtitle')}
                     </p>
 
                     <form onSubmit={handleSubmit}>
@@ -284,10 +282,10 @@ export default function JoinTrainerPage() {
                             className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                         >
                             {uploading
-                                ? 'Uploading CV...'
+                                ? t('uploading')
                                 : submitting
-                                    ? 'Submitting Application...'
-                                    : 'Submit Application'}
+                                    ? t('submitting')
+                                    : t('submitBtn')}
                         </button>
                     </form>
                 </div>

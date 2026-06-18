@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { MapPin, Briefcase, Clock, Plus, Edit, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
@@ -37,6 +38,7 @@ export default function JobsPage() {
     const [companyJobs, setCompanyJobs] = useState<CompanyJob[]>([]);
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState({ search: '', location: 'all', type: 'all' });
+    const t = useTranslations('Jobs');
 
     const isCompany = session?.user?.role === 'company';
 
@@ -87,26 +89,26 @@ export default function JobsPage() {
                     <div className="mb-12 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 sm:p-8 border border-blue-100">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                             <div>
-                                <h2 className="text-2xl font-bold text-gray-900">Your Job Management</h2>
-                                <p className="mt-1 text-gray-600">Manage your postings and review applications</p>
+                                <h2 className="text-2xl font-bold text-gray-900">{t('companyManagementTitle')}</h2>
+                                <p className="mt-1 text-gray-600">{t('companyManagementDesc')}</p>
                             </div>
                             <div className="flex flex-col sm:flex-row gap-3">
                                 <Link href="/company/jobs?status=draft">
                                     <button
                                         className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-600"
-                                        aria-label="View draft jobs"
+                                        aria-label={t('viewDrafts')}
                                     >
                                         <Briefcase className="h-5 w-5 mr-2" aria-hidden="true" />
-                                        View Drafts
+                                        {t('viewDrafts')}
                                     </button>
                                 </Link>
                                 <Link href="/company/jobs/new">
                                     <button
                                         className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
-                                        aria-label="Post a new job listing"
+                                        aria-label={t('postNewJob')}
                                     >
                                         <Plus className="h-5 w-5 mr-2" aria-hidden="true" />
-                                        Post New Job
+                                        {t('postNewJob')}
                                     </button>
                                 </Link>
                             </div>
@@ -125,24 +127,24 @@ export default function JobsPage() {
                                             </span>
                                         </div>
                                         <p className="text-sm text-gray-600 mb-3">
-                                            {job.applicantCount || 0} applicants • {job.location}
+                                            {job.applicantCount || 0} {t('applicants')} • {job.location}
                                         </p>
                                         <div className="flex gap-2">
                                             <button
                                                 onClick={() => router.push(`/company/jobs/${job._id}/edit`)}
                                                 className="flex-1 text-sm px-3 py-1.5 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
-                                                aria-label={`Edit job: ${job.title}`}
+                                                aria-label={`${t('edit')} ${job.title}`}
                                             >
                                                 <Edit className="h-3.5 w-3.5 mr-1" aria-hidden="true" />
-                                                Edit
+                                                {t('edit')}
                                             </button>
                                             <button
                                                 onClick={() => router.push(`/company/jobs/${job._id}/applicants`)}
                                                 className="flex-1 text-sm px-3 py-1.5 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                                                aria-label={`View applicants for: ${job.title}`}
+                                                aria-label={`${t('view')} ${job.title}`}
                                             >
                                                 <Eye className="h-3.5 w-3.5 mr-1" aria-hidden="true" />
-                                                View
+                                                {t('view')}
                                             </button>
                                         </div>
                                     </div>
@@ -151,14 +153,14 @@ export default function JobsPage() {
                         ) : (
                             <div className="bg-white rounded-lg p-8 text-center border border-gray-200">
                                 <Briefcase className="h-12 w-12 text-gray-400 mx-auto mb-3" aria-hidden="true" />
-                                <p className="text-gray-600 mb-4">You haven&apos;t posted any jobs yet</p>
+                                <p className="text-gray-600 mb-4">{t('noCompanyJobs')}</p>
                                 <Link href="/company/jobs/new">
                                     <button
                                         className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
-                                        aria-label="Post your first job listing"
+                                        aria-label={t('postFirstJob')}
                                     >
                                         <Plus className="h-5 w-5 mr-2" aria-hidden="true" />
-                                        Post Your First Job
+                                        {t('postFirstJob')}
                                     </button>
                                 </Link>
                             </div>
@@ -167,7 +169,7 @@ export default function JobsPage() {
                         {companyJobs.length > 3 && (
                             <div className="mt-4 text-center">
                                 <Link href="/company/jobs" className="text-blue-600 hover:text-blue-700 font-medium">
-                                    View All {companyJobs.length} Jobs →
+                                    {t('viewAllJobs', { count: companyJobs.length })}
                                 </Link>
                             </div>
                         )}
@@ -177,10 +179,10 @@ export default function JobsPage() {
                 {/* Header */}
                 <div className="mb-8">
                     <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900">
-                        {isCompany ? 'Browse All Available Jobs' : 'Find Your Next Opportunity'}
+                        {isCompany ? t('titleCompany') : t('titleUser')}
                     </h1>
                     <p className="mt-2 text-base leading-relaxed text-gray-600">
-                        {isCompany ? 'See what other companies are posting' : 'Discover accessible job opportunities that match your skills'}
+                        {isCompany ? t('subtitleCompany') : t('subtitleUser')}
                     </p>
                 </div>
 
@@ -192,48 +194,48 @@ export default function JobsPage() {
                 >
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                         <div>
-                            <label htmlFor="job-search" className="sr-only">Search jobs by keyword</label>
+                            <label htmlFor="job-search" className="sr-only">{t('searchAria')}</label>
                             <input
                                 id="job-search"
                                 type="search"
-                                placeholder="Search jobs..."
+                                placeholder={t('searchPlaceholder')}
                                 className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base min-h-[44px] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
                                 value={filters.search}
                                 onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-                                aria-label="Search jobs by keyword"
+                                aria-label={t('searchAria')}
                             />
                         </div>
                         <div>
-                            <label htmlFor="job-location" className="sr-only">Filter by location type</label>
+                            <label htmlFor="job-location" className="sr-only">{t('allLocations')}</label>
                             <select
                                 id="job-location"
                                 className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base min-h-[44px] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
                                 value={filters.location}
                                 onChange={(e) => setFilters({ ...filters, location: e.target.value })}
-                                aria-label="Filter by location type"
+                                aria-label={t('allLocations')}
                             >
-                                <option value="all">All Locations</option>
-                                <option value="remote">Remote</option>
-                                <option value="onsite">Onsite</option>
-                                <option value="hybrid">Hybrid</option>
+                                <option value="all">{t('allLocations')}</option>
+                                <option value="remote">{t('remote')}</option>
+                                <option value="onsite">{t('onsite')}</option>
+                                <option value="hybrid">{t('hybrid')}</option>
                             </select>
                         </div>
                         <div>
-                            <label htmlFor="job-type" className="sr-only">Filter by job type</label>
+                            <label htmlFor="job-type" className="sr-only">{t('allTypes')}</label>
                             <select
                                 id="job-type"
                                 className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base min-h-[44px] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
                                 value={filters.type}
                                 onChange={(e) => setFilters({ ...filters, type: e.target.value })}
-                                aria-label="Filter by job type"
+                                aria-label={t('allTypes')}
                             >
-                                <option value="all">All Types</option>
-                                <option value="full-time">Full-time</option>
-                                <option value="part-time">Part-time</option>
-                                <option value="internship">Internship</option>
+                                <option value="all">{t('allTypes')}</option>
+                                <option value="full-time">{t('fullTime')}</option>
+                                <option value="part-time">{t('partTime')}</option>
+                                <option value="internship">{t('internship')}</option>
                             </select>
                         </div>
-                        <Button variant="primary" onClick={() => fetchJobs()} aria-label="Apply filters and search jobs" className="w-full">Search</Button>
+                        <Button variant="primary" onClick={() => fetchJobs()} aria-label={t('searchBtn')} className="w-full">{t('searchBtn')}</Button>
                     </div>
                 </div>
 
@@ -250,13 +252,13 @@ export default function JobsPage() {
                                 className="animate-spin h-12 w-12 border-4 border-blue-600 border-t-transparent rounded-full mx-auto"
                                 aria-hidden="true"
                             />
-                            <p className="mt-4 text-gray-600">Loading jobs...</p>
+                            <p className="mt-4 text-gray-600">{t('loading')}</p>
                         </div>
                     ) : jobs.length === 0 ? (
                         <div className="text-center py-12 bg-white rounded-lg shadow-sm border border-gray-200">
                             <Briefcase className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Jobs Found</h3>
-                            <p className="text-gray-600">Try adjusting your filters or check back later for new opportunities</p>
+                            <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('noJobs')}</h3>
+                            <p className="text-gray-600">{t('noJobsDesc')}</p>
                         </div>
                     ) : (
                         jobs.map((job) => (
@@ -311,10 +313,10 @@ export default function JobsPage() {
                                         </p>
                                         <Link
                                             href={`/jobs/${job._id}`}
-                                            aria-label={`View full details for ${job.title}`}
+                                            aria-label={`${t('viewDetails')} ${job.title}`}
                                         >
                                             <Button variant="primary" size="sm" className="mt-2 w-full">
-                                                View Details
+                                                {t('viewDetails')}
                                             </Button>
                                         </Link>
                                     </div>

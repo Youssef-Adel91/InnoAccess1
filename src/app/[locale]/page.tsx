@@ -1,46 +1,48 @@
 import Link from "next/link";
 import { Briefcase, GraduationCap, Eye, Zap, Shield, Users } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { useTranslations } from "next-intl";
 
 export default function Home() {
+    const t = useTranslations("Landing");
     const features = [
         {
             icon: Eye,
-            title: "Screen Reader Optimized",
-            description: "Full NVDA, JAWS, and VoiceOver compatibility with WCAG 2.1 AAA standards",
+            title: t("features.screenReader.title"),
+            description: t("features.screenReader.description"),
         },
         {
             icon: Briefcase,
-            title: "Accessible Job Board",
-            description: "Find inclusive job opportunities with detailed accessibility features",
+            title: t("features.jobBoard.title"),
+            description: t("features.jobBoard.description"),
         },
         {
             icon: GraduationCap,
-            title: "Learning Platform",
-            description: "Professional courses with transcripts and keyboard-accessible video players",
+            title: t("features.lms.title"),
+            description: t("features.lms.description"),
         },
         {
             icon: Zap,
-            title: "Easy Navigation",
-            description: "Keyboard-only navigation, skip links, and logical focus management",
+            title: t("features.navigation.title"),
+            description: t("features.navigation.description"),
         },
         {
             icon: Shield,
-            title: "Secure & Private",
-            description: "Your data is protected with industry-standard security measures",
+            title: t("features.security.title"),
+            description: t("features.security.description"),
         },
         {
             icon: Users,
-            title: "Inclusive Community",
-            description: "Connect with employers and trainers who value accessibility",
+            title: t("features.community.title"),
+            description: t("features.community.description"),
         },
     ];
 
     const stats = [
-        { value: "10,000+", label: "Active Jobs" },
-        { value: "500+", label: "Courses Available" },
-        { value: "50,000+", label: "Platform Users" },
-        { value: "1,000+", label: "Companies" },
+        { value: "10,000+", label: t("stats.activeJobs") },
+        { value: "500+", label: t("stats.coursesAvailable") },
+        { value: "50,000+", label: t("stats.platformUsers") },
+        { value: "1,000+", label: t("stats.companies") },
     ];
 
     return (
@@ -63,12 +65,11 @@ export default function Home() {
                             id="hero-heading"
                             className="text-4xl font-extrabold tracking-tight leading-tight sm:text-5xl md:text-6xl lg:text-7xl"
                         >
-                            Empowering Careers Through
-                            <span className="block mt-1 text-blue-200">Accessible Opportunities</span>
+                            {t("hero.heading")}
+                            <span className="block mt-1 text-blue-200">{t("hero.headingAccent")}</span>
                         </h1>
                         <p className="mt-6 text-lg sm:text-xl leading-relaxed text-blue-100 max-w-3xl mx-auto">
-                            InnoAccess is Egypt&apos;s first fully accessible job board and learning platform,
-                            designed for visually impaired individuals with complete screen reader support.
+                            {t("hero.description")}
                         </p>
                         <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center items-center">
                             <Link href="/jobs" className="w-full sm:w-auto">
@@ -76,10 +77,10 @@ export default function Home() {
                                     size="lg"
                                     variant="secondary"
                                     className="w-full sm:w-auto bg-white text-blue-700 hover:bg-blue-50 hover:shadow-xl font-bold"
-                                    aria-label="Browse available jobs"
+                                    aria-label={t("hero.findJobsLabel")}
                                 >
                                     <Briefcase className="mr-2 h-5 w-5" aria-hidden="true" />
-                                    Find Jobs
+                                    {t("hero.findJobs")}
                                 </Button>
                             </Link>
                             <Link href="/courses" className="w-full sm:w-auto">
@@ -87,10 +88,10 @@ export default function Home() {
                                     size="lg"
                                     variant="outline"
                                     className="w-full sm:w-auto border-white text-white hover:bg-white/10 hover:border-white/80 font-bold"
-                                    aria-label="Explore available courses"
+                                    aria-label={t("hero.browseCoursesLabel")}
                                 >
                                     <GraduationCap className="mr-2 h-5 w-5" aria-hidden="true" />
-                                    Browse Courses
+                                    {t("hero.browseCourses")}
                                 </Button>
                             </Link>
                         </div>
@@ -113,7 +114,7 @@ export default function Home() {
             {/* Stats Section */}
             <section className="bg-white py-12 sm:py-16" aria-labelledby="stats-heading">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <h2 id="stats-heading" className="sr-only">Platform Statistics</h2>
+                    <h2 id="stats-heading" className="sr-only">{t("stats.heading")}</h2>
                     <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
                         {stats.map((stat, index) => (
                             <div
@@ -141,11 +142,10 @@ export default function Home() {
                             id="features-heading"
                             className="text-3xl sm:text-4xl font-extrabold tracking-tight text-gray-900"
                         >
-                            Built for Accessibility
+                            {t("features.heading")}
                         </h2>
                         <p className="mt-4 text-base sm:text-lg leading-relaxed text-gray-600 max-w-2xl mx-auto">
-                            Every feature is designed with accessibility in mind, ensuring a seamless
-                            experience for all users.
+                            {t("features.subheading")}
                         </p>
                     </div>
 
@@ -181,11 +181,10 @@ export default function Home() {
                         id="cta-heading"
                         className="text-3xl sm:text-4xl font-extrabold tracking-tight"
                     >
-                        Ready to Get Started?
+                        {t("cta.heading")}
                     </h2>
                     <p className="mt-4 text-base sm:text-lg leading-relaxed text-blue-100 max-w-2xl mx-auto">
-                        Join thousands of users who are finding jobs and learning new skills on
-                        InnoAccess.
+                        {t("cta.description")}
                     </p>
                     <div className="mt-8 flex justify-center">
                         <Link href="/auth/register" className="w-full sm:w-auto">
@@ -194,7 +193,7 @@ export default function Home() {
                                 variant="secondary"
                                 className="w-full sm:w-auto bg-white text-blue-700 hover:bg-blue-50 hover:shadow-xl font-bold"
                             >
-                                Create Free Account
+                                {t("cta.createAccount")}
                             </Button>
                         </Link>
                     </div>

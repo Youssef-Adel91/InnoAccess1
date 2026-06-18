@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import {
     Clock, CheckCircle, XCircle, Eye, Star,
     MapPin, Briefcase, Calendar, FileText
@@ -27,55 +28,56 @@ interface Application {
     appliedAt: string;
 }
 
-// Status configuration with text labels and icons for accessibility
-const statusConfig = {
-    pending: {
-        label: 'Pending Review',
-        icon: Clock,
-        bgColor: 'bg-yellow-50',
-        textColor: 'text-yellow-800',
-        borderColor: 'border-yellow-200',
-        iconColor: 'text-yellow-600',
-    },
-    viewed: {
-        label: 'Viewed by Company',
-        icon: Eye,
-        bgColor: 'bg-blue-50',
-        textColor: 'text-blue-800',
-        borderColor: 'border-blue-200',
-        iconColor: 'text-blue-600',
-    },
-    shortlisted: {
-        label: 'Shortlisted',
-        icon: Star,
-        bgColor: 'bg-purple-50',
-        textColor: 'text-purple-800',
-        borderColor: 'border-purple-200',
-        iconColor: 'text-purple-600',
-    },
-    accepted: {
-        label: 'Accepted',
-        icon: CheckCircle,
-        bgColor: 'bg-green-50',
-        textColor: 'text-green-800',
-        borderColor: 'border-green-200',
-        iconColor: 'text-green-600',
-    },
-    rejected: {
-        label: 'Not Selected',
-        icon: XCircle,
-        bgColor: 'bg-red-50',
-        textColor: 'text-red-800',
-        borderColor: 'border-red-200',
-        iconColor: 'text-red-600',
-    },
-};
-
 export default function UserApplicationsPage() {
     const { data: session, status: sessionStatus } = useSession();
     const [applications, setApplications] = useState<Application[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<'all' | 'pending' | 'accepted' | 'rejected'>('all');
+    const t = useTranslations('UserApplications');
+
+    // Status configuration with text labels and icons for accessibility
+    const statusConfig = {
+        pending: {
+            label: t('status.pendingLabel'),
+            icon: Clock,
+            bgColor: 'bg-yellow-50',
+            textColor: 'text-yellow-800',
+            borderColor: 'border-yellow-200',
+            iconColor: 'text-yellow-600',
+        },
+        viewed: {
+            label: t('status.viewedLabel'),
+            icon: Eye,
+            bgColor: 'bg-blue-50',
+            textColor: 'text-blue-800',
+            borderColor: 'border-blue-200',
+            iconColor: 'text-blue-600',
+        },
+        shortlisted: {
+            label: t('status.shortlistedLabel'),
+            icon: Star,
+            bgColor: 'bg-purple-50',
+            textColor: 'text-purple-800',
+            borderColor: 'border-purple-200',
+            iconColor: 'text-purple-600',
+        },
+        accepted: {
+            label: t('status.acceptedLabel'),
+            icon: CheckCircle,
+            bgColor: 'bg-green-50',
+            textColor: 'text-green-800',
+            borderColor: 'border-green-200',
+            iconColor: 'text-green-600',
+        },
+        rejected: {
+            label: t('status.rejectedLabel'),
+            icon: XCircle,
+            bgColor: 'bg-red-50',
+            textColor: 'text-red-800',
+            borderColor: 'border-red-200',
+            iconColor: 'text-red-600',
+        },
+    };
 
     useEffect(() => {
         if (sessionStatus === 'unauthenticated' || (session && session.user.role !== 'user')) {
@@ -108,7 +110,7 @@ export default function UserApplicationsPage() {
             <main id="main-content" className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
                     <div className="animate-spin h-12 w-12 border-4 border-blue-600 border-t-transparent rounded-full mx-auto" />
-                    <p className="mt-4 text-gray-600">Loading applications...</p>
+                    <p className="mt-4 text-gray-600">{t('loading')}</p>
                 </div>
             </main>
         );
@@ -119,9 +121,9 @@ export default function UserApplicationsPage() {
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 {/* Header */}
                 <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900">My Applications</h1>
+                    <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
                     <p className="mt-2 text-gray-600">
-                        Track all your job applications and their current status
+                        {t('subtitle')}
                     </p>
                 </div>
 
@@ -138,7 +140,7 @@ export default function UserApplicationsPage() {
                                     }`}
                                 aria-current={filter === status ? 'page' : undefined}
                             >
-                                {status.charAt(0).toUpperCase() + status.slice(1)}
+                                {t(`status.${status}`)}
                                 {status === filter && (
                                     <span className="ml-2 px-2 py-0.5 rounded-full bg-blue-100 text-blue-600 text-xs">
                                         {applications.length}
@@ -153,15 +155,15 @@ export default function UserApplicationsPage() {
                 {applications.length === 0 ? (
                     <div className="text-center py-12 bg-white rounded-lg shadow-sm border border-gray-200">
                         <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" aria-hidden="true" />
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">No Applications Found</h3>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('noApplications')}</h3>
                         <p className="text-gray-600 mb-4">
                             {filter === 'all'
-                                ? "You haven't applied to any jobs yet"
-                                : `You don't have any ${filter} applications`}
+                                ? t('noApplicationsAll')
+                                : t('noApplicationsFilter', { filter: t(`status.${filter}`) })}
                         </p>
                         <Link href="/jobs">
                             <button className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-                                Browse Jobs
+                                {t('browseJobs')}
                             </button>
                         </Link>
                     </div>
@@ -203,7 +205,7 @@ export default function UserApplicationsPage() {
                                                 <span className="flex items-center">
                                                     <Calendar className="h-4 w-4 mr-1" aria-hidden="true" />
                                                     <span className="sr-only">Applied on:</span>
-                                                    Applied {new Date(application.appliedAt).toLocaleDateString()}
+                                                    {t('appliedOn', { date: new Date(application.appliedAt).toLocaleDateString() })}
                                                 </span>
                                             </div>
 
@@ -212,7 +214,7 @@ export default function UserApplicationsPage() {
                                                 <div className="mt-3">
                                                     <details className="group">
                                                         <summary className="text-sm text-blue-600 hover:text-blue-700 cursor-pointer list-none flex items-center">
-                                                            View Cover Letter
+                                                            {t('viewCoverLetter')}
                                                             <span className="ml-1 transform group-open:rotate-180 transition-transform" aria-hidden="true">
                                                                 ▼
                                                             </span>
@@ -242,7 +244,7 @@ export default function UserApplicationsPage() {
                                     <div className="mt-4 flex gap-2 pt-4 border-t border-gray-200">
                                         <Link href={`/jobs/${application.jobId._id}`}>
                                             <button className="text-sm px-3 py-1.5 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition">
-                                                View Job
+                                                {t('viewJob')}
                                             </button>
                                         </Link>
                                         {application.cvUrl && application.cvUrl.startsWith('http') && (
@@ -253,7 +255,7 @@ export default function UserApplicationsPage() {
                                                 rel="noopener noreferrer"
                                                 className="text-sm px-3 py-1.5 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition"
                                             >
-                                                Download CV
+                                                {t('downloadCV')}
                                             </a>
                                         )}
                                     </div>
