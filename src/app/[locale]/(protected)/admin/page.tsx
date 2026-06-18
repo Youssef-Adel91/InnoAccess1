@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { Users, Briefcase, GraduationCap, Building2, CheckCircle, XCircle, Eye, X, Mail, Banknote, TrendingUp, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
@@ -81,6 +82,7 @@ interface PendingCompany {
 }
 
 export default function AdminDashboardPage() {
+    const t = useTranslations('AdminDashboard');
     const { data: session, status } = useSession();
     const [stats, setStats] = useState<Stats | null>(null);
     const [pendingCompanies, setPendingCompanies] = useState<PendingCompany[]>([]);
@@ -391,6 +393,7 @@ export default function AdminDashboardPage() {
                                                 <th className="px-5 py-2.5 text-right text-xs font-semibold text-gray-500 uppercase">Enrolled</th>
                                                 <th className="px-5 py-2.5 text-right text-xs font-semibold text-gray-500 uppercase">Paid</th>
                                                 <th className="px-5 py-2.5 text-right text-xs font-semibold text-gray-500 uppercase">Rev. Est.</th>
+                                                <th className="px-5 py-2.5 text-right text-xs font-semibold text-gray-500 uppercase">{t('actions')}</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-50">
@@ -406,6 +409,11 @@ export default function AdminDashboardPage() {
                                                     <td className="px-5 py-3 text-right text-gray-600">{c.paidCount}</td>
                                                     <td className="px-5 py-3 text-right font-semibold text-emerald-700">
                                                         {c.revenueEstimate > 0 ? formatEGP(c.revenueEstimate) : '—'}
+                                                    </td>
+                                                    <td className="px-5 py-3 text-right">
+                                                        <Link href={`/admin/courses/${c.courseId}`} className="text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors">
+                                                            {t('viewAnalytics')}
+                                                        </Link>
                                                     </td>
                                                 </tr>
                                             ))}

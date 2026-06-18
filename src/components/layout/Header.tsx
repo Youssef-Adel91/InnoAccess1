@@ -207,6 +207,10 @@ export function Header({ locale = 'en' }: HeaderProps) {
                         )}
                         {session?.user?.role === 'admin' && (
                             <>
+                                <Link href="/admin/trainers" className={navLink('/admin/trainers')} aria-current={isActive('/admin/trainers') ? 'page' : undefined}>
+                                    <Users className="mr-2 h-4 w-4" aria-hidden="true" />
+                                    {t('nav.trainersDirectory')}
+                                </Link>
                                 <Link href="/admin/trainers/requests" className={navLink('/admin/trainers/requests')} aria-current={isActive('/admin/trainers/requests') ? 'page' : undefined}>
                                     <Users className="mr-2 h-4 w-4" aria-hidden="true" />
                                     {t('nav.trainerRequests')}
@@ -348,6 +352,10 @@ export function Header({ locale = 'en' }: HeaderProps) {
                         )}
                         {session?.user?.role === 'admin' && (
                             <>
+                                <Link href="/admin/trainers" className={mobileLink('/admin/trainers')} onClick={() => setMobileMenuOpen(false)} aria-current={isActive('/admin/trainers') ? 'page' : undefined}>
+                                    <Users className="mr-3 h-5 w-5 shrink-0" aria-hidden="true" />
+                                    {t('nav.trainersDirectory')}
+                                </Link>
                                 <Link href="/admin/trainers/requests" className={mobileLink('/admin/trainers/requests')} onClick={() => setMobileMenuOpen(false)} aria-current={isActive('/admin/trainers/requests') ? 'page' : undefined}>
                                     <Users className="mr-3 h-5 w-5 shrink-0" aria-hidden="true" />
                                     {t('nav.trainerRequests')}

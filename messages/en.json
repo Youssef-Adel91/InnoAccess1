@@ -12,6 +12,7 @@
             "becomeTrainer": "Become a Trainer",
             "myJobs": "My Jobs",
             "myCourses": "My Courses",
+            "trainersDirectory": "Trainers Directory",
             "trainerRequests": "Trainer Requests",
             "videoApprovals": "Video Approvals"
         },
@@ -421,5 +422,9 @@
         "email": "Email",
         "enrolledDate": "Enrolled Date",
         "unknownUser": "Unknown User"
+    },
+    "AdminDashboard": {
+        "actions": "Actions",
+        "viewAnalytics": "View Details"
     }
 }

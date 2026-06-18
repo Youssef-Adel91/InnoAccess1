@@ -12,6 +12,7 @@
             "becomeTrainer": "انضم كمدرب",
             "myJobs": "وظائفي",
             "myCourses": "دوراتي",
+            "trainersDirectory": "دليل المدربين",
             "trainerRequests": "طلبات المدربين",
             "videoApprovals": "الموافقة على الفيديوهات"
         },
@@ -421,5 +422,9 @@
         "email": "البريد الإلكتروني",
         "enrolledDate": "تاريخ التسجيل",
         "unknownUser": "مستخدم غير معروف"
+    },
+    "AdminDashboard": {
+        "actions": "إجراءات",
+        "viewAnalytics": "عرض التفاصيل"
     }
 }
