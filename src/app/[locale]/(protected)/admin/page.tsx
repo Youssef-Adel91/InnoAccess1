@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { Users, Briefcase, GraduationCap, Building2, CheckCircle, XCircle, Eye, X, Mail, Banknote, TrendingUp, BarChart3 } from 'lucide-react';
+import { Users, Briefcase, GraduationCap, Building2, CheckCircle, XCircle, Eye, X, Mail, Banknote, TrendingUp, BarChart3, FileText, ClipboardList } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 interface Stats {
@@ -13,6 +13,7 @@ interface Stats {
         total: number;
         companies: number;
         trainers: number;
+        volunteers?: number;
         pendingApprovals: number;
     };
     jobs: {
@@ -21,6 +22,15 @@ interface Stats {
     courses: {
         total: number;
         published: number;
+    };
+    enrollments?: {
+        total: number;
+    };
+    applications?: {
+        total: number;
+    };
+    resumes?: {
+        total: number;
     };
 }
 
@@ -192,51 +202,70 @@ export default function AdminDashboardPage() {
                 {/* Stats Grid */}
                 {stats && (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        {/* Users Card */}
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col justify-between hover:shadow-md transition-shadow">
                             <div className="flex items-center">
-                                <div className="flex-shrink-0">
-                                    <Users className="h-8 w-8 text-blue-600" aria-hidden="true" />
+                                <div className="flex-shrink-0 bg-blue-50 p-3 rounded-lg">
+                                    <Users className="h-6 w-6 text-blue-600" aria-hidden="true" />
                                 </div>
                                 <div className="ml-4">
-                                    <p className="text-sm font-medium text-gray-600">Total Users</p>
+                                    <p className="text-sm font-medium text-gray-500">{t('totalUsers')}</p>
                                     <p className="text-2xl font-bold text-gray-900">{stats.users.total}</p>
                                 </div>
                             </div>
-                        </div>
-
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                            <div className="flex items-center">
-                                <div className="flex-shrink-0">
-                                    <Building2 className="h-8 w-8 text-purple-600" aria-hidden="true" />
-                                </div>
-                                <div className="ml-4">
-                                    <p className="text-sm font-medium text-gray-600">Companies</p>
-                                    <p className="text-2xl font-bold text-gray-900">{stats.users.companies}</p>
-                                </div>
+                            <div className="mt-4 pt-4 border-t border-gray-100 flex flex-wrap gap-2 text-xs text-gray-500">
+                                <span>{t('users')}: {stats.users.total - stats.users.trainers - stats.users.companies - (stats.users.volunteers || 0)}</span>
+                                <span>• {t('trainers')}: {stats.users.trainers}</span>
+                                <span>• {t('companies')}: {stats.users.companies}</span>
+                                <span>• {t('volunteers')}: {stats.users.volunteers || 0}</span>
                             </div>
                         </div>
 
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        {/* Enrollments Card */}
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col justify-between hover:shadow-md transition-shadow">
                             <div className="flex items-center">
-                                <div className="flex-shrink-0">
-                                    <Briefcase className="h-8 w-8 text-green-600" aria-hidden="true" />
+                                <div className="flex-shrink-0 bg-emerald-50 p-3 rounded-lg">
+                                    <GraduationCap className="h-6 w-6 text-emerald-600" aria-hidden="true" />
                                 </div>
                                 <div className="ml-4">
-                                    <p className="text-sm font-medium text-gray-600">Active Jobs</p>
-                                    <p className="text-2xl font-bold text-gray-900">{stats.jobs.active}</p>
+                                    <p className="text-sm font-medium text-gray-500">{t('totalEnrollments')}</p>
+                                    <p className="text-2xl font-bold text-gray-900">{stats.enrollments?.total || 0}</p>
                                 </div>
+                            </div>
+                            <div className="mt-4 pt-4 border-t border-gray-100 text-xs text-gray-500">
+                                {t('platformWideEnrollments')}
                             </div>
                         </div>
 
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        {/* Applications Card */}
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col justify-between hover:shadow-md transition-shadow">
                             <div className="flex items-center">
-                                <div className="flex-shrink-0">
-                                    <GraduationCap className="h-8 w-8 text-yellow-600" aria-hidden="true" />
+                                <div className="flex-shrink-0 bg-purple-50 p-3 rounded-lg">
+                                    <ClipboardList className="h-6 w-6 text-purple-600" aria-hidden="true" />
                                 </div>
                                 <div className="ml-4">
-                                    <p className="text-sm font-medium text-gray-600">Published Courses</p>
-                                    <p className="text-2xl font-bold text-gray-900">{stats.courses.published}</p>
+                                    <p className="text-sm font-medium text-gray-500">{t('jobApplications')}</p>
+                                    <p className="text-2xl font-bold text-gray-900">{stats.applications?.total || 0}</p>
                                 </div>
+                            </div>
+                            <div className="mt-4 pt-4 border-t border-gray-100 text-xs text-gray-500">
+                                {t('submittedApplications')}
+                            </div>
+                        </div>
+
+                        {/* Resumes Card */}
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col justify-between hover:shadow-md transition-shadow">
+                            <div className="flex items-center">
+                                <div className="flex-shrink-0 bg-orange-50 p-3 rounded-lg">
+                                    <FileText className="h-6 w-6 text-orange-600" aria-hidden="true" />
+                                </div>
+                                <div className="ml-4">
+                                    <p className="text-sm font-medium text-gray-500">{t('resumesCreated')}</p>
+                                    <p className="text-2xl font-bold text-gray-900">{stats.resumes?.total || 0}</p>
+                                </div>
+                            </div>
+                            <div className="mt-4 pt-4 border-t border-gray-100 text-xs text-gray-500">
+                                {t('resumesBuilderUsage')}
                             </div>
                         </div>
                     </div>

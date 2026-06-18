@@ -4,6 +4,9 @@ import { connectDB } from '@/lib/db';
 import User from '@/models/User';
 import Job from '@/models/Job';
 import Course from '@/models/Course';
+import Enrollment from '@/models/Enrollment';
+import Application from '@/models/Application';
+import Resume from '@/models/Resume';
 import Notification, { NotificationType } from '@/models/Notification';
 import { authOptions } from '@/lib/auth';
 
@@ -35,18 +38,26 @@ export async function GET(request: NextRequest) {
             totalUsers,
             totalCompanies,
             totalTrainers,
+            totalVolunteers,
             pendingCompanies,
             activeJobs,
             totalCourses,
             publishedCourses,
+            totalEnrollments,
+            totalApplications,
+            totalResumes,
         ] = await Promise.all([
             User.countDocuments({ role: 'user' }),
             User.countDocuments({ role: 'company' }),
             User.countDocuments({ role: 'trainer' }),
+            User.countDocuments({ role: 'volunteer' }),
             User.countDocuments({ role: 'company', isApproved: false }),
             Job.countDocuments({ status: 'active' }),
             Course.countDocuments(),
             Course.countDocuments({ isPublished: true }),
+            Enrollment.countDocuments(),
+            Application.countDocuments(),
+            Resume.countDocuments(),
         ]);
 
         return NextResponse.json({
@@ -56,6 +67,7 @@ export async function GET(request: NextRequest) {
                     total: totalUsers,
                     companies: totalCompanies,
                     trainers: totalTrainers,
+                    volunteers: totalVolunteers,
                     pendingApprovals: pendingCompanies,
                 },
                 jobs: {
@@ -64,6 +76,15 @@ export async function GET(request: NextRequest) {
                 courses: {
                     total: totalCourses,
                     published: publishedCourses,
+                },
+                enrollments: {
+                    total: totalEnrollments,
+                },
+                applications: {
+                    total: totalApplications,
+                },
+                resumes: {
+                    total: totalResumes,
                 },
             },
         });

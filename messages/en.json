@@ -407,7 +407,9 @@
         "viewCV": "View CV",
         "noCV": "No CV Available",
         "fallbackSpecialization": "Trainer",
-        "backToAdmin": "Admin Dashboard"
+        "backToAdmin": "Admin Dashboard",
+        "coursesTaught": "Courses Taught",
+        "noCoursesYet": "No courses yet"
     },
     "AdminCourseDetails": {
         "backToCourses": "Back to Courses",
@@ -425,6 +427,17 @@
     },
     "AdminDashboard": {
         "actions": "Actions",
-        "viewAnalytics": "View Details"
+        "viewAnalytics": "View Details",
+        "totalUsers": "Total Users",
+        "users": "Users",
+        "trainers": "Trainers",
+        "companies": "Companies",
+        "volunteers": "Volunteers",
+        "totalEnrollments": "Course Enrollments",
+        "platformWideEnrollments": "Platform-wide course enrollments",
+        "jobApplications": "Job Applications",
+        "submittedApplications": "Submitted job applications",
+        "resumesCreated": "Resumes Created",
+        "resumesBuilderUsage": "Using CV Builder"
     }
 }

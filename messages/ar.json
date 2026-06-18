@@ -407,7 +407,9 @@
         "viewCV": "عرض السيرة الذاتية",
         "noCV": "لا توجد سيرة ذاتية",
         "fallbackSpecialization": "مدرب",
-        "backToAdmin": "لوحة تحكم الإدارة"
+        "backToAdmin": "لوحة تحكم الإدارة",
+        "coursesTaught": "الدورات المقدمة",
+        "noCoursesYet": "لا توجد دورات بعد"
     },
     "AdminCourseDetails": {
         "backToCourses": "العودة إلى الدورات",
@@ -425,6 +427,17 @@
     },
     "AdminDashboard": {
         "actions": "إجراءات",
-        "viewAnalytics": "عرض التفاصيل"
+        "viewAnalytics": "عرض التفاصيل",
+        "totalUsers": "إجمالي المستخدمين",
+        "users": "مستخدمين",
+        "trainers": "مدربين",
+        "companies": "شركات",
+        "volunteers": "متطوعين",
+        "totalEnrollments": "التسجيل في الدورات",
+        "platformWideEnrollments": "إجمالي التسجيل في المنصة",
+        "jobApplications": "طلبات التوظيف",
+        "submittedApplications": "طلبات التوظيف المقدمة",
+        "resumesCreated": "السير الذاتية",
+        "resumesBuilderUsage": "إنشاء عبر المنشئ"
     }
 }

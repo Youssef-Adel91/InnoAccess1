@@ -2,6 +2,7 @@ import { getTranslations } from 'next-intl/server';
 import { connectDB } from '@/lib/db';
 import User, { UserRole } from '@/models/User';
 import TrainerProfile from '@/models/TrainerProfile';
+import Course from '@/models/Course';
 import Image from 'next/image';
 import { UserCircle, FileText, Briefcase, ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
@@ -31,8 +32,22 @@ export default async function AdminTrainersDirectoryPage() {
     // Map profiles by userId for O(1) lookup
     const profileMap = new Map(profiles.map((p) => [p.userId.toString(), p]));
 
+    // Fetch courses associated with these trainers
+    const courses = await Course.find({ trainerId: { $in: userIds } }).select('title trainerId').lean();
+    
+    // Group courses by trainerId
+    const courseMap = new Map<string, any[]>();
+    courses.forEach((course: any) => {
+        const tId = course.trainerId.toString();
+        if (!courseMap.has(tId)) {
+            courseMap.set(tId, []);
+        }
+        courseMap.get(tId)!.push(course);
+    });
+
     const trainers = users.map((user) => {
         const profile = profileMap.get(user._id.toString());
+        const tCourses = courseMap.get(user._id.toString()) || [];
         return {
             id: user._id.toString(),
             name: user.name,
@@ -40,6 +55,7 @@ export default async function AdminTrainersDirectoryPage() {
             avatar: user.profile?.avatar || null,
             specialization: profile?.specialization || t('fallbackSpecialization'),
             cvUrl: profile?.cvUrl || null,
+            courses: tCourses,
         };
     });
 
@@ -89,8 +105,30 @@ export default async function AdminTrainersDirectoryPage() {
                                     )}
                                 </div>
                                 <h2 className="text-xl font-bold text-gray-900 mb-1 line-clamp-1">{trainer.name}</h2>
-                                <p className="text-sm font-medium text-blue-600 mb-2 line-clamp-1">{trainer.specialization}</p>
-                                <p className="text-sm text-gray-500 mb-6 line-clamp-1">{trainer.email}</p>
+                                <p className="text-sm font-medium text-blue-600 mb-3 line-clamp-1">{trainer.specialization}</p>
+                                
+                                {/* Courses Taught Section */}
+                                <div className="w-full text-center mb-4">
+                                    <h4 className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">{t('coursesTaught')}</h4>
+                                    {trainer.courses.length > 0 ? (
+                                        <div className="flex flex-wrap gap-1.5 justify-center">
+                                            {trainer.courses.slice(0, 3).map((course: any) => (
+                                                <span key={course._id.toString()} className="inline-block px-2 py-1 bg-gray-50 text-gray-700 text-xs rounded-md border border-gray-200 line-clamp-1 max-w-[140px]" title={course.title}>
+                                                    {course.title}
+                                                </span>
+                                            ))}
+                                            {trainer.courses.length > 3 && (
+                                                <span className="inline-block px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-md border border-blue-100">
+                                                    +{trainer.courses.length - 3}
+                                                </span>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <p className="text-xs text-gray-400 italic">{t('noCoursesYet')}</p>
+                                    )}
+                                </div>
+
+                                <p className="text-sm text-gray-500 mb-6 line-clamp-1 mt-auto">{trainer.email}</p>
 
                                 <div className="mt-auto w-full">
                                     {trainer.cvUrl ? (
