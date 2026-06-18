@@ -1,10 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
-import { useRouter } from '@/i18n/navigation';
+// ⚠️  Both useRouter AND usePathname must come from @/i18n/navigation (next-intl's
+//     localized wrappers), NOT from next/navigation.
+//     next-intl's usePathname strips the locale prefix so router.replace receives
+//     the bare path (e.g. '/about') and prepends the new locale correctly.
+import { useRouter, usePathname } from '@/i18n/navigation';
 import {
     Briefcase,
     GraduationCap,
