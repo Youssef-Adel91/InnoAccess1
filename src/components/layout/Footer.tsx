@@ -44,8 +44,10 @@ export function Footer({ locale = 'en' }: FooterProps) {
                             className="inline-flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 rounded"
                             aria-label={t('logoLabel')}
                         >
-                            <span className="text-xl font-extrabold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">Inno</span>
-                            <span className="text-xl font-extrabold text-white">Access</span>
+                            <span dir="ltr" className="inline-block">
+                                <span className="text-xl font-extrabold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">Inno</span>
+                                <span className="text-xl font-extrabold text-white">Access</span>
+                            </span>
                         </Link>
                         <p className="mt-3 text-sm text-gray-400 leading-relaxed max-w-xs">
                             {t('tagline')}

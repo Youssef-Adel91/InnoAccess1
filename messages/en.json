@@ -216,6 +216,29 @@
             "wallet": "My Wallet",
             "requestPayout": "Request Payout"
         }
+    },
+    "Courses": {
+        "loading": "Loading courses...",
+        "title": "Browse Courses",
+        "subtitle": "Learn new skills with accessible courses featuring transcripts and keyboard controls",
+        "filters": {
+            "category": "Category",
+            "allCategories": "All Categories",
+            "price": "Price",
+            "allCourses": "All Courses",
+            "freeOnly": "Free Only",
+            "paidOnly": "Paid Only",
+            "reset": "Reset Filters"
+        },
+        "free": "Free",
+        "by": "by",
+        "modules": "modules",
+        "viewWorkshop": "View Workshop",
+        "viewCourse": "View Course",
+        "emptyState": {
+            "title": "No courses available yet",
+            "subtitle": "Check back later for new courses"
+        }
     }
 }
 

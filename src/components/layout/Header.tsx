@@ -153,8 +153,10 @@ export function Header({ locale = 'en' }: HeaderProps) {
                         className="flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded-lg px-1"
                         aria-label={t('logoLabel')}
                     >
-                        <span className="text-2xl font-extrabold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Inno</span>
-                        <span className="text-2xl font-extrabold text-gray-900">Access</span>
+                        <span dir="ltr" className="inline-block">
+                            <span className="text-2xl font-extrabold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Inno</span>
+                            <span className="text-2xl font-extrabold text-gray-900">Access</span>
+                        </span>
                     </Link>
 
                     {/* Desktop Navigation */}

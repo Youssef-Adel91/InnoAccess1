@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { GraduationCap, Clock, Users, Star, BookOpen, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { useTranslations } from 'next-intl';
 
 interface Course {
     _id: string;
@@ -35,6 +36,7 @@ function formatPrice(cents: number): string {
 }
 
 export default function CoursesPage() {
+    const t = useTranslations('Courses');
     const [courses, setCourses] = useState<Course[]>([]);
     const [categories, setCategories] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -103,7 +105,7 @@ export default function CoursesPage() {
             <main className="min-h-screen flex items-center justify-center bg-gray-50">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Loading courses...</p>
+                    <p className="mt-4 text-gray-600">{t('loading')}</p>
                 </div>
             </main>
         );
@@ -114,9 +116,9 @@ export default function CoursesPage() {
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 {/* Header */}
                 <div className="mb-8">
-                    <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900">Browse Courses</h1>
+                    <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900">{t('title')}</h1>
                     <p className="mt-2 text-base leading-relaxed text-gray-600">
-                        Learn new skills with accessible courses featuring transcripts and keyboard controls
+                        {t('subtitle')}
                     </p>
                 </div>
 
@@ -126,7 +128,7 @@ export default function CoursesPage() {
                         {/* Category Filter */}
                         <div>
                             <label htmlFor="category" className="block text-sm font-semibold text-gray-700 mb-2">
-                                Category
+                                {t('filters.category')}
                             </label>
                             <select
                                 id="category"
@@ -134,7 +136,7 @@ export default function CoursesPage() {
                                 onChange={(e) => setSelectedCategory(e.target.value)}
                                 className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base min-h-[44px] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
                             >
-                                <option value="all">All Categories</option>
+                                <option value="all">{t('filters.allCategories')}</option>
                                 {categories.map((cat) => (
                                     <option key={cat._id} value={cat._id}>
                                         {cat.name}
@@ -146,7 +148,7 @@ export default function CoursesPage() {
                         {/* Price Filter */}
                         <div>
                             <label htmlFor="price" className="block text-sm font-semibold text-gray-700 mb-2">
-                                Price
+                                {t('filters.price')}
                             </label>
                             <select
                                 id="price"
@@ -154,9 +156,9 @@ export default function CoursesPage() {
                                 onChange={(e) => setPriceFilter(e.target.value)}
                                 className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base min-h-[44px] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
                             >
-                                <option value="all">All Courses</option>
-                                <option value="free">Free Only</option>
-                                <option value="paid">Paid Only</option>
+                                <option value="all">{t('filters.allCourses')}</option>
+                                <option value="free">{t('filters.freeOnly')}</option>
+                                <option value="paid">{t('filters.paidOnly')}</option>
                             </select>
                         </div>
 
@@ -169,7 +171,7 @@ export default function CoursesPage() {
                                 }}
                                 className="w-full min-h-[44px] px-4 py-3 bg-gray-600 text-white rounded-xl hover:bg-gray-700 hover:shadow-md transition-all duration-200 font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-600 focus-visible:ring-offset-2"
                             >
-                                Reset Filters
+                                {t('filters.reset')}
                             </button>
                         </div>
                     </div>
@@ -215,7 +217,7 @@ export default function CoursesPage() {
                                     })() : null}
                                     <span className="absolute top-3 right-3 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-2">
                                         {course.isFree ? (
-                                            <span>Free</span>
+                                            <span>{t('free')}</span>
                                         ) : (
                                             <>
                                                 {course.originalPrice && course.originalPrice > course.price && (
@@ -239,7 +241,7 @@ export default function CoursesPage() {
                                         {course.title}
                                     </h2>
 
-                                    <p className="text-sm text-gray-600 mb-2">by {course.trainerId.name}</p>
+                                    <p className="text-sm text-gray-600 mb-2">{t('by')} {course.trainerId.name}</p>
 
                                     <p className="text-gray-700 text-sm mb-4 line-clamp-2">
                                         {course.description}
@@ -262,14 +264,14 @@ export default function CoursesPage() {
                                         ) : (
                                             <span className="flex items-center">
                                                 <BookOpen className="mr-1 h-4 w-4" />
-                                                {course.modules?.length || 0} modules
+                                                {course.modules?.length || 0} {t('modules')}
                                             </span>
                                         )}
                                     </div>
 
                                     <Link href={`/courses/${course._id}`}>
                                         <Button variant="primary" className="w-full min-h-[44px]">
-                                            {course.courseType === 'LIVE' ? 'View Workshop' : 'View Course'}
+                                            {course.courseType === 'LIVE' ? t('viewWorkshop') : t('viewCourse')}
                                         </Button>
                                     </Link>
                                 </div>
@@ -280,9 +282,9 @@ export default function CoursesPage() {
                     /* Empty State */
                     <div className="text-center py-12 bg-white rounded-lg shadow-md">
                         <GraduationCap className="mx-auto h-16 w-16 text-gray-400" />
-                        <h3 className="mt-4 text-lg font-semibold text-gray-900">No courses available yet</h3>
+                        <h3 className="mt-4 text-lg font-semibold text-gray-900">{t('emptyState.title')}</h3>
                         <p className="mt-2 text-sm text-gray-600">
-                            Check back later for new courses
+                            {t('emptyState.subtitle')}
                         </p>
                     </div>
                 )}
