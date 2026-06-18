@@ -398,6 +398,28 @@
         "rejectedText": "يمكنك معالجة الملاحظات المذكورة أعلاه وإعادة التقديم باستخدام النموذج أدناه.",
         "reapply": "إعادة التقديم كمدرب",
         "errorCV": "يرجى تحميل السيرة الذاتية"
+    },
+    "AdminTrainers": {
+        "title": "دليل المدربين",
+        "subtitle": "عرض وإدارة جميع المدربين المعتمدين في المنصة.",
+        "noTrainers": "لم يتم العثور على مدربين",
+        "viewCV": "عرض السيرة الذاتية",
+        "noCV": "لا توجد سيرة ذاتية",
+        "fallbackSpecialization": "مدرب",
+        "backToAdmin": "لوحة تحكم الإدارة"
+    },
+    "AdminCourseDetails": {
+        "backToCourses": "العودة إلى الدورات",
+        "trainer": "المدرب",
+        "unknownTrainer": "مدرب غير معروف",
+        "statusPublished": "منشور",
+        "statusDraft": "مسودة",
+        "totalEnrolled": "إجمالي المسجلين",
+        "traineesList": "المتدربون المسجلون",
+        "noTrainees": "لم يسجل أي متدرب في هذه الدورة بعد.",
+        "name": "الاسم",
+        "email": "البريد الإلكتروني",
+        "enrolledDate": "تاريخ التسجيل",
+        "unknownUser": "مستخدم غير معروف"
     }
 }
-

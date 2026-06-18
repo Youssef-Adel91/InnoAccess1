@@ -398,6 +398,28 @@
         "rejectedText": "You can address the feedback above and reapply using the form below.",
         "reapply": "Reapply as Trainer",
         "errorCV": "Please upload your CV"
+    },
+    "AdminTrainers": {
+        "title": "Trainer Directory",
+        "subtitle": "View and manage all approved trainers on the platform.",
+        "noTrainers": "No trainers found",
+        "viewCV": "View CV",
+        "noCV": "No CV Available",
+        "fallbackSpecialization": "Trainer",
+        "backToAdmin": "Admin Dashboard"
+    },
+    "AdminCourseDetails": {
+        "backToCourses": "Back to Courses",
+        "trainer": "Trainer",
+        "unknownTrainer": "Unknown Trainer",
+        "statusPublished": "Published",
+        "statusDraft": "Draft",
+        "totalEnrolled": "Total Enrolled",
+        "traineesList": "Enrolled Trainees",
+        "noTrainees": "No trainees have enrolled in this course yet.",
+        "name": "Name",
+        "email": "Email",
+        "enrolledDate": "Enrolled Date",
+        "unknownUser": "Unknown User"
     }
 }
-
