@@ -20,7 +20,6 @@ const nextConfig = {
         'isomorphic-dompurify',
         'bcrypt',
         'nodemailer',
-        '@react-pdf/renderer',
     ],
     transpilePackages: ['@react-pdf/renderer'],
     // Allow larger request bodies for Server Actions (e.g. course thumbnail uploads up to 10MB)
