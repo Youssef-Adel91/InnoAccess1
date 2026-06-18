@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
-import TurnstileWidget from '@/components/ui/TurnstileWidget';
+import TurnstileWidget, { TurnstileRef } from '@/components/ui/TurnstileWidget';
 import { Eye, EyeOff } from 'lucide-react';
 import TrainerRegistrationForm from '@/components/auth/TrainerRegistrationForm';
 import { stopBackspacePropagation } from '@/lib/keyboardUtils';
@@ -29,6 +29,7 @@ export default function RegisterPage() {
     const [success, setSuccess] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [turnstileToken, setTurnstileToken] = useState('');
+    const turnstileRef = useRef<TurnstileRef>(null);
 
     // Trainer state
     const [trainerData, setTrainerData] = useState({
@@ -145,6 +146,10 @@ export default function RegisterPage() {
 
             if (!response.ok) {
                 setError(data.error?.message || 'Registration failed');
+                // Reset CAPTCHA on failure since tokens are single-use
+                if (turnstileRef.current) {
+                    turnstileRef.current.reset();
+                }
             } else {
                 setSuccess(data.data?.message || 'Account created successfully! Please sign in.');
                 // Redirect directly to sign-in (email verification is auto-approved)
@@ -449,6 +454,7 @@ export default function RegisterPage() {
                         {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
                             <div className="flex justify-center">
                                 <TurnstileWidget
+                                    ref={turnstileRef}
                                     onVerify={setTurnstileToken}
                                 />
                             </div>

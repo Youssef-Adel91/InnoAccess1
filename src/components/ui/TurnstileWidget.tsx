@@ -1,34 +1,38 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 
 declare global {
     interface Window {
         turnstile?: {
-            render: (container: HTMLElement, options: {
-                sitekey: string;
-                callback: (token: string) => void;
-            }) => void;
+            render: (container: HTMLElement, options: any) => string;
+            reset: (widgetId: string) => void;
         };
-        __turnstileRendered?: boolean;
     }
+}
+
+export interface TurnstileRef {
+    reset: () => void;
 }
 
 interface TurnstileProps {
     onVerify: (token: string) => void;
 }
 
-export default function TurnstileWidget({ onVerify }: TurnstileProps) {
+const TurnstileWidget = forwardRef<TurnstileRef, TurnstileProps>(({ onVerify }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
+    const widgetIdRef = useRef<string>();
+
+    useImperativeHandle(ref, () => ({
+        reset: () => {
+            if (window.turnstile && widgetIdRef.current) {
+                window.turnstile.reset(widgetIdRef.current);
+                onVerify('');
+            }
+        }
+    }));
 
     useEffect(() => {
-        // Global flag to prevent duplicate renders across all instances
-        if (window.__turnstileRendered) {
-            console.log('⏭️ Turnstile already rendered globally, skipping');
-            return;
-        }
-
-        // Get site key
         const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
         if (!siteKey) {
@@ -36,42 +40,38 @@ export default function TurnstileWidget({ onVerify }: TurnstileProps) {
             return;
         }
 
-        console.log('✅ Turnstile Site Key found:', siteKey.substring(0, 10) + '...');
-
-        // Render widget
         const renderWidget = () => {
-            if (window.turnstile && containerRef.current && !window.__turnstileRendered) {
-                console.log('🎨 Rendering Turnstile widget...');
+            // Only render if container is empty
+            if (window.turnstile && containerRef.current && containerRef.current.childElementCount === 0) {
                 try {
-                    window.turnstile.render(containerRef.current, {
+                    widgetIdRef.current = window.turnstile.render(containerRef.current, {
                         sitekey: siteKey,
                         callback: (token: string) => {
-                            console.log('✅ Turnstile verification successful!');
                             onVerify(token);
                         },
+                        'expired-callback': () => {
+                            onVerify('');
+                        },
+                        'error-callback': () => {
+                            onVerify('');
+                        }
                     });
-                    window.__turnstileRendered = true; // Mark as rendered globally
-                    console.log('✓ Widget rendered successfully');
                 } catch (error) {
-                    console.error('❌ Render error:', error);
+                    console.error('❌ Turnstile render error:', error);
                 }
             }
         };
 
-        // Load script
         if (!window.turnstile) {
-            console.log('📥 Loading Turnstile script...');
             const script = document.createElement('script');
-            script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+            script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
             script.async = true;
             script.defer = true;
             script.onload = () => {
-                console.log('✅ Turnstile script loaded');
                 renderWidget();
             };
-            document.body.appendChild(script);
+            document.head.appendChild(script);
         } else {
-            console.log('✓ Script already loaded');
             renderWidget();
         }
     }, [onVerify]);
@@ -79,8 +79,11 @@ export default function TurnstileWidget({ onVerify }: TurnstileProps) {
     return (
         <div
             ref={containerRef}
-            className="my-4"
-            style={{ minWidth: '300px', minHeight: '65px' }}
+            className="my-4 min-h-[65px] min-w-[300px]"
         />
     );
-}
+});
+
+TurnstileWidget.displayName = 'TurnstileWidget';
+
+export default TurnstileWidget;
