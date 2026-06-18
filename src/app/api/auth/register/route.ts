@@ -19,7 +19,7 @@ const registerSchema = z.object({
             passwordRegex,
             'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'
         ),
-    role: z.enum([UserRole.USER, UserRole.COMPANY, UserRole.TRAINER]).default(UserRole.USER),
+    role: z.enum([UserRole.USER, UserRole.COMPANY, UserRole.TRAINER, UserRole.VOLUNTEER]).default(UserRole.USER),
     companyName: z.string().min(2).optional(),
     companyBio: z.string().min(50, 'Company description must be at least 50 characters').optional(),
     socialMedia: z.object({
