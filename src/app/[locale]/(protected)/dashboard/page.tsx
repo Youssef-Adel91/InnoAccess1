@@ -1,17 +1,28 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { Briefcase, GraduationCap, Bell, Settings, User as UserIcon, ArrowRight, Clock, CheckCircle } from 'lucide-react';
+import {
+    Briefcase,
+    GraduationCap,
+    Bell,
+    Settings,
+    User as UserIcon,
+    ArrowRight,
+    Clock,
+    CheckCircle,
+} from 'lucide-react';
 import useSWR from 'swr';
 import { ProfileCompletenessCard } from '@/components/dashboard/ProfileCompletenessCard';
 import { LiveSessionAlert } from '@/components/dashboard/LiveSessionAlert';
 import { calculateProfileCompleteness } from '@/lib/profileCompleteness';
+import { useTranslations } from 'next-intl';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function DashboardPage() {
+    const t = useTranslations('Dashboard');
+    const tCommon = useTranslations('Common');
     const { data: session, status } = useSession();
 
     // Fetch user applications
@@ -42,92 +53,95 @@ export default function DashboardPage() {
     const { data: upcomingSessionsData } = useSWR(
         session?.user?.role === 'user' ? '/api/user/upcoming-sessions' : null,
         fetcher,
-        { refreshInterval: 30000 } // Refresh every 30 seconds for live updates
+        { refreshInterval: 30000 }
     );
 
+    // ── Loading state ──────────────────────────────────────────────────────────
     if (status === 'loading') {
         return (
             <main id="main-content" className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
-                    <div className="animate-spin h-12 w-12 border-4 border-blue-600 border-t-transparent rounded-full mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Loading your dashboard...</p>
+                    <div className="animate-spin h-12 w-12 border-4 border-blue-600 border-t-transparent rounded-full mx-auto" />
+                    <p className="mt-4 text-gray-600">{t('loading')}</p>
                 </div>
             </main>
         );
     }
 
-    if (status === 'unauthenticated') {
-        redirect('/auth/signin');
+    // ── Unauthenticated — middleware handles the redirect, this is a fallback ──
+    // NOTE: We intentionally do NOT call redirect() here.
+    // The middleware already redirects unauthenticated users to /[locale]/auth/signin.
+    // Calling redirect('/auth/signin') from a client component would produce a
+    // non-locale path and cause a redirect loop.
+    if (status === 'unauthenticated' || !session) {
+        return null;
     }
 
-    // Redirect admins to admin dashboard
-    if (session?.user?.role === 'admin') {
-        redirect('/admin');
-    }
-
-    // Calculate stats
-    const applicationsCount = applicationsData?.data?.applications?.length || 0;
-    const enrollmentsCount = enrollmentsData?.data?.enrollments?.length || 0;
+    // ── Calculate stats ────────────────────────────────────────────────────────
+    const applicationsCount  = applicationsData?.data?.applications?.length || 0;
+    const enrollmentsCount   = enrollmentsData?.data?.enrollments?.length || 0;
     const recentApplications = applicationsData?.data?.applications?.slice(0, 3) || [];
     const latestNotification = notificationsData?.data?.notifications?.[0];
 
-    // Calculate profile completeness (only for regular users)
-    const profileCompleteness = session?.user?.role === 'user' && userProfileData?.data?.user
-        ? calculateProfileCompleteness(userProfileData.data.user)
-        : null;
+    const profileCompleteness =
+        session?.user?.role === 'user' && userProfileData?.data?.user
+            ? calculateProfileCompleteness(userProfileData.data.user)
+            : null;
 
-    // Get upcoming live sessions
     const upcomingSessions = upcomingSessionsData?.data?.sessions || [];
 
     const quickActions = [
         {
-            name: 'Browse Jobs',
-            href: '/jobs',
-            icon: Briefcase,
-            description: 'Find your next opportunity',
-            color: 'bg-blue-500',
+            name:        t('quickActions.browseJobs'),
+            href:        '/jobs',
+            icon:        Briefcase,
+            description: t('quickActions.browseJobsDesc'),
+            color:       'bg-blue-500',
         },
         {
-            name: 'Browse Courses',
-            href: '/courses',
-            icon: GraduationCap,
-            description: 'Continue learning',
-            color: 'bg-green-500',
+            name:        t('quickActions.browseCourses'),
+            href:        '/courses',
+            icon:        GraduationCap,
+            description: t('quickActions.browseCoursesDesc'),
+            color:       'bg-green-500',
         },
         {
-            name: 'My Courses',
-            href: '/user/courses',
-            icon: GraduationCap,
-            description: 'View enrolled courses',
-            color: 'bg-purple-500',
-            userOnly: true, // Only show for users
+            name:        t('quickActions.myCourses'),
+            href:        '/user/courses',
+            icon:        GraduationCap,
+            description: t('quickActions.myCoursesDesc'),
+            color:       'bg-purple-500',
+            userOnly:    true,
         },
         {
-            name: 'Notifications',
-            href: '/notifications',
-            icon: Bell,
-            description: 'View updates',
-            color: 'bg-yellow-500',
+            name:        t('quickActions.notifications'),
+            href:        '/notifications',
+            icon:        Bell,
+            description: t('quickActions.notificationsDesc'),
+            color:       'bg-yellow-500',
         },
         {
-            name: 'My Profile',
-            href: '/profile',
-            icon: Settings,
-            description: 'Edit your information',
-            color: 'bg-gray-500',
+            name:        t('quickActions.myProfile'),
+            href:        '/profile',
+            icon:        Settings,
+            description: t('quickActions.myProfileDesc'),
+            color:       'bg-gray-500',
         },
     ];
 
     return (
         <main id="main-content" className="min-h-screen bg-gray-50 py-8">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+
                 {/* Welcome Section */}
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold text-gray-900">
-                        Welcome back, {session?.user?.name}!
+                        {t('welcomeBack', { name: session?.user?.name })}
                     </h1>
                     <p className="mt-2 text-gray-600">
-                        Role: <span className="font-medium capitalize">{session?.user?.role}</span>
+                        <span className="font-medium capitalize">
+                            {t('role', { role: session?.user?.role })}
+                        </span>
                     </p>
                 </div>
 
@@ -154,27 +168,24 @@ export default function DashboardPage() {
                                 </svg>
                             </div>
                             <div className="ml-3">
-                                <p className="text-sm text-yellow-700">
-                                    Your company account is pending admin approval. You&apos;ll be able to post jobs once
-                                    approved.
-                                </p>
+                                <p className="text-sm text-yellow-700">{t('pendingApproval')}</p>
                             </div>
                         </div>
                     </div>
                 )}
 
-                {/* Live Workshop Alerts - Only for users */}
+                {/* Live Workshop Alerts */}
                 {upcomingSessions.length > 0 && (
                     <div className="mb-8">
-                        {upcomingSessions.map((session: any) => (
-                            <div key={session._id} className="mb-4">
-                                <LiveSessionAlert course={session} />
+                        {upcomingSessions.map((sess: any) => (
+                            <div key={sess._id} className="mb-4">
+                                <LiveSessionAlert course={sess} />
                             </div>
                         ))}
                     </div>
                 )}
 
-                {/* Profile Completeness - Only for users */}
+                {/* Profile Completeness */}
                 {profileCompleteness && profileCompleteness.percentage < 100 && (
                     <div className="mb-8">
                         <ProfileCompletenessCard completeness={profileCompleteness} />
@@ -185,11 +196,9 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                         <div className="flex items-center">
-                            <div className="flex-shrink-0">
-                                <Briefcase className="h-8 w-8 text-blue-600" aria-hidden="true" />
-                            </div>
+                            <Briefcase className="h-8 w-8 text-blue-600" aria-hidden="true" />
                             <div className="ml-4">
-                                <p className="text-sm font-medium text-gray-600">Applications</p>
+                                <p className="text-sm font-medium text-gray-600">{t('stats.applications')}</p>
                                 <p className="text-2xl font-bold text-gray-900">{applicationsCount}</p>
                             </div>
                         </div>
@@ -197,11 +206,9 @@ export default function DashboardPage() {
 
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                         <div className="flex items-center">
-                            <div className="flex-shrink-0">
-                                <GraduationCap className="h-8 w-8 text-green-600" aria-hidden="true" />
-                            </div>
+                            <GraduationCap className="h-8 w-8 text-green-600" aria-hidden="true" />
                             <div className="ml-4">
-                                <p className="text-sm font-medium text-gray-600">Enrolled Courses</p>
+                                <p className="text-sm font-medium text-gray-600">{t('stats.enrolledCourses')}</p>
                                 <p className="text-2xl font-bold text-gray-900">{enrollmentsCount}</p>
                             </div>
                         </div>
@@ -209,11 +216,9 @@ export default function DashboardPage() {
 
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                         <div className="flex items-center">
-                            <div className="flex-shrink-0">
-                                <UserIcon className="h-8 w-8 text-purple-600" aria-hidden="true" />
-                            </div>
+                            <UserIcon className="h-8 w-8 text-purple-600" aria-hidden="true" />
                             <div className="ml-4">
-                                <p className="text-sm font-medium text-gray-600">Profile Views</p>
+                                <p className="text-sm font-medium text-gray-600">{t('stats.profileViews')}</p>
                                 <p className="text-2xl font-bold text-gray-900">0</p>
                             </div>
                         </div>
@@ -225,18 +230,23 @@ export default function DashboardPage() {
                     {session?.user?.role === 'user' && (
                         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                             <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-lg font-semibold text-gray-900">Recent Applications</h2>
+                                <h2 className="text-lg font-semibold text-gray-900">
+                                    {t('widgets.recentApplications')}
+                                </h2>
                                 <Link
                                     href="/user/applications"
                                     className="text-sm text-blue-600 hover:text-blue-700 flex items-center"
                                 >
-                                    View all
+                                    {tCommon('viewAll')}
                                     <ArrowRight className="h-4 w-4 ml-1" />
                                 </Link>
                             </div>
                             {recentApplications.length === 0 ? (
                                 <p className="text-sm text-gray-500 text-center py-8">
-                                    No applications yet. <Link href="/jobs" className="text-blue-600 hover:underline">Browse jobs</Link>
+                                    {t('widgets.noApplications')}{' '}
+                                    <Link href="/jobs" className="text-blue-600 hover:underline">
+                                        {t('widgets.browseJobs')}
+                                    </Link>
                                 </p>
                             ) : (
                                 <div className="space-y-3">
@@ -251,7 +261,7 @@ export default function DashboardPage() {
                                             <p className="text-sm text-gray-600">{app.jobId.companyId.name}</p>
                                             <div className="flex items-center mt-1 text-xs text-gray-500">
                                                 {app.status === 'pending' && <Clock className="h-3 w-3 mr-1 text-yellow-500" />}
-                                                {app.status === 'viewed' && <CheckCircle className="h-3 w-3 mr-1 text-blue-500" />}
+                                                {app.status === 'viewed'  && <CheckCircle className="h-3 w-3 mr-1 text-blue-500" />}
                                                 <span className="capitalize">{app.status}</span>
                                                 <span className="mx-2">•</span>
                                                 <span>{new Date(app.appliedAt).toLocaleDateString()}</span>
@@ -266,18 +276,20 @@ export default function DashboardPage() {
                     {/* Latest Notification Widget */}
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                         <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-semibold text-gray-900">Latest Notification</h2>
+                            <h2 className="text-lg font-semibold text-gray-900">
+                                {t('widgets.latestNotification')}
+                            </h2>
                             <Link
                                 href="/notifications"
                                 className="text-sm text-blue-600 hover:text-blue-700 flex items-center"
                             >
-                                View all
+                                {t('widgets.viewAll')}
                                 <ArrowRight className="h-4 w-4 ml-1" />
                             </Link>
                         </div>
                         {!latestNotification ? (
                             <p className="text-sm text-gray-500 text-center py-8">
-                                No notifications yet. We&apos;ll notify you of important updates!
+                                {t('widgets.noNotifications')}
                             </p>
                         ) : (
                             <div className="border-l-4 border-yellow-500 pl-4 py-2">
@@ -293,18 +305,13 @@ export default function DashboardPage() {
 
                 {/* Quick Actions */}
                 <div>
-                    <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
+                    <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                        {t('quickActions.heading')}
+                    </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         {quickActions
                             .filter((action) => {
-                                // Hide admin panel from non-admin users
-                                if (action.href === '/admin' && session?.user?.role !== 'admin') {
-                                    return false;
-                                }
-                                // Filter out user-only actions if not a regular user
-                                if (action.userOnly && session?.user?.role !== 'user') {
-                                    return false;
-                                }
+                                if (action.userOnly && session?.user?.role !== 'user') return false;
                                 return true;
                             })
                             .map((action) => (

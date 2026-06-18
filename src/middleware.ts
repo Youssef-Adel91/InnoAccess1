@@ -5,20 +5,19 @@ import { kv } from '@vercel/kv';
 import createIntlMiddleware from 'next-intl/middleware';
 import { routing } from './i18n/routing';
 
-// ─── next-intl middleware ───────────────────────────────────────────────────
-// Handles locale prefix routing (/en/... and /ar/...) and sets the
-// locale cookie so Server Components know which language to load.
-// This runs ONLY for public routes — protected routes are handled separately.
+// ─── next-intl middleware ─────────────────────────────────────────────────────
+// Now handles ALL non-API routes — both public and protected pages live under
+// [locale]/, so every page request needs locale detection/prefix handling.
 const intlMiddleware = createIntlMiddleware(routing);
 
-// ─── Rate limiter ────────────────────────────────────────────────────────────
+// ─── Rate limiter ─────────────────────────────────────────────────────────────
 const globalRateLimit = new Ratelimit({
     redis: kv,
     limiter: Ratelimit.slidingWindow(100, '10 s'),
     analytics: true,
 });
 
-// ─── Public API routes — no auth required ─────────────────────────────────
+// ─── Public API routes — no auth required ─────────────────────────────────────
 const PUBLIC_API_ROUTES = [
     '/api/jobs',
     '/api/courses',
@@ -27,56 +26,75 @@ const PUBLIC_API_ROUTES = [
     '/api/contact',
     '/api/blob',
 ];
-
 const isPublicApiRoute = (path: string) =>
     PUBLIC_API_ROUTES.some((route) => path.startsWith(route));
 
-// ─── Affiliate referral cookie ───────────────────────────────────────────────
+// ─── Affiliate referral cookie ─────────────────────────────────────────────────
 const AFFILIATE_CODE_REGEX = /^VOL_[A-Z0-9]{6}$/;
-const REF_COOKIE_NAME = 'innoaccess_ref';
-const REF_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
+const REF_COOKIE_NAME      = 'innoaccess_ref';
+const REF_COOKIE_MAX_AGE   = 60 * 60 * 24 * 30;
 
-// ─── Route classification helpers ───────────────────────────────────────────
+// ─── Locale helpers ───────────────────────────────────────────────────────────
+
 /**
- * Returns true for routes that need next-intl locale handling.
- * These are the public-facing pages that will be translated.
- * NOTE: we strip the locale prefix when checking — next-intl will have
- * already injected the prefix, but we need to recognise the pattern.
+ * Strips the locale prefix from a path so we can match against
+ * role-protection patterns that don't know about locale prefixes.
+ *
+ * Examples:
+ *   /en/admin      → /admin
+ *   /ar/dashboard  → /dashboard
+ *   /en/           → /
+ *   /about         → /about  (no prefix found — returned unchanged)
  */
-function isLocaleRoute(path: string): boolean {
-    // Matches /en/... or /ar/... prefixed paths, plus the bare / root
-    return (
-        path === '/' ||
-        /^\/(en|ar)(\/|$)/.test(path)
-    );
+function stripLocale(path: string): string {
+    for (const locale of routing.locales) {
+        if (path.startsWith(`/${locale}/`)) {
+            return path.slice(locale.length + 1); // e.g. "/en/admin" → "/admin"
+        }
+        if (path === `/${locale}`) {
+            return '/';
+        }
+    }
+    return path;
 }
 
 /**
- * Returns true for paths that must BYPASS next-intl and go straight to
- * the withAuth-protected pipeline (or be served as-is for APIs).
+ * Extracts the active locale from the path.
+ * Falls back to the default locale if none found.
  */
-function isProtectedRoute(path: string): boolean {
+function extractLocale(path: string): string {
+    for (const locale of routing.locales) {
+        if (path.startsWith(`/${locale}/`) || path === `/${locale}`) {
+            return locale;
+        }
+    }
+    return routing.defaultLocale;
+}
+
+/**
+ * Returns true for paths that require authentication (after locale is stripped).
+ */
+function isProtectedPath(strippedPath: string): boolean {
     return (
-        path.startsWith('/admin') ||
-        path.startsWith('/company') ||
-        path.startsWith('/trainer') ||
-        path.startsWith('/dashboard') ||
-        path.startsWith('/volunteer') ||
-        path.startsWith('/profile') ||
-        path.startsWith('/notifications') ||
-        path.startsWith('/user') ||
-        path.startsWith('/join-trainer') ||
-        path.startsWith('/api')
+        strippedPath.startsWith('/admin')        ||
+        strippedPath.startsWith('/company')      ||
+        strippedPath.startsWith('/trainer')      ||
+        strippedPath.startsWith('/dashboard')    ||
+        strippedPath.startsWith('/volunteer')    ||
+        strippedPath.startsWith('/profile')      ||
+        strippedPath.startsWith('/notifications') ||
+        strippedPath.startsWith('/user')         ||
+        strippedPath.startsWith('/join-trainer')
     );
 }
 
-// ─── withAuth — protected route middleware ────────────────────────────────────
+// ─── withAuth — unified middleware ────────────────────────────────────────────
 export default withAuth(
     async function middleware(req) {
         const token = req.nextauth.token;
         const path  = req.nextUrl.pathname;
 
-        // ── Real client IP behind Cloudflare ───────────────────────────────
+        // ── Real client IP (behind Cloudflare) ──────────────────────────────
         const ip =
             req.headers.get('cf-connecting-ip')
             ?? req.headers.get('x-real-ip')
@@ -84,63 +102,12 @@ export default withAuth(
             ?? req.ip
             ?? '127.0.0.1';
 
-        // ── next-intl: handle locale prefix for public routes ─────────────
-        // If this request is for a locale-aware public page, delegate to
-        // next-intl's middleware first. It handles:
-        //   • Redirecting / → /en/
-        //   • Detecting locale from URL and setting NEXT_LOCALE cookie
-        //   • Stripping the locale prefix for Next.js file routing
-        if (isLocaleRoute(path) && !isProtectedRoute(path)) {
-            return intlMiddleware(req as unknown as NextRequest);
-        }
-
-        // ── Affiliate referral cookie ─────────────────────────────────────
-        const refCode = req.nextUrl.searchParams.get('ref');
-
-        if (refCode && AFFILIATE_CODE_REGEX.test(refCode)) {
-            const existingCookie = req.cookies.get(REF_COOKIE_NAME)?.value;
-
-            if (existingCookie !== refCode) {
-                const response = NextResponse.next();
-                response.cookies.set(REF_COOKIE_NAME, refCode, {
-                    httpOnly: true,
-                    secure:   process.env.NODE_ENV === 'production',
-                    sameSite: 'lax',
-                    maxAge:   REF_COOKIE_MAX_AGE,
-                    path:     '/',
-                });
-
-                // Apply role checks to the same response object
-                if (path.startsWith('/admin') && token?.role !== 'admin') {
-                    return NextResponse.redirect(new URL('/', req.url));
-                }
-                if (path.startsWith('/company') && token?.role !== 'company') {
-                    return NextResponse.redirect(new URL('/', req.url));
-                }
-                if (path.startsWith('/trainer') && token?.role !== 'trainer') {
-                    const isManagePath = /^\/trainer\/courses\/[^\/]+\/manage/.test(path);
-                    if (!(isManagePath && token?.role === 'company')) {
-                        return NextResponse.redirect(new URL('/join-trainer', req.url));
-                    }
-                }
-                if (path.startsWith('/volunteer') && token?.role !== 'volunteer') {
-                    return NextResponse.redirect(new URL('/dashboard', req.url));
-                }
-                if (token?.role === 'company' && !token?.isApproved && !path.startsWith('/company/pending')) {
-                    return NextResponse.redirect(new URL('/company/pending', req.url));
-                }
-
-                return response;
-            }
-        }
-
-        // ── Rate limiting for all API routes ──────────────────────────────
+        // ── API routes: rate-limit only, skip intl ───────────────────────────
         if (path.startsWith('/api')) {
             try {
                 const { success, limit, reset, remaining } = await globalRateLimit.limit(
                     `global_api_${ip}`
                 );
-
                 if (!success) {
                     return NextResponse.json(
                         { error: 'Too many requests. Please try again later.' },
@@ -155,50 +122,86 @@ export default withAuth(
                     );
                 }
             } catch (rateLimitError) {
-                console.warn('⚠️  Rate limiter unavailable, skipping:', (rateLimitError as Error).message);
+                console.warn('⚠️  Rate limiter unavailable:', (rateLimitError as Error).message);
+            }
+            return NextResponse.next();
+        }
+
+        // ── Affiliate referral cookie ────────────────────────────────────────
+        const refCode = req.nextUrl.searchParams.get('ref');
+        if (refCode && AFFILIATE_CODE_REGEX.test(refCode)) {
+            const existingCookie = req.cookies.get(REF_COOKIE_NAME)?.value;
+            if (existingCookie !== refCode) {
+                const response = NextResponse.next();
+                response.cookies.set(REF_COOKIE_NAME, refCode, {
+                    httpOnly: true,
+                    secure:   process.env.NODE_ENV === 'production',
+                    sameSite: 'lax',
+                    maxAge:   REF_COOKIE_MAX_AGE,
+                    path:     '/',
+                });
+                return response;
             }
         }
 
-        // ── Role-based route protection ────────────────────────────────────
-        if (path.startsWith('/admin') && token?.role !== 'admin') {
-            return NextResponse.redirect(new URL('/', req.url));
+        // ── Role-based protection (locale-aware) ─────────────────────────────
+        // Strip the locale prefix so we can match against /admin, /dashboard etc.
+        const strippedPath = stripLocale(path);
+        const locale       = extractLocale(path);
+
+        // Helper: build a redirect to a locale-prefixed path
+        const localRedirect = (target: string) =>
+            NextResponse.redirect(new URL(`/${locale}${target}`, req.url));
+
+        if (strippedPath.startsWith('/admin') && token?.role !== 'admin') {
+            return localRedirect('/');
         }
-        if (path.startsWith('/company') && token?.role !== 'company') {
-            return NextResponse.redirect(new URL('/', req.url));
+        if (strippedPath.startsWith('/company') && token?.role !== 'company') {
+            return localRedirect('/');
         }
-        if (path.startsWith('/trainer') && token?.role !== 'trainer') {
-            const isManagePath = /^\/trainer\/courses\/[^\/]+\/manage/.test(path);
+        if (strippedPath.startsWith('/trainer') && token?.role !== 'trainer') {
+            const isManagePath = /^\/trainer\/courses\/[^/]+\/manage/.test(strippedPath);
             if (isManagePath && token?.role === 'company') {
-                // allow through
+                // company can manage their own trainer courses — allow through
             } else {
-                return NextResponse.redirect(new URL('/join-trainer', req.url));
+                return localRedirect('/join-trainer');
             }
         }
-        if (path.startsWith('/volunteer') && token?.role !== 'volunteer') {
-            return NextResponse.redirect(new URL('/dashboard', req.url));
+        if (strippedPath.startsWith('/volunteer') && token?.role !== 'volunteer') {
+            return localRedirect('/dashboard');
         }
-        if (token?.role === 'company' && !token?.isApproved && !path.startsWith('/company/pending')) {
-            return NextResponse.redirect(new URL('/company/pending', req.url));
+        if (
+            token?.role === 'company' &&
+            !token?.isApproved &&
+            !strippedPath.startsWith('/company/pending')
+        ) {
+            return localRedirect('/company/pending');
         }
 
-        return NextResponse.next();
+        // ── next-intl: locale routing for all non-API routes ─────────────────
+        // Runs for every page request (public + protected alike).
+        // Handles:  / → /en/   |  locale cookie  |  URL rewriting for file routing
+        return intlMiddleware(req as unknown as NextRequest);
     },
     {
         callbacks: {
             authorized: ({ token, req }) => {
                 const path = req.nextUrl.pathname;
 
-                // Always allow /api/auth (NextAuth internals)
+                // Always allow NextAuth internals
                 if (path.startsWith('/api/auth')) return true;
 
-                // Allow locale-aware public pages — next-intl handles them above
-                // withAuth's authorized callback must not block them
-                if (isLocaleRoute(path) && !isProtectedRoute(path)) return true;
-
-                // Allow public API routes
+                // Allow all public API routes
                 if (isPublicApiRoute(path)) return true;
 
-                // All other matched routes require a valid session
+                // Allow all other API routes through (will hit the rate-limiter above)
+                if (path.startsWith('/api')) return true;
+
+                // Strip locale prefix and check if the path is protected
+                const strippedPath = stripLocale(path);
+                if (!isProtectedPath(strippedPath)) return true;
+
+                // Protected paths require a valid session token
                 return !!token;
             },
         },
@@ -208,15 +211,13 @@ export default withAuth(
 export const config = {
     matcher: [
         /*
-         * Match all request paths EXCEPT:
-         * - _next/static (static files)
-         * - _next/image (Next.js image optimization)
-         * - favicon.ico, robots.txt, sitemap.xml
-         * - Public assets in /public
-         *
-         * This intentionally matches locale-prefix paths like /en/... and /ar/...
-         * so next-intl can handle them, AND matches protected paths so withAuth
-         * can handle those.
+         * Match all request paths EXCEPT static assets.
+         * This covers:
+         *   /                       → intl redirects to /en/
+         *   /en/dashboard           → intl + auth check
+         *   /ar/admin               → intl + auth check
+         *   /api/jobs               → public API (rate-limited)
+         *   /api/admin/analytics    → protected API (rate-limited)
          */
         '/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?)$).*)',
     ],

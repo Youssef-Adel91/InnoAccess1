@@ -146,6 +146,76 @@
     },
     "Common": {
         "skipToContent": "Skip to main content",
-        "loading": "Loading..."
+        "loading": "Loading...",
+        "viewAll": "View all",
+        "role": "Role"
+    },
+    "Dashboard": {
+        "loading": "Loading your dashboard...",
+        "welcomeBack": "Welcome back, {name}!",
+        "role": "Role: {role}",
+        "pendingApproval": "Your company account is pending admin approval. You'll be able to post jobs once approved.",
+        "stats": {
+            "heading": "Your Stats",
+            "applications": "Applications",
+            "enrolledCourses": "Enrolled Courses",
+            "profileViews": "Profile Views"
+        },
+        "widgets": {
+            "recentApplications": "Recent Applications",
+            "noApplications": "No applications yet.",
+            "browseJobs": "Browse jobs",
+            "latestNotification": "Latest Notification",
+            "noNotifications": "No notifications yet. We'll notify you of important updates!"
+        },
+        "quickActions": {
+            "heading": "Quick Actions",
+            "browseJobs": "Browse Jobs",
+            "browseJobsDesc": "Find your next opportunity",
+            "browseCourses": "Browse Courses",
+            "browseCoursesDesc": "Continue learning",
+            "myCourses": "My Courses",
+            "myCoursesDesc": "View enrolled courses",
+            "notifications": "Notifications",
+            "notificationsDesc": "View updates",
+            "myProfile": "My Profile",
+            "myProfileDesc": "Edit your information"
+        }
+    },
+    "Admin": {
+        "heading": "Admin Dashboard",
+        "trainers": "Trainer Management",
+        "approvals": "Video Approvals",
+        "payouts": "Payout Requests",
+        "courses": "Course Intelligence",
+        "analytics": "Analytics"
+    },
+    "Company": {
+        "jobs": {
+            "heading": "My Job Listings",
+            "newJob": "Post New Job",
+            "noJobs": "No job listings yet."
+        },
+        "courses": {
+            "heading": "My Courses",
+            "newCourse": "Create Course",
+            "noCourses": "No courses yet."
+        }
+    },
+    "Trainer": {
+        "dashboard": {
+            "heading": "Trainer Dashboard",
+            "myCourses": "My Courses"
+        }
+    },
+    "Volunteer": {
+        "affiliate": {
+            "heading": "Affiliate Dashboard",
+            "myCode": "My Referral Code",
+            "commissions": "Commission History",
+            "wallet": "My Wallet",
+            "requestPayout": "Request Payout"
+        }
     }
 }
+

@@ -146,6 +146,76 @@
     },
     "Common": {
         "skipToContent": "انتقل إلى المحتوى الرئيسي",
-        "loading": "جارٍ التحميل..."
+        "loading": "جارٍ التحميل...",
+        "viewAll": "عرض الكل",
+        "role": "الدور"
+    },
+    "Dashboard": {
+        "loading": "جارٍ تحميل لوحة التحكم...",
+        "welcomeBack": "مرحبًا بعودتك، {name}!",
+        "role": "الدور: {role}",
+        "pendingApproval": "حساب شركتك في انتظار موافقة المسؤول. ستتمكن من نشر الوظائف بعد الموافقة.",
+        "stats": {
+            "heading": "إحصاءاتك",
+            "applications": "الطلبات",
+            "enrolledCourses": "الدورات المسجّلة",
+            "profileViews": "مشاهدات الملف الشخصي"
+        },
+        "widgets": {
+            "recentApplications": "أحدث الطلبات",
+            "noApplications": "لا توجد طلبات بعد.",
+            "browseJobs": "تصفح الوظائف",
+            "latestNotification": "آخر الإشعارات",
+            "noNotifications": "لا توجد إشعارات بعد. سنُعلمك بالتحديثات المهمة!"
+        },
+        "quickActions": {
+            "heading": "إجراءات سريعة",
+            "browseJobs": "تصفح الوظائف",
+            "browseJobsDesc": "اعثر على فرصتك القادمة",
+            "browseCourses": "تصفح الدورات",
+            "browseCoursesDesc": "تابع تعلمك",
+            "myCourses": "دوراتي",
+            "myCoursesDesc": "عرض الدورات المسجّلة",
+            "notifications": "الإشعارات",
+            "notificationsDesc": "عرض التحديثات",
+            "myProfile": "ملفي الشخصي",
+            "myProfileDesc": "تعديل معلوماتك"
+        }
+    },
+    "Admin": {
+        "heading": "لوحة تحكم المسؤول",
+        "trainers": "إدارة المدربين",
+        "approvals": "الموافقة على الفيديوهات",
+        "payouts": "طلبات السحب",
+        "courses": "ذكاء الدورات",
+        "analytics": "التحليلات"
+    },
+    "Company": {
+        "jobs": {
+            "heading": "إعلانات وظائفي",
+            "newJob": "نشر وظيفة جديدة",
+            "noJobs": "لا توجد إعلانات وظائف بعد."
+        },
+        "courses": {
+            "heading": "دوراتي",
+            "newCourse": "إنشاء دورة",
+            "noCourses": "لا توجد دورات بعد."
+        }
+    },
+    "Trainer": {
+        "dashboard": {
+            "heading": "لوحة تحكم المدرب",
+            "myCourses": "دوراتي"
+        }
+    },
+    "Volunteer": {
+        "affiliate": {
+            "heading": "لوحة تحكم الشريك",
+            "myCode": "كود الإحالة الخاص بي",
+            "commissions": "سجل العمولات",
+            "wallet": "محفظتي",
+            "requestPayout": "طلب سحب"
+        }
     }
 }
+

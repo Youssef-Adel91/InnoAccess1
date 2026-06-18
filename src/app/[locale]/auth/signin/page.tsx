@@ -2,14 +2,21 @@
 
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Eye, EyeOff } from 'lucide-react';
 import { stopBackspacePropagation } from '@/lib/keyboardUtils';
+import { useTranslations } from 'next-intl';
+import { useRouter } from '@/i18n/navigation';
 
 export default function SignInPage() {
+    const t = useTranslations('Auth.signIn');
+    const tErr = useTranslations('Auth.errors');
+
+    // Use next-intl's locale-aware router so push('/dashboard') becomes
+    // /en/dashboard or /ar/dashboard automatically.
     const router = useRouter();
+
     const [formData, setFormData] = useState({ email: '', password: '' });
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
@@ -22,7 +29,7 @@ export default function SignInPage() {
 
         try {
             const result = await signIn('credentials', {
-                email: formData.email,
+                email:    formData.email,
                 password: formData.password,
                 redirect: false,
             });
@@ -30,11 +37,12 @@ export default function SignInPage() {
             if (result?.error) {
                 setError(result.error);
             } else if (result?.ok) {
+                // next-intl's router.push automatically prepends the current locale
                 router.push('/dashboard');
                 router.refresh();
             }
-        } catch (err: any) {
-            setError('An unexpected error occurred');
+        } catch {
+            setError(tErr('unexpected'));
         } finally {
             setIsLoading(false);
         }
@@ -49,21 +57,21 @@ export default function SignInPage() {
             <div className="w-full max-w-md mx-auto">
                 <div className="text-center mb-8">
                     <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">
-                        Sign In to InnoAccess
+                        {t('pageTitle')}
                     </h1>
                     <p className="mt-2 text-sm text-gray-600">
-                        Or{' '}
+                        {t('noAccount')}{' '}
                         <Link
                             href="/auth/register"
                             className="font-semibold text-blue-600 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded"
                         >
-                            create a new account
+                            {t('createAccount')}
                         </Link>
                     </p>
                 </div>
 
                 <div className="bg-white rounded-2xl shadow-lg ring-1 ring-gray-200 px-6 py-8 sm:px-10">
-                    <form onSubmit={handleSubmit} className="space-y-5" aria-label="Sign in form">
+                    <form onSubmit={handleSubmit} className="space-y-5" aria-label={t('pageTitle')}>
                         {error && (
                             <div
                                 className="bg-red-50 border border-red-200 text-red-800 rounded-xl p-4 text-sm"
@@ -76,7 +84,7 @@ export default function SignInPage() {
 
                         <div>
                             <label htmlFor="email" className={labelClass}>
-                                Email Address
+                                {t('emailLabel')}
                             </label>
                             <input
                                 id="email"
@@ -93,7 +101,7 @@ export default function SignInPage() {
 
                         <div>
                             <label htmlFor="password" className={labelClass}>
-                                Password
+                                {t('passwordLabel')}
                             </label>
                             <div className="relative">
                                 <input
@@ -112,7 +120,7 @@ export default function SignInPage() {
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
                                     className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-r-xl"
-                                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                    aria-label={showPassword ? t('hidePassword') : t('showPassword')}
                                     aria-pressed={showPassword}
                                 >
                                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -129,14 +137,14 @@ export default function SignInPage() {
                                     className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                 />
                                 <label htmlFor="remember-me" className="text-sm text-gray-700 select-none">
-                                    Remember me
+                                    {t('rememberMe')}
                                 </label>
                             </div>
                             <Link
                                 href="/auth/forgot-password"
                                 className="text-sm font-semibold text-blue-600 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded"
                             >
-                                Forgot password?
+                                {t('forgotPassword')}
                             </Link>
                         </div>
 
@@ -147,7 +155,7 @@ export default function SignInPage() {
                             isLoading={isLoading}
                             className="w-full mt-2"
                         >
-                            Sign In
+                            {t('submitButton')}
                         </Button>
                     </form>
                 </div>
