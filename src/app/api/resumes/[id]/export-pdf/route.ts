@@ -106,6 +106,7 @@ export async function POST(_req: NextRequest, { params }: RouteContext) {
         // (no JSX transform needed). The ClassicTemplate handles font registration
         // internally via registerResumeFonts() in pdfFonts.ts.
         const pdfBuffer = await renderToBuffer(
+            // @ts-expect-error react-pdf typing mismatch with React 19 FunctionComponentElement
             createElement(ClassicTemplate, { draft })
         );
 

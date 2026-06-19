@@ -40,38 +40,19 @@ export function registerResumeFonts(): void {
             ? (process.env.NEXTAUTH_URL ?? 'http://localhost:3000')
             : '';
 
-    // ── Inter (LTR — English resumes) ─────────────────────────────────────────
+    // ── Cairo (Supports both LTR and RTL Arabic/English) ──────────────────────
+    // Cairo is a modern Arabic/Latin typeface that supports full Unicode BiDi
+    // and correct Arabic contextual forms (initial, medial, final, isolated).
     Font.register({
-        family: 'Inter',
+        family: 'Cairo',
         fonts: [
             {
-                src:        `${base}/fonts/Inter-Regular.ttf`,
+                src:        `${base}/fonts/Cairo-Regular.ttf`,
                 fontWeight: 'normal',
                 fontStyle:  'normal',
             },
             {
-                src:        `${base}/fonts/Inter-Bold.ttf`,
-                fontWeight: 'bold',
-                fontStyle:  'normal',
-            },
-        ],
-    });
-
-    // ── Amiri (RTL — Arabic resumes) ──────────────────────────────────────────
-    // Amiri is purpose-built for Arabic typography. It includes:
-    //   - Full Unicode BiDi so mixed Arabic/Latin text renders correctly
-    //   - Correct Arabic contextual forms (initial, medial, final, isolated)
-    //   - Latin glyphs for numbers and punctuation (used in both directions)
-    Font.register({
-        family: 'Amiri',
-        fonts: [
-            {
-                src:        `${base}/fonts/Amiri-Regular.ttf`,
-                fontWeight: 'normal',
-                fontStyle:  'normal',
-            },
-            {
-                src:        `${base}/fonts/Amiri-Bold.ttf`,
+                src:        `${base}/fonts/Cairo-Bold.ttf`,
                 fontWeight: 'bold',
                 fontStyle:  'normal',
             },

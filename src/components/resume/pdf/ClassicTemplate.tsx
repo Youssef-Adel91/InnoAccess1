@@ -40,7 +40,7 @@ type LabelKey = keyof typeof LABELS;
 
 const createStyles = (direction: 'ltr' | 'rtl') => {
     const isRtl      = direction === 'rtl';
-    const fontFamily = isRtl ? 'Amiri' : 'Inter';
+    const fontFamily = 'Cairo';
     const textAlign  = isRtl ? ('right' as const) : ('left' as const);
 
     return StyleSheet.create({
