@@ -62,6 +62,12 @@ export interface ICourse extends Document {
     isFree: boolean; // Is entire course free?
     price: number; // Required if not free (in cents)
     originalPrice?: number; // Original price before discount (in cents)
+    /**
+     * Fraction of the NET sale amount (after gateway fees) paid to the trainer.
+     * e.g. 0.40 = 40% to trainer, 0.60 retained by platform before volunteer commission.
+     * Defaults to 0.40 if not set by admin. Range: 0–1.
+     */
+    trainerCommissionRate: number;
     thumbnail?: string; // Cloudinary URL
     courseType: CourseType; // NEW: RECORDED or LIVE
     liveSession?: ILiveSession; // NEW: Live Zoom session details
@@ -204,6 +210,14 @@ const CourseSchema = new Schema<ICourse>(
         originalPrice: {
             type: Number,
             min: [0, 'Original price cannot be negative'],
+        },
+        trainerCommissionRate: {
+            type:    Number,
+            default: 0.40,
+            min:     [0,    'Trainer commission rate cannot be negative'],
+            max:     [1,    'Trainer commission rate cannot exceed 100%'],
+            // Admin-configurable per course. Stored as a decimal fraction.
+            // Default 0.40 means the trainer earns 40% of the net sale amount.
         },
         thumbnail: String,
         modules: {

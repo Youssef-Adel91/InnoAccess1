@@ -1,39 +1,50 @@
 import mongoose, { Schema, Model, Document, Types } from 'mongoose';
 
 /**
- * Wallet Document Interface
+ * Wallet — unified for both Trainers and Volunteers
  *
- * One Wallet document per volunteer. Acts as a running balance ledger.
+ * ── Design: Single model, user-type discriminator ─────────────────────────────
+ * We deliberately use one Wallet model for both user types.
+ * Rationale:
+ *   - Unified payout queue in the admin finance dashboard
+ *   - Identical balance mechanics (availableBalance, totalPaidOut)
+ *   - One $inc call pattern across the whole codebase
  *
- * Balance rules:
- *   pendingBalance   — commissions locked for the 14-day anti-refund hold.
- *                      Incremented when a Commission is created.
- *                      Decremented when a Commission transitions pending→available.
+ * ── Balance definitions ───────────────────────────────────────────────────────
+ *   pendingBalance   — earnings locked during anti-refund hold period.
+ *                      Volunteers: 14-day hold on affiliate commissions.
+ *                      Trainers:   0-day hold (admin manually approves all orders
+ *                                  before revenue is split, so hold is not needed).
  *
- *   availableBalance — unlocked commissions ready to withdraw.
- *                      Incremented when pending→available transition occurs.
- *                      Decremented when a Payout is requested (and those
- *                      commissions are marked 'paid').
+ *   availableBalance — unlocked earnings ready for payout.
+ *                      Incremented by revenueSplitEngine on each approved order.
+ *                      Decremented when admin "settles" via the finance dashboard.
  *
  *   totalEarned      — lifetime cumulative. Only ever increases.
- *                      Incremented together with pendingBalance on each new
- *                      Commission. Used for the volunteer's "all-time" stat.
  *
  *   totalPaidOut     — lifetime withdrawn. Only ever increases.
- *                      Incremented when a Payout is marked as paid by admin.
  *
- * All balance fields are in EGP (whole units, matching Order.amount).
+ * All amounts are in EGP whole units.
  *
- * IMPORTANT: Never update balances with read-modify-write (find → calculate → save).
- * Always use MongoDB's atomic $inc operator to prevent race conditions when
- * multiple sales or payouts happen concurrently.
+ * ── Concurrency safety ────────────────────────────────────────────────────────
+ * NEVER use read-modify-write. Always use MongoDB's atomic $inc operator
+ * to prevent race conditions when multiple sales are processed concurrently.
  */
+
+export type WalletUserType = 'trainer' | 'volunteer';
+
 export interface IWallet extends Document {
-    volunteerId:      Types.ObjectId;
+    /** The user who owns this wallet (trainer or volunteer) */
+    userId:           Types.ObjectId;
+
+    /** Discriminator: which role this wallet belongs to */
+    userType:         WalletUserType;
+
     pendingBalance:   number;
     availableBalance: number;
     totalEarned:      number;
     totalPaidOut:     number;
+
     createdAt: Date;
     updatedAt: Date;
 }
@@ -42,11 +53,15 @@ export interface IWallet extends Document {
 
 const WalletSchema = new Schema<IWallet>(
     {
-        volunteerId: {
+        userId: {
             type:     Schema.Types.ObjectId,
             ref:      'User',
-            required: [true, 'Volunteer ID is required'],
-            unique:   true, // 1-to-1 relationship — one wallet per volunteer
+            required: [true, 'User ID is required'],
+        },
+        userType: {
+            type:     String,
+            enum:     ['trainer', 'volunteer'] satisfies WalletUserType[],
+            required: [true, 'User type is required'],
         },
         pendingBalance: {
             type:    Number,
@@ -76,14 +91,27 @@ const WalletSchema = new Schema<IWallet>(
 
 // ─── Indexes ───────────────────────────────────────────────────────────────────
 
-// Primary lookup — one wallet per volunteer (unique already creates an index,
-// but we re-declare it explicitly for documentation clarity)
-WalletSchema.index({ volunteerId: 1 }, { unique: true });
+// Primary lookup — one wallet per user per type (trainer + volunteer both supported)
+// Unique compound index: a trainer can have one wallet, a volunteer can have one wallet
+WalletSchema.index({ userId: 1, userType: 1 }, { unique: true });
+
+// Finance dashboard query — find all wallets with outstanding balances
+WalletSchema.index({ availableBalance: 1, userType: 1 });
+
+// ── Backward-compatibility virtual ────────────────────────────────────────────
+// Volunteer code still reads wallet.volunteerId in some places.
+// This virtual keeps those reads working without a data migration.
+WalletSchema.virtual('volunteerId').get(function (this: IWallet) {
+    return this.userId;
+});
 
 // ─── Model ─────────────────────────────────────────────────────────────────────
 
-const Wallet: Model<IWallet> =
-    mongoose.models.Wallet ||
-    mongoose.model<IWallet>('Wallet', WalletSchema);
+// Force model re-registration to pick up schema changes in dev hot-reload
+if (mongoose.models.Wallet) {
+    delete mongoose.models.Wallet;
+}
+
+const Wallet: Model<IWallet> = mongoose.model<IWallet>('Wallet', WalletSchema);
 
 export default Wallet;

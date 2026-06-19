@@ -13,6 +13,7 @@ import { CURRENCY } from '@/lib/payment-constants';
 import { sendEmail } from '@/lib/mail';
 import { cookies } from 'next/headers';
 import { attributeAffiliateCommission } from '@/lib/affiliateUtils';
+import { executeRevenueSplit } from '@/lib/revenueSplitEngine';
 
 /**
  * Submit manual payment with receipt screenshot
@@ -300,17 +301,37 @@ export async function approveManualPayment(orderId: string) {
             // Don't fail the approval if course update fails
         }
 
-        // ── Affiliate commission attribution ──────────────────────────────────
-        // Called AFTER the enrollment is confirmed so we never credit a commission
-        // for an order that somehow failed to enroll.
-        // This call is non-throwing — a commission bug cannot fail an approval.
-        await attributeAffiliateCommission(
-            order._id as Types.ObjectId,
-            order.userId as Types.ObjectId,
-            order.courseId as Types.ObjectId,
-            order.amount,
-            order.affiliateRef ?? null
-        );
+        // ── Revenue split (ERP) ───────────────────────────────────────────────
+        // Fetch the full course document to get trainerCommissionRate.
+        // The populate above only fetched 'title', so we need a separate query.
+        // This is non-throwing — a split failure must NOT reverse enrollment.
+        const courseDoc = await Course.findById(order.courseId)
+            .select('trainerId trainerCommissionRate').lean();
+
+        const splitResult = await executeRevenueSplit({
+            orderId:               order._id as Types.ObjectId,
+            buyerId:               order.userId as Types.ObjectId,
+            trainerId:             courseDoc?.trainerId as Types.ObjectId,
+            courseId:              order.courseId as Types.ObjectId,
+            amountCents:           order.amount,
+            trainerCommissionRate: courseDoc?.trainerCommissionRate ?? 0.40,
+            affiliateRef:          order.affiliateRef ?? null,
+        });
+
+        if (!splitResult.success) {
+            // Log for admin reconciliation — do NOT fail the approval
+            console.warn(
+                `⚠️ Revenue split failed for order ${orderId} (enrollment is still confirmed): ${splitResult.error}`
+            );
+        } else {
+            const s = splitResult.split!;
+            console.log(
+                `💰 Split complete — Gross: ${s.grossAmountEGP} EGP | ` +
+                `Trainer: ${s.trainerCommissionEGP} | ` +
+                `Volunteer: ${s.volunteerCommissionEGP} | ` +
+                `Platform: ${s.platformNetProfitEGP}`
+            );
+        }
 
         console.log('📋 Checking email conditions for approval...');
         console.log('userId type:', typeof order.userId);
