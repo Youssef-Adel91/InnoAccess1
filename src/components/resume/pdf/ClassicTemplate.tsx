@@ -5,145 +5,226 @@ import {
     Text,
     View,
     StyleSheet,
-    Font,
     Link,
 } from '@react-pdf/renderer';
 import type { ResumeDraft } from '@/store/useResumeStore';
+import { registerResumeFonts } from './pdfFonts';
 
 // ─── Font Registration ────────────────────────────────────────────────────────
+// Called at module load time. The guard inside registerResumeFonts() makes
+// this idempotent — safe to call from both PreviewStep (client) and the
+// export-pdf API route (server).
+registerResumeFonts();
 
-// Register an Arabic-supporting font (Amiri) so that RTL characters render correctly.
-// We also register a standard English font (Roboto) for LTR resumes.
-// Important: @react-pdf/renderer requires absolute URLs or valid paths for fonts.
-Font.register({
-    family: 'Amiri',
-    fonts: [
-        { src: 'https://fonts.gstatic.com/s/amiri/v26/J7aRnpd8CGxCG8ScyA.ttf', fontWeight: 'normal' },
-        { src: 'https://fonts.gstatic.com/s/amiri/v26/J7aanpd8CGxCG8SUUQ-1_w.ttf', fontWeight: 'bold' },
-    ],
-});
+// ─── Section labels (bilingual) ───────────────────────────────────────────────
 
-Font.register({
-    family: 'Roboto',
-    fonts: [
-        { src: 'https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Me5Q.ttf', fontWeight: 'normal' },
-        { src: 'https://fonts.gstatic.com/s/roboto/v30/KFOlCnqEu92Fr1MmWUlvAw.ttf', fontWeight: 'bold' },
-    ],
-});
+const LABELS = {
+    summary:          { ltr: 'Professional Summary', rtl: 'الملخص المهني'   },
+    experience:       { ltr: 'Work Experience',       rtl: 'الخبرة العملية'   },
+    education:        { ltr: 'Education',             rtl: 'التعليم'          },
+    skills:           { ltr: 'Skills',                rtl: 'المهارات'         },
+    certifications:   { ltr: 'Certifications',        rtl: 'الشهادات'         },
+    languages:        { ltr: 'Languages',             rtl: 'اللغات'           },
+    present:          { ltr: 'Present',               rtl: 'الآن'             },
+    grade:            { ltr: 'Grade',                 rtl: 'التقدير'          },
+} as const;
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
+type LabelKey = keyof typeof LABELS;
+
+// ─── Style factory ────────────────────────────────────────────────────────────
+// All styles are computed once per render based on document direction.
+// RTL layout is achieved via:
+//   • textAlign: 'right'                  — text alignment
+//   • flexDirection: 'row-reverse'        — horizontal stacking
+//   • Swapped padding/margin left ↔ right — section gutters
 
 const createStyles = (direction: 'ltr' | 'rtl') => {
-    const isRtl = direction === 'rtl';
-    const fontFamily = isRtl ? 'Amiri' : 'Roboto';
-
-    // The textAlign property determines alignment. For RTL, text usually aligns right.
-    const textAlign = isRtl ? 'right' : 'left';
+    const isRtl      = direction === 'rtl';
+    const fontFamily = isRtl ? 'Amiri' : 'Inter';
+    const textAlign  = isRtl ? ('right' as const) : ('left' as const);
 
     return StyleSheet.create({
+        // ── Page ─────────────────────────────────────────────────────────────
         page: {
-            padding: 40,
+            paddingTop:    45,
+            paddingBottom: 45,
+            paddingLeft:   45,
+            paddingRight:  45,
             fontFamily,
-            fontSize: 11,
-            color: '#333333',
-            lineHeight: 1.5,
+            fontSize:      10.5,
+            color:         '#1a1a1a',
+            lineHeight:    1.55,
             backgroundColor: '#ffffff',
-            // Note: @react-pdf/renderer has limited flex-direction support for RTL
-            // We handle layout alignment via textAlign and flex rules.
         },
+
+        // ── Header ────────────────────────────────────────────────────────────
         header: {
-            marginBottom: 20,
-            textAlign: 'center',
-            borderBottomWidth: 1,
-            borderBottomColor: '#dddddd',
+            marginBottom:    22,
+            paddingBottom:   16,
+            borderBottomWidth: 2,
+            borderBottomColor: '#2563eb',
             borderBottomStyle: 'solid',
-            paddingBottom: 15,
+            alignItems:      'center',
         },
         name: {
-            fontSize: 24,
-            fontWeight: 'bold',
-            color: '#000000',
-            marginBottom: 5,
-            textAlign: 'center',
+            fontSize:    26,
+            fontWeight:  'bold',
+            color:       '#111827',
+            marginBottom: 6,
+            textAlign:   'center',
+            letterSpacing: 0.5,
         },
         contactRow: {
-            flexDirection: isRtl ? 'row-reverse' : 'row',
+            flexDirection:  isRtl ? 'row-reverse' : 'row',
             justifyContent: 'center',
-            flexWrap: 'wrap',
-            gap: 10,
-            fontSize: 10,
-            color: '#555555',
+            flexWrap:       'wrap',
+            fontSize:       9.5,
+            color:          '#4b5563',
         },
-        contactItem: {
-            marginHorizontal: 5,
+        contactSep: {
+            marginHorizontal: 6,
+            color:            '#9ca3af',
         },
         link: {
-            color: '#0056b3',
+            color:          '#2563eb',
             textDecoration: 'none',
         },
+
+        // ── Sections ──────────────────────────────────────────────────────────
         section: {
-            marginBottom: 15,
+            marginBottom: 14,
         },
         sectionTitle: {
-            fontSize: 14,
-            fontWeight: 'bold',
-            color: '#000000',
-            textTransform: 'uppercase',
-            marginBottom: 8,
-            paddingBottom: 3,
+            fontSize:          10,
+            fontWeight:        'bold',
+            color:             '#2563eb',
+            textTransform:     'uppercase',
+            letterSpacing:     1.2,
+            marginBottom:      7,
+            paddingBottom:     4,
             borderBottomWidth: 1,
-            borderBottomColor: '#eeeeee',
+            borderBottomColor: '#e5e7eb',
             borderBottomStyle: 'solid',
             textAlign,
         },
-        itemBlock: {
+
+        // ── Entry blocks (experience, education, certifications) ──────────────
+        entryBlock: {
             marginBottom: 10,
         },
-        itemHeaderRow: {
-            flexDirection: isRtl ? 'row-reverse' : 'row',
+        entryHeaderRow: {
+            flexDirection:  isRtl ? 'row-reverse' : 'row',
             justifyContent: 'space-between',
-            alignItems: 'baseline',
-            marginBottom: 3,
+            alignItems:     'flex-start',
+            marginBottom:   2,
         },
-        itemTitle: {
+        entryLeft: {
+            flex:      1,
+            alignItems: isRtl ? 'flex-end' : 'flex-start',
+        },
+        entryTitle: {
             fontWeight: 'bold',
-            fontSize: 12,
-            color: '#111111',
+            fontSize:   11,
+            color:      '#111827',
             textAlign,
         },
-        itemSubtitle: {
+        entrySubtitle: {
             fontStyle: 'italic',
-            color: '#444444',
+            color:     '#374151',
+            fontSize:  10,
             textAlign,
         },
-        itemDate: {
-            fontSize: 10,
-            color: '#666666',
+        entryDate: {
+            fontSize:    9.5,
+            color:       '#6b7280',
+            textAlign:   isRtl ? 'left' : 'right',
+            flexShrink:  0,
+            marginLeft:  isRtl ? 0 : 8,
+            marginRight: isRtl ? 8 : 0,
         },
-        itemDescription: {
+        entryDescription: {
             marginTop: 4,
+            fontSize:  10,
+            color:     '#374151',
             textAlign,
-            color: '#444444',
         },
-        skillRow: {
+        entryMeta: {
+            fontSize:  9.5,
+            color:     '#6b7280',
+            marginTop: 2,
+            textAlign,
+        },
+
+        // ── Skills ────────────────────────────────────────────────────────────
+        skillsWrap: {
             flexDirection: isRtl ? 'row-reverse' : 'row',
-            flexWrap: 'wrap',
-            gap: 5,
-            marginTop: 5,
+            flexWrap:      'wrap',
+            marginTop:     4,
         },
         skillBadge: {
-            backgroundColor: '#f3f4f6',
-            paddingHorizontal: 6,
-            paddingVertical: 3,
-            borderRadius: 3,
-            fontSize: 9,
-            color: '#374151',
-            marginRight: isRtl ? 0 : 5,
-            marginLeft: isRtl ? 5 : 0,
+            backgroundColor: '#eff6ff',
+            borderWidth:     1,
+            borderColor:     '#bfdbfe',
+            borderStyle:     'solid',
+            borderRadius:    4,
+            paddingHorizontal: 7,
+            paddingVertical:   3,
+            marginRight:  isRtl ? 0 : 5,
+            marginLeft:   isRtl ? 5 : 0,
             marginBottom: 5,
+            fontSize:     9,
+            color:        '#1e40af',
+        },
+
+        // ── Two-column layout (certs + languages) ─────────────────────────────
+        twoCol: {
+            flexDirection: isRtl ? 'row-reverse' : 'row',
+        },
+        colLeft: {
+            flex:       1,
+            paddingRight: isRtl ? 0 : 12,
+            paddingLeft:  isRtl ? 12 : 0,
+        },
+        colRight: {
+            flex: 1,
+        },
+
+        // ── Language entries ──────────────────────────────────────────────────
+        langRow: {
+            flexDirection:  isRtl ? 'row-reverse' : 'row',
+            justifyContent: 'space-between',
+            marginBottom:   5,
+        },
+        langName: {
+            fontWeight: 'bold',
+            fontSize:   10,
+            textAlign,
+        },
+        langLevel: {
+            fontSize:  9.5,
+            color:     '#6b7280',
+            textAlign: isRtl ? 'left' : 'right',
         },
     });
 };
+
+// ─── Helper: section heading ──────────────────────────────────────────────────
+
+function SectionHeading({
+    labelKey,
+    direction,
+    styles,
+}: {
+    labelKey:  LabelKey;
+    direction: 'ltr' | 'rtl';
+    styles:    ReturnType<typeof createStyles>;
+}) {
+    return (
+        <Text style={styles.sectionTitle}>
+            {LABELS[labelKey][direction]}
+        </Text>
+    );
+}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -164,158 +245,191 @@ export function ClassicTemplate({ draft }: ClassicTemplateProps) {
     } = draft;
 
     const styles = createStyles(direction);
+    const dir    = direction;
 
-    // Helpers to combine contact details safely
-    const contactLinks = [
-        personalInfo.email && <Link style={styles.link} src={`mailto:${personalInfo.email}`}>{personalInfo.email}</Link>,
-        personalInfo.phone,
-        personalInfo.location,
-        personalInfo.linkedin && <Link style={styles.link} src={personalInfo.linkedin}>LinkedIn</Link>,
-        personalInfo.github && <Link style={styles.link} src={personalInfo.github}>GitHub</Link>,
-        personalInfo.website && <Link style={styles.link} src={personalInfo.website}>Portfolio</Link>,
-    ].filter(Boolean);
+    // Build contact items as flat text/link nodes so we can interleave separators
+    const contactItems: React.ReactNode[] = [];
 
-    // RTL Note: @react-pdf/renderer <Document> supports language/direction metadata,
-    // but actual RTL layout must be composed manually via flex-direction: row-reverse.
+    const pushContact = (node: React.ReactNode) => {
+        if (contactItems.length > 0) {
+            contactItems.push(
+                <Text key={`sep-${contactItems.length}`} style={styles.contactSep}>·</Text>
+            );
+        }
+        contactItems.push(node);
+    };
+
+    if (personalInfo.email) {
+        pushContact(
+            <Link key="email" style={styles.link} src={`mailto:${personalInfo.email}`}>
+                {personalInfo.email}
+            </Link>
+        );
+    }
+    if (personalInfo.phone)    pushContact(<Text key="phone">{personalInfo.phone}</Text>);
+    if (personalInfo.location) pushContact(<Text key="loc">{personalInfo.location}</Text>);
+    if (personalInfo.linkedin) {
+        pushContact(
+            <Link key="li" style={styles.link} src={personalInfo.linkedin}>LinkedIn</Link>
+        );
+    }
+    if (personalInfo.github) {
+        pushContact(
+            <Link key="gh" style={styles.link} src={personalInfo.github}>GitHub</Link>
+        );
+    }
+    if (personalInfo.website) {
+        pushContact(
+            <Link key="web" style={styles.link} src={personalInfo.website}>Portfolio</Link>
+        );
+    }
+
     return (
         <Document
             title={draft.title || 'Resume'}
             author={personalInfo.fullName}
             subject="Curriculum Vitae"
-            language={direction === 'rtl' ? 'ar' : 'en'}
+            language={dir === 'rtl' ? 'ar' : 'en'}
+            creator="InnoAccess Resume Builder"
+            producer="@react-pdf/renderer"
         >
-            {/* The tagged prop is crucial for PDF/UA Accessibility */}
             <Page size="A4" style={styles.page}>
-                
-                {/* ── Header ─────────────────────────────────────────────── */}
+
+                {/* ── Header ────────────────────────────────────────────── */}
                 <View style={styles.header}>
                     <Text style={styles.name}>{personalInfo.fullName || 'Your Name'}</Text>
                     <View style={styles.contactRow}>
-                        {contactLinks.map((item, i) => (
-                            <React.Fragment key={i}>
-                                <Text style={styles.contactItem}>{item}</Text>
-                                {i < contactLinks.length - 1 && <Text>|</Text>}
-                            </React.Fragment>
-                        ))}
+                        {contactItems}
                     </View>
                 </View>
 
-                {/* ── Summary ────────────────────────────────────────────── */}
-                {summary && (
+                {/* ── Professional Summary ───────────────────────────────── */}
+                {summary.trim() && (
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>
-                            {direction === 'rtl' ? 'الملخص المهني' : 'Professional Summary'}
-                        </Text>
-                        <Text style={styles.itemDescription}>{summary}</Text>
+                        <SectionHeading labelKey="summary" direction={dir} styles={styles} />
+                        <Text style={styles.entryDescription}>{summary}</Text>
                     </View>
                 )}
 
-                {/* ── Experience ─────────────────────────────────────────── */}
+                {/* ── Work Experience ────────────────────────────────────── */}
                 {experiences.length > 0 && (
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>
-                            {direction === 'rtl' ? 'الخبرة العملية' : 'Work Experience'}
-                        </Text>
+                        <SectionHeading labelKey="experience" direction={dir} styles={styles} />
                         {experiences.map((exp) => (
-                            <View key={exp.clientId} style={styles.itemBlock} wrap={false}>
-                                <View style={styles.itemHeaderRow}>
-                                    <View>
-                                        <Text style={styles.itemTitle}>{exp.jobTitle}</Text>
-                                        <Text style={styles.itemSubtitle}>{exp.company} {exp.location ? `— ${exp.location}` : ''}</Text>
+                            <View key={exp.clientId} style={styles.entryBlock} wrap={false}>
+                                <View style={styles.entryHeaderRow}>
+                                    <View style={styles.entryLeft}>
+                                        <Text style={styles.entryTitle}>{exp.jobTitle}</Text>
+                                        <Text style={styles.entrySubtitle}>
+                                            {exp.company}{exp.location ? ` — ${exp.location}` : ''}
+                                        </Text>
                                     </View>
-                                    <Text style={styles.itemDate}>
-                                        {exp.startDate} - {exp.isCurrent ? (direction === 'rtl' ? 'الآن' : 'Present') : exp.endDate}
+                                    <Text style={styles.entryDate}>
+                                        {exp.startDate}
+                                        {' – '}
+                                        {exp.isCurrent ? LABELS.present[dir] : (exp.endDate || LABELS.present[dir])}
                                     </Text>
                                 </View>
-                                {exp.description && (
-                                    <Text style={styles.itemDescription}>{exp.description}</Text>
+                                {exp.description.trim() && (
+                                    <Text style={styles.entryDescription}>{exp.description}</Text>
                                 )}
                             </View>
                         ))}
                     </View>
                 )}
 
-                {/* ── Education ──────────────────────────────────────────── */}
+                {/* ── Education ─────────────────────────────────────────── */}
                 {educations.length > 0 && (
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>
-                            {direction === 'rtl' ? 'التعليم' : 'Education'}
-                        </Text>
+                        <SectionHeading labelKey="education" direction={dir} styles={styles} />
                         {educations.map((edu) => (
-                            <View key={edu.clientId} style={styles.itemBlock} wrap={false}>
-                                <View style={styles.itemHeaderRow}>
-                                    <View>
-                                        <Text style={styles.itemTitle}>{edu.institution}</Text>
-                                        <Text style={styles.itemSubtitle}>{edu.degree} in {edu.fieldOfStudy}</Text>
+                            <View key={edu.clientId} style={styles.entryBlock} wrap={false}>
+                                <View style={styles.entryHeaderRow}>
+                                    <View style={styles.entryLeft}>
+                                        <Text style={styles.entryTitle}>{edu.institution}</Text>
+                                        <Text style={styles.entrySubtitle}>
+                                            {edu.degree}{edu.fieldOfStudy ? ` — ${edu.fieldOfStudy}` : ''}
+                                        </Text>
                                     </View>
-                                    <Text style={styles.itemDate}>
-                                        {edu.startDate} - {edu.endDate || (direction === 'rtl' ? 'الآن' : 'Present')}
+                                    <Text style={styles.entryDate}>
+                                        {edu.startDate}
+                                        {edu.endDate ? ` – ${edu.endDate}` : ''}
                                     </Text>
                                 </View>
-                                {edu.grade && <Text style={{ ...styles.itemDescription, fontSize: 10, marginTop: 2 }}>Grade: {edu.grade}</Text>}
-                                {edu.description && (
-                                    <Text style={styles.itemDescription}>{edu.description}</Text>
+                                {edu.grade && (
+                                    <Text style={styles.entryMeta}>
+                                        {LABELS.grade[dir]}: {edu.grade}
+                                    </Text>
+                                )}
+                                {edu.description.trim() && (
+                                    <Text style={styles.entryDescription}>{edu.description}</Text>
                                 )}
                             </View>
                         ))}
                     </View>
                 )}
 
-                {/* ── Skills ─────────────────────────────────────────────── */}
+                {/* ── Skills ────────────────────────────────────────────── */}
                 {skills.length > 0 && (
                     <View style={styles.section} wrap={false}>
-                        <Text style={styles.sectionTitle}>
-                            {direction === 'rtl' ? 'المهارات' : 'Skills'}
-                        </Text>
-                        <View style={styles.skillRow}>
+                        <SectionHeading labelKey="skills" direction={dir} styles={styles} />
+                        <View style={styles.skillsWrap}>
                             {skills.map((skill) => (
                                 <View key={skill.clientId} style={styles.skillBadge}>
-                                    <Text>{skill.name} ({skill.level})</Text>
+                                    <Text>{skill.name} · {skill.level.charAt(0).toUpperCase() + skill.level.slice(1)}</Text>
                                 </View>
                             ))}
                         </View>
                     </View>
                 )}
 
-                {/* ── Certifications & Languages (Grid) ────────────────── */}
-                <View style={{ flexDirection: direction === 'rtl' ? 'row-reverse' : 'row', justifyContent: 'space-between' }}>
-                    
-                    {/* Certifications */}
-                    {certifications.length > 0 && (
-                        <View style={{ flex: 1, paddingRight: direction === 'rtl' ? 0 : 15, paddingLeft: direction === 'rtl' ? 15 : 0 }}>
-                            <Text style={styles.sectionTitle}>
-                                {direction === 'rtl' ? 'الشهادات' : 'Certifications'}
-                            </Text>
-                            {certifications.map((cert) => (
-                                <View key={cert.clientId} style={styles.itemBlock}>
-                                    <Text style={styles.itemTitle}>{cert.name}</Text>
-                                    <Text style={styles.itemSubtitle}>{cert.issuer}</Text>
-                                    {(cert.issueDate || cert.expiryDate) && (
-                                        <Text style={styles.itemDate}>
-                                            {cert.issueDate} {cert.expiryDate ? `- ${cert.expiryDate}` : ''}
+                {/* ── Certifications + Languages (two-column) ───────────── */}
+                {(certifications.length > 0 || languages.length > 0) && (
+                    <View style={styles.twoCol}>
+
+                        {/* Certifications */}
+                        {certifications.length > 0 && (
+                            <View style={styles.colLeft}>
+                                <SectionHeading labelKey="certifications" direction={dir} styles={styles} />
+                                {certifications.map((cert) => (
+                                    <View key={cert.clientId} style={styles.entryBlock} wrap={false}>
+                                        <Text style={styles.entryTitle}>{cert.name}</Text>
+                                        <Text style={styles.entrySubtitle}>{cert.issuer}</Text>
+                                        {(cert.issueDate || cert.expiryDate) && (
+                                            <Text style={styles.entryMeta}>
+                                                {cert.issueDate}{cert.expiryDate ? ` – ${cert.expiryDate}` : ''}
+                                            </Text>
+                                        )}
+                                        {cert.credentialUrl && (
+                                            <Link style={styles.link} src={cert.credentialUrl}>
+                                                <Text style={{ ...styles.entryMeta, color: '#2563eb' }}>
+                                                    View credential
+                                                </Text>
+                                            </Link>
+                                        )}
+                                    </View>
+                                ))}
+                            </View>
+                        )}
+
+                        {/* Languages */}
+                        {languages.length > 0 && (
+                            <View style={styles.colRight}>
+                                <SectionHeading labelKey="languages" direction={dir} styles={styles} />
+                                {languages.map((lang) => (
+                                    <View key={lang.clientId} style={styles.langRow} wrap={false}>
+                                        <Text style={styles.langName}>{lang.name}</Text>
+                                        <Text style={styles.langLevel}>
+                                            {lang.proficiency.charAt(0).toUpperCase() + lang.proficiency.slice(1)}
                                         </Text>
-                                    )}
-                                </View>
-                            ))}
-                        </View>
-                    )}
+                                    </View>
+                                ))}
+                            </View>
+                        )}
 
-                    {/* Languages */}
-                    {languages.length > 0 && (
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.sectionTitle}>
-                                {direction === 'rtl' ? 'اللغات' : 'Languages'}
-                            </Text>
-                            {languages.map((lang) => (
-                                <View key={lang.clientId} style={{ marginBottom: 5 }}>
-                                    <Text style={styles.itemTitle}>{lang.name}</Text>
-                                    <Text style={styles.itemDescription}>{lang.proficiency}</Text>
-                                </View>
-                            ))}
-                        </View>
-                    )}
+                    </View>
+                )}
 
-                </View>
             </Page>
         </Document>
     );
