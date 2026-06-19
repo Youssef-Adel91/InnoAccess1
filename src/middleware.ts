@@ -32,7 +32,7 @@ const isPublicApiRoute = (path: string) =>
 // ─── Affiliate referral cookie ─────────────────────────────────────────────────
 const AFFILIATE_CODE_REGEX = /^VOL_[A-Z0-9]{6}$/;
 const REF_COOKIE_NAME      = 'innoaccess_ref';
-const REF_COOKIE_MAX_AGE   = 60 * 60 * 24 * 30;
+const REF_COOKIE_MAX_AGE   = 60 * 60 * 24 * 7; // 7 days
 
 // ─── Locale helpers ───────────────────────────────────────────────────────────
 

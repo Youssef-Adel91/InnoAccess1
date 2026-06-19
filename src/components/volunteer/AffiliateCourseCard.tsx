@@ -59,6 +59,9 @@ export default function AffiliateCourseCard({
     const [copyState, setCopyState] = useState<'idle' | 'copied' | 'error'>('idle');
     const [announcement, setAnnouncement] = useState('');
 
+    // Normalize price from cents to EGP
+    const coursePriceEGP = course.price / 100;
+
     // ── Build the affiliate URL ──────────────────────────────────────────────
     const affiliateUrl = `${typeof window !== 'undefined' ? window.location.origin : 'https://innoaccess.vercel.app'}/courses/${course._id}?ref=${affiliateCode}`;
 
@@ -149,7 +152,7 @@ export default function AffiliateCourseCard({
                             ? 'bg-emerald-500 text-white'
                             : 'bg-blue-600 text-white'
                     }`}>
-                        {course.isFree ? 'Free' : formatEGP(course.price)}
+                        {course.isFree ? 'Free' : formatEGP(coursePriceEGP)}
                     </span>
                 </div>
 
@@ -187,7 +190,7 @@ export default function AffiliateCourseCard({
                     <div className="bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">
                         <div className="flex items-center justify-between gap-2">
                             <p className="text-xs font-medium text-emerald-700">
-                                💰 You earn <strong>{formatEGP(Math.round(course.price * commissionRate))}</strong> per sale
+                                💰 You earn <strong>{formatEGP(Math.round(coursePriceEGP * commissionRate))}</strong> per sale
                             </p>
                             <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-600 text-white shrink-0">
                                 {tierName} · {tierLabel}
