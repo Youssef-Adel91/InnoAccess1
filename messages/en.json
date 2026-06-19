@@ -473,5 +473,84 @@
         "generateAffiliateLink": "Generate Affiliate Link",
         "linkCopied": "Affiliate Link Copied!",
         "affiliateCopyText": "{description}\n\nEnroll now via my link: {url}"
+    },
+    "AdminFinance": {
+        "title": "Finance & Accounting",
+        "subtitle": "Platform revenue, splits, expenses, and profitability",
+        "tabs": {
+            "overview":  "Overview",
+            "payouts":   "Payouts",
+            "expenses":  "Expenses",
+            "ledger":    "Audit Ledger"
+        },
+        "kpi": {
+            "grossRevenue":    "Total Gross Revenue",
+            "netProfit":       "Platform Net Profit",
+            "pendingPayouts":  "Pending Payouts",
+            "totalExpenses":   "Total Expenses",
+            "trainerOwed":     "Trainers Owed",
+            "volunteerOwed":   "Volunteers Owed"
+        },
+        "payouts": {
+            "heading":         "Outstanding Balances",
+            "empty":           "No outstanding balances. All wallets are settled.",
+            "settleBtn":       "Mark as Paid",
+            "settling":        "Settling…",
+            "settleConfirm":   "Mark EGP {amount} as paid to {name}?",
+            "settleSuccess":   "EGP {amount} marked as paid successfully.",
+            "colName":         "Name",
+            "colRole":         "Role",
+            "colAvailable":    "Available Balance",
+            "colEarned":       "Total Earned",
+            "colPaidOut":      "Total Paid Out",
+            "colAction":       "Action"
+        },
+        "expenses": {
+            "heading":         "Operating Expenses",
+            "addHeading":      "Log New Expense",
+            "empty":           "No expenses logged yet.",
+            "labelAmount":     "Amount (EGP)",
+            "labelCategory":   "Category",
+            "labelDescription":"Description",
+            "labelDate":       "Date",
+            "submitBtn":       "Log Expense",
+            "submitting":      "Logging…",
+            "successMsg":      "Expense logged successfully.",
+            "colDate":         "Date",
+            "colCategory":     "Category",
+            "colDescription":  "Description",
+            "colAmount":       "Amount",
+            "colAddedBy":      "Logged By",
+            "categories": {
+                "SERVERS":   "Servers & Hosting",
+                "MARKETING": "Marketing & Ads",
+                "SALARIES":  "Salaries",
+                "TOOLS":     "Tools & Software",
+                "OTHER":     "Other"
+            }
+        },
+        "ledger": {
+            "heading":     "Financial Audit Log",
+            "empty":       "No ledger entries yet.",
+            "colDate":     "Date",
+            "colType":     "Entry Type",
+            "colAmount":   "Amount",
+            "colNote":     "Note",
+            "colUser":     "User",
+            "colCourse":   "Course",
+            "filterAll":   "All Types",
+            "entryTypes": {
+                "GROSS_REVENUE":        "Gross Revenue",
+                "GATEWAY_FEE":          "Gateway Fee",
+                "TRAINER_COMMISSION":   "Trainer Commission",
+                "VOLUNTEER_COMMISSION": "Volunteer Commission",
+                "NET_PLATFORM_PROFIT":  "Platform Profit",
+                "PAYOUT_SETTLED":       "Payout Settled",
+                "MANUAL_EXPENSE":       "Manual Expense"
+            }
+        },
+        "loading": "Loading financial data…",
+        "error":   "Failed to load data. Please try again.",
+        "egp":     "EGP"
     }
 }

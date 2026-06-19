@@ -473,5 +473,84 @@
         "generateAffiliateLink": "توليد رابط التسويق",
         "linkCopied": "تم نسخ رابط التسويق!",
         "affiliateCopyText": "{description}\n\nسجل الآن عبر الرابط الخاص بي: {url}"
+    },
+    "AdminFinance": {
+        "title": "المالية والمحاسبة",
+        "subtitle": "إيرادات المنصة، التقسيمات، المصروفات، والربحية",
+        "tabs": {
+            "overview":  "نظرة عامة",
+            "payouts":   "المدفوعات",
+            "expenses":  "المصروفات",
+            "ledger":    "سجل المراجعة"
+        },
+        "kpi": {
+            "grossRevenue":    "إجمالي الإيرادات",
+            "netProfit":       "صافي ربح المنصة",
+            "pendingPayouts":  "المدفوعات المعلقة",
+            "totalExpenses":   "إجمالي المصروفات",
+            "trainerOwed":     "المدربون المستحقون",
+            "volunteerOwed":   "المتطوعون المستحقون"
+        },
+        "payouts": {
+            "heading":         "الأرصدة المستحقة",
+            "empty":           "لا توجد أرصدة مستحقة. جميع المحافظ تمت تسويتها.",
+            "settleBtn":       "تسجيل كمدفوع",
+            "settling":        "جارٍ التسوية…",
+            "settleConfirm":   "هل تريد تسجيل {amount} جنيه كمدفوع لـ {name}؟",
+            "settleSuccess":   "تم تسجيل {amount} جنيه كمدفوع بنجاح.",
+            "colName":         "الاسم",
+            "colRole":         "الدور",
+            "colAvailable":    "الرصيد المتاح",
+            "colEarned":       "إجمالي الأرباح",
+            "colPaidOut":      "إجمالي المدفوع",
+            "colAction":       "الإجراء"
+        },
+        "expenses": {
+            "heading":         "المصروفات التشغيلية",
+            "addHeading":      "تسجيل مصروف جديد",
+            "empty":           "لم يتم تسجيل أي مصروفات بعد.",
+            "labelAmount":     "المبلغ (جنيه)",
+            "labelCategory":   "الفئة",
+            "labelDescription":"الوصف",
+            "labelDate":       "التاريخ",
+            "submitBtn":       "تسجيل المصروف",
+            "submitting":      "جارٍ التسجيل…",
+            "successMsg":      "تم تسجيل المصروف بنجاح.",
+            "colDate":         "التاريخ",
+            "colCategory":     "الفئة",
+            "colDescription":  "الوصف",
+            "colAmount":       "المبلغ",
+            "colAddedBy":      "سُجّل بواسطة",
+            "categories": {
+                "SERVERS":   "الخوادم والاستضافة",
+                "MARKETING": "التسويق والإعلانات",
+                "SALARIES":  "الرواتب",
+                "TOOLS":     "الأدوات والبرامج",
+                "OTHER":     "أخرى"
+            }
+        },
+        "ledger": {
+            "heading":     "سجل المراجعة المالية",
+            "empty":       "لا توجد قيود في السجل بعد.",
+            "colDate":     "التاريخ",
+            "colType":     "نوع القيد",
+            "colAmount":   "المبلغ",
+            "colNote":     "ملاحظة",
+            "colUser":     "المستخدم",
+            "colCourse":   "الدورة",
+            "filterAll":   "جميع الأنواع",
+            "entryTypes": {
+                "GROSS_REVENUE":        "الإيراد الإجمالي",
+                "GATEWAY_FEE":          "رسوم بوابة الدفع",
+                "TRAINER_COMMISSION":   "عمولة المدرب",
+                "VOLUNTEER_COMMISSION": "عمولة المتطوع",
+                "NET_PLATFORM_PROFIT":  "ربح المنصة الصافي",
+                "PAYOUT_SETTLED":       "تسوية مدفوعات",
+                "MANUAL_EXPENSE":       "مصروف يدوي"
+            }
+        },
+        "loading": "جارٍ تحميل البيانات المالية…",
+        "error":   "فشل تحميل البيانات. يرجى المحاولة مرة أخرى.",
+        "egp":     "ج.م"
     }
 }
