@@ -15,6 +15,7 @@
             "trainersDirectory": "Trainers Directory",
             "trainerRequests": "Trainer Requests",
             "videoApprovals": "Video Approvals",
+            "orders": "Orders & Approvals",
             "volunteerDashboard": "Volunteer Dashboard"
         },
         "auth": {
@@ -191,7 +192,30 @@
         "approvals": "Video Approvals",
         "payouts": "Payout Requests",
         "courses": "Course Intelligence",
-        "analytics": "Analytics"
+        "analytics": "Analytics",
+        "orders": {
+            "title": "Manual Payment Orders",
+            "subtitle": "Review and approve pending manual payments",
+            "loading": "Loading orders...",
+            "noOrders": "No Pending Orders",
+            "noOrdersDesc": "All manual payments have been reviewed",
+            "table": {
+                "student": "Student",
+                "course": "Course",
+                "amount": "Amount",
+                "phone": "Phone",
+                "date": "Date",
+                "receipt": "Receipt",
+                "actions": "Actions"
+            },
+            "noReceipt": "No receipt",
+            "viewReceipt": "View",
+            "approve": "Approve",
+            "reject": "Reject",
+            "receiptScreenshot": "Receipt Screenshot",
+            "confirmApprove": "Are you sure you want to approve this payment? The student will be enrolled immediately.",
+            "promptReject": "Enter rejection reason:"
+        }
     },
     "Company": {
         "jobs": {

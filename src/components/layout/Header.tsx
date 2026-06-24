@@ -21,6 +21,7 @@ import {
     Video,
     Users,
     Languages,
+    CreditCard,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import useSWR from 'swr';
@@ -219,6 +220,10 @@ export function Header({ locale = 'en' }: HeaderProps) {
                                     <Video className="mr-2 h-4 w-4" aria-hidden="true" />
                                     {t('nav.videoApprovals')}
                                 </Link>
+                                <Link href="/admin/orders" className={navLink('/admin/orders')} aria-current={isActive('/admin/orders') ? 'page' : undefined}>
+                                    <CreditCard className="mr-2 h-4 w-4" aria-hidden="true" />
+                                    {t('nav.orders')}
+                                </Link>
                             </>
                         )}
                         {session?.user?.role === 'volunteer' && (
@@ -369,6 +374,10 @@ export function Header({ locale = 'en' }: HeaderProps) {
                                 <Link href="/admin/approvals" className={mobileLink('/admin/approvals')} onClick={() => setMobileMenuOpen(false)} aria-current={isActive('/admin/approvals') ? 'page' : undefined}>
                                     <Video className="mr-3 h-5 w-5 shrink-0" aria-hidden="true" />
                                     {t('nav.videoApprovals')}
+                                </Link>
+                                <Link href="/admin/orders" className={mobileLink('/admin/orders')} onClick={() => setMobileMenuOpen(false)} aria-current={isActive('/admin/orders') ? 'page' : undefined}>
+                                    <CreditCard className="mr-3 h-5 w-5 shrink-0" aria-hidden="true" />
+                                    {t('nav.orders')}
                                 </Link>
                             </>
                         )}

@@ -15,6 +15,7 @@
             "trainersDirectory": "دليل المدربين",
             "trainerRequests": "طلبات المدربين",
             "videoApprovals": "الموافقات على الفيديو",
+            "orders": "الطلبات والموافقات",
             "volunteerDashboard": "لوحة تحكم المتطوعين"
         },
         "auth": {
@@ -191,7 +192,30 @@
         "approvals": "الموافقة على الفيديوهات",
         "payouts": "طلبات السحب",
         "courses": "ذكاء الدورات",
-        "analytics": "التحليلات"
+        "analytics": "التحليلات",
+        "orders": {
+            "title": "طلبات الدفع اليدوي",
+            "subtitle": "مراجعة والموافقة على مدفوعات التحويل اليدوي",
+            "loading": "جارٍ تحميل الطلبات...",
+            "noOrders": "لا توجد طلبات معلقة",
+            "noOrdersDesc": "تمت مراجعة جميع المدفوعات اليدوية",
+            "table": {
+                "student": "الطالب",
+                "course": "الدورة",
+                "amount": "المبلغ",
+                "phone": "الهاتف",
+                "date": "التاريخ",
+                "receipt": "الإيصال",
+                "actions": "الإجراءات"
+            },
+            "noReceipt": "لا يوجد إيصال",
+            "viewReceipt": "عرض",
+            "approve": "موافقة",
+            "reject": "رفض",
+            "receiptScreenshot": "صورة الإيصال",
+            "confirmApprove": "هل أنت متأكد من الموافقة على هذا الدفع؟ سيتم تسجيل الطالب فوراً.",
+            "promptReject": "أدخل سبب الرفض:"
+        }
     },
     "Company": {
         "jobs": {

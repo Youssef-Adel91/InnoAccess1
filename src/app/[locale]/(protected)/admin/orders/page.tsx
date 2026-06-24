@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { CheckCircle, XCircle, Eye, Loader2, DollarSign } from 'lucide-react';
 import { approveManualPayment, rejectManualPayment } from '@/app/actions/payment';
+import { useTranslations } from 'next-intl';
 
 interface Order {
     _id: string;
@@ -28,6 +29,7 @@ interface Order {
 export default function AdminOrdersPage() {
     const { data: session, status } = useSession();
     const router = useRouter();
+    const t = useTranslations('Admin.orders');
 
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
@@ -63,7 +65,7 @@ export default function AdminOrdersPage() {
     };
 
     const handleApprove = async (orderId: string) => {
-        if (!confirm('Are you sure you want to approve this payment? The student will be enrolled immediately.')) {
+        if (!confirm(t('confirmApprove'))) {
             return;
         }
 
@@ -86,7 +88,7 @@ export default function AdminOrdersPage() {
     };
 
     const handleReject = async (orderId: string) => {
-        const reason = prompt('Enter rejection reason:');
+        const reason = prompt(t('promptReject'));
         if (!reason) return;
 
         setProcessingId(orderId);
@@ -112,7 +114,7 @@ export default function AdminOrdersPage() {
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Loading orders...</p>
+                    <p className="mt-4 text-gray-600">{t('loading')}</p>
                 </div>
             </div>
         );
@@ -123,8 +125,8 @@ export default function AdminOrdersPage() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Header */}
                 <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900">Manual Payment Orders</h1>
-                    <p className="mt-2 text-gray-600">Review and approve pending manual payments</p>
+                    <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
+                    <p className="mt-2 text-gray-600">{t('subtitle')}</p>
                 </div>
 
                 {/* Error Message */}
@@ -138,8 +140,8 @@ export default function AdminOrdersPage() {
                 {orders.length === 0 ? (
                     <div className="bg-white rounded-lg shadow-md p-12 text-center">
                         <DollarSign className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">No Pending Orders</h3>
-                        <p className="text-gray-600">All manual payments have been reviewed</p>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('noOrders')}</h3>
+                        <p className="text-gray-600">{t('noOrdersDesc')}</p>
                     </div>
                 ) : (
                     <div className="bg-white rounded-lg shadow-md overflow-hidden">
@@ -147,25 +149,25 @@ export default function AdminOrdersPage() {
                             <thead className="bg-gray-50">
                                 <tr>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Student
+                                        {t('table.student')}
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Course
+                                        {t('table.course')}
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Amount
+                                        {t('table.amount')}
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Phone
+                                        {t('table.phone')}
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Date
+                                        {t('table.date')}
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Receipt
+                                        {t('table.receipt')}
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Actions
+                                        {t('table.actions')}
                                     </th>
                                 </tr>
                             </thead>
@@ -209,10 +211,10 @@ export default function AdminOrdersPage() {
                                                     className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
                                                 >
                                                     <Eye className="h-4 w-4 mr-1" />
-                                                    View
+                                                    {t('viewReceipt')}
                                                 </button>
                                             ) : (
-                                                <span className="text-sm text-gray-400">No receipt</span>
+                                                <span className="text-sm text-gray-400">{t('noReceipt')}</span>
                                             )}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
@@ -226,7 +228,7 @@ export default function AdminOrdersPage() {
                                                 ) : (
                                                     <CheckCircle className="h-4 w-4 mr-1" />
                                                 )}
-                                                Approve
+                                                {t('approve')}
                                             </button>
                                             <button
                                                 onClick={() => handleReject(order._id)}
@@ -234,7 +236,7 @@ export default function AdminOrdersPage() {
                                                 className="inline-flex items-center px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
                                             >
                                                 <XCircle className="h-4 w-4 mr-1" />
-                                                Reject
+                                                {t('reject')}
                                             </button>
                                         </td>
                                     </tr>
@@ -252,7 +254,7 @@ export default function AdminOrdersPage() {
                     >
                         <div className="bg-white rounded-lg max-w-4xl max-h-[90vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
                             <div className="p-4 border-b flex items-center justify-between">
-                                <h3 className="text-lg font-semibold">Receipt Screenshot</h3>
+                                <h3 className="text-lg font-semibold">{t('receiptScreenshot')}</h3>
                                 <button
                                     onClick={() => setSelectedReceipt(null)}
                                     className="text-gray-500 hover:text-gray-700"
