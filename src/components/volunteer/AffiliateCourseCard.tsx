@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { GraduationCap, Copy, Check, ExternalLink } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 

@@ -168,7 +168,8 @@
             "noApplications": "No applications yet.",
             "browseJobs": "Browse jobs",
             "latestNotification": "Latest Notification",
-            "noNotifications": "No notifications yet. We'll notify you of important updates!"
+            "noNotifications": "No notifications yet. We'll notify you of important updates!",
+            "viewAll": "View All"
         },
         "quickActions": {
             "heading": "Quick Actions",

@@ -168,7 +168,8 @@
             "noApplications": "لا توجد طلبات بعد.",
             "browseJobs": "تصفح الوظائف",
             "latestNotification": "آخر الإشعارات",
-            "noNotifications": "لا توجد إشعارات بعد. سنُعلمك بالتحديثات المهمة!"
+            "noNotifications": "لا توجد إشعارات بعد. سنُعلمك بالتحديثات المهمة!",
+            "viewAll": "عرض الكل"
         },
         "quickActions": {
             "heading": "إجراءات سريعة",
