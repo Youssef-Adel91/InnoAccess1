@@ -7,10 +7,11 @@ import Wallet from '@/models/Wallet';
 import Payout, { PayoutMethod, PayoutStatus } from '@/models/Payout';
 import mongoose, { Types } from 'mongoose';
 
+import { MIN_PAYOUT_AMOUNT } from '@/lib/affiliateUtils';
+
 // ─── Validation ────────────────────────────────────────────────────────────────
 
 const VALID_METHODS: PayoutMethod[] = [PayoutMethod.VODAFONE_CASH, PayoutMethod.INSTAPAY];
-const MIN_PAYOUT_AMOUNT = 50; // EGP — minimum withdrawal amount
 
 // ─── POST /api/volunteer/payout ────────────────────────────────────────────────
 

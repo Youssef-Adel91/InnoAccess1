@@ -136,12 +136,16 @@ export async function GET() {
             .sort((a, b) => new Date(a.unlocksAt).getTime() - new Date(b.unlocksAt).getTime())[0]
             ?.unlocksAt ?? null;
 
+        const computedPendingBalance = commissions
+            .filter((c) => c.status === CommissionStatus.PENDING)
+            .reduce((sum, c) => sum + c.commissionAmount, 0);
+
         return NextResponse.json({
             success: true,
             data: {
                 commissions,
                 wallet: {
-                    pendingBalance:   wallet.pendingBalance,
+                    pendingBalance:   computedPendingBalance,
                     availableBalance: wallet.availableBalance,
                     totalEarned:      wallet.totalEarned,
                     totalPaidOut:     wallet.totalPaidOut,

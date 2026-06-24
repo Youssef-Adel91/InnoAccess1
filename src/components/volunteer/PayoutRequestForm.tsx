@@ -15,7 +15,9 @@ interface PayoutRequestFormProps {
 
 type PayoutMethod = 'vodafone_cash' | 'instapay';
 
-const MIN_AMOUNT = 50;
+const MIN_AMOUNT = process.env.NEXT_PUBLIC_MIN_PAYOUT_AMOUNT 
+    ? parseInt(process.env.NEXT_PUBLIC_MIN_PAYOUT_AMOUNT, 10) 
+    : 50;
 
 function formatEGP(n: number) {
     return new Intl.NumberFormat('ar-EG', { style: 'currency', currency: 'EGP', maximumFractionDigits: 0 }).format(n);

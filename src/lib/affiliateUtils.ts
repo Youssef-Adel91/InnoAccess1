@@ -65,6 +65,11 @@ export function getCommissionTier(totalSales: number): CommissionTier {
 /** How many days a commission stays locked after a sale (anti-refund hold) */
 export const COMMISSION_LOCK_DAYS = 14;
 
+/** Minimum withdrawal amount for volunteers (can be configured via environment) */
+export const MIN_PAYOUT_AMOUNT = process.env.NEXT_PUBLIC_MIN_PAYOUT_AMOUNT
+    ? parseInt(process.env.NEXT_PUBLIC_MIN_PAYOUT_AMOUNT, 10)
+    : 50;
+
 // ─── Code Generation ───────────────────────────────────────────────────────────
 
 /**
