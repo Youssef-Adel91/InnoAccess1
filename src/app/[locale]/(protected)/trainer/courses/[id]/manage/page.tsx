@@ -10,7 +10,7 @@ import { YouTubeUploader } from '@/components/trainer/YouTubeUploader';
 import LiveCourseManagement from '@/components/trainer/LiveCourseManagement';
 import { ArrowLeft, Plus, ChevronDown, ChevronUp, Video, CheckCircle, Clock, XCircle, Trash2, Edit2, Youtube, Upload, Share2 } from 'lucide-react';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 
 interface Course {
     _id: string;
@@ -61,6 +61,7 @@ export default function ManageCoursePage() {
     const params = useParams();
     const courseId = params.id as string;
     const t = useTranslations('Trainer.manageCourse');
+    const locale = useLocale();
 
     const [course, setCourse] = useState<Course | null>(null);
     const [showToast, setShowToast] = useState(false);
@@ -159,7 +160,8 @@ export default function ManageCoursePage() {
 
     const handleShare = async () => {
         if (!course) return;
-        const url = `${window.location.origin}/courses/${courseId}`;
+        const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+        const url = `${baseUrl}/${locale}/courses/${courseId}`;
         const template = t('shareTemplate', { courseTitle: course.title, url });
         try {
             await navigator.clipboard.writeText(template);
