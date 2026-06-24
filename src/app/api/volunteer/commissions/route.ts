@@ -66,7 +66,7 @@ export async function GET() {
             // Update wallet: move amount from pending → available
             // Uses atomic $inc to avoid read-modify-write races
             await Wallet.findOneAndUpdate(
-                { volunteerId },
+                { userId: volunteerId, userType: 'volunteer' },
                 {
                     $inc: {
                         pendingBalance:   -totalUnlocked,
@@ -116,7 +116,7 @@ export async function GET() {
         ]);
 
         // ── Step 3: Fetch wallet (or return zero-state if first time) ─────────
-        const wallet = await Wallet.findOne({ volunteerId }).lean() ?? {
+        const wallet = await Wallet.findOne({ userId: volunteerId, userType: 'volunteer' }).lean() ?? {
             pendingBalance:   0,
             availableBalance: 0,
             totalEarned:      0,

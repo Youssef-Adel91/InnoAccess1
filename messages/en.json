@@ -223,6 +223,16 @@
             "wallet": "My Wallet",
             "requestPayout": "Request Payout"
         },
+        "courseCard": {
+            "earnPerSale": "💰 You earn <strong>{amount}</strong> per sale",
+            "noCommissionFree": "ℹ️ No commission on free courses — but sharing builds goodwill!",
+            "copyAndShare": "Copy & Share",
+            "copied": "Copied!",
+            "copyFailed": "Failed",
+            "free": "Free",
+            "live": "🔴 LIVE",
+            "recorded": "▶ RECORDED"
+        },
         "leaderboard": {
             "title": "Top Affiliates Leaderboard",
             "subtitle": "Global rankings by total successful referral sales",

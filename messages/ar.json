@@ -223,6 +223,16 @@
             "wallet": "محفظتي",
             "requestPayout": "طلب سحب"
         },
+        "courseCard": {
+            "earnPerSale": "💰 ستربح <strong>{amount}</strong> لكل مبيعة",
+            "noCommissionFree": "ℹ️ لا توجد عمولة على الدورات المجانية — لكن مشاركتها تبني سمعة طيبة!",
+            "copyAndShare": "انسخ وشارك",
+            "copied": "تم النسخ!",
+            "copyFailed": "فشل النسخ",
+            "free": "مجاني",
+            "live": "🔴 مباشر",
+            "recorded": "▶ مسجل"
+        },
         "leaderboard": {
             "title": "لوحة المتصدرين — أفضل الشركاء",
             "subtitle": "الترتيب العالمي حسب إجمالي مبيعات الإحالة الناجحة",

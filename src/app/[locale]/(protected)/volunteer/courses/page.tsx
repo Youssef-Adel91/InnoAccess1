@@ -23,6 +23,7 @@ export default function VolunteerCoursesPage() {
 
     const [courses,       setCourses]       = useState<AffiliateCourse[]>([]);
     const [affiliateCode, setAffiliateCode] = useState<string>('');
+    const [affiliateCodeError, setAffiliateCodeError] = useState(false);
     const [searchQuery,   setSearchQuery]   = useState<string>('');
     const [isLoading,     setIsLoading]     = useState(true);
     const [error,         setError]         = useState<string | null>(null);
@@ -34,13 +35,17 @@ export default function VolunteerCoursesPage() {
     // ── Fetch affiliate code (lazy generation) ────────────────────────────────
     const fetchAffiliateCode = useCallback(async () => {
         try {
+            setAffiliateCodeError(false);
             const res  = await fetch('/api/volunteer/affiliate-code');
             const data = await res.json();
             if (data.success) {
                 setAffiliateCode(data.data.affiliateCode);
+            } else {
+                setAffiliateCodeError(true);
             }
         } catch {
             console.error('Failed to fetch affiliate code');
+            setAffiliateCodeError(true);
         }
     }, []);
 
@@ -271,6 +276,17 @@ export default function VolunteerCoursesPage() {
                                 Clear search
                             </button>
                         )}
+                    </div>
+                ) : affiliateCodeError ? (
+                    <div className="text-center py-16 bg-white rounded-2xl border border-red-200">
+                        <p className="text-red-600 font-medium">Failed to load your affiliate code.</p>
+                        <button
+                            type="button"
+                            onClick={fetchAffiliateCode}
+                            className="mt-4 px-4 py-2 text-sm bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors"
+                        >
+                            Retry
+                        </button>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">

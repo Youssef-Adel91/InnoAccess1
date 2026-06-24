@@ -93,14 +93,14 @@ export async function POST(req: NextRequest) {
                 { $set: { status: CommissionStatus.AVAILABLE } }
             );
             await Wallet.findOneAndUpdate(
-                { volunteerId },
+                { userId: volunteerId, userType: 'volunteer' },
                 { $inc: { pendingBalance: -totalUnlocked, availableBalance: +totalUnlocked } },
                 { upsert: true }
             );
         }
 
         // ── Step 2: Fetch current wallet (after unlock) ───────────────────────
-        const wallet = await Wallet.findOne({ volunteerId });
+        const wallet = await Wallet.findOne({ userId: volunteerId, userType: 'volunteer' });
 
         if (!wallet || wallet.availableBalance < amount) {
             return NextResponse.json(
@@ -184,7 +184,7 @@ export async function POST(req: NextRequest) {
 
             // c) Debit the wallet
             await Wallet.findOneAndUpdate(
-                { volunteerId },
+                { userId: volunteerId, userType: 'volunteer' },
                 {
                     $inc: {
                         availableBalance: -amount,

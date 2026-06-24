@@ -203,7 +203,7 @@ export async function attributeAffiliateCommission(
         // findOneAndUpdate with upsert:true creates the Wallet if it doesn't exist.
         // $inc is atomic at the MongoDB level — safe for concurrent requests.
         await Wallet.findOneAndUpdate(
-            { volunteerId: volunteer._id },
+            { userId: volunteer._id, userType: 'volunteer' },
             {
                 $inc: {
                     pendingBalance: commissionAmount,
@@ -211,7 +211,8 @@ export async function attributeAffiliateCommission(
                 },
                 $setOnInsert: {
                     // Only set these on document creation (first commission ever)
-                    volunteerId:      volunteer._id,
+                    userId:           volunteer._id,
+                    userType:         'volunteer',
                     availableBalance: 0,
                     totalPaidOut:     0,
                 },

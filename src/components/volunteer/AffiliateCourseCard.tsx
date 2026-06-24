@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { GraduationCap, Copy, Check, ExternalLink } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -56,6 +57,7 @@ export default function AffiliateCourseCard({
     tierLabel      = '10%',
     tierName       = 'Starter',
 }: AffiliateCourseCardProps) {
+    const t = useTranslations('Volunteer.courseCard');
     const [copyState, setCopyState] = useState<'idle' | 'copied' | 'error'>('idle');
     const [announcement, setAnnouncement] = useState('');
 
@@ -95,7 +97,7 @@ export default function AffiliateCourseCard({
             // Modern Clipboard API (requires HTTPS or localhost)
             await navigator.clipboard.writeText(shareText);
             setCopyState('copied');
-            setAnnouncement('Copied! Text is ready to paste.');
+            setAnnouncement(t('copied'));
         } catch {
             // Fallback: create a textarea, select its content, execCommand
             try {
@@ -108,10 +110,10 @@ export default function AffiliateCourseCard({
                 document.execCommand('copy');
                 document.body.removeChild(ta);
                 setCopyState('copied');
-                setAnnouncement('Copied! Text is ready to paste.');
+                setAnnouncement(t('copied'));
             } catch {
                 setCopyState('error');
-                setAnnouncement('Copy failed. Please copy the link manually.');
+                setAnnouncement(t('copyFailed'));
             }
         }
 
@@ -152,7 +154,7 @@ export default function AffiliateCourseCard({
                             ? 'bg-emerald-500 text-white'
                             : 'bg-blue-600 text-white'
                     }`}>
-                        {course.isFree ? 'Free' : formatEGP(coursePriceEGP)}
+                        {course.isFree ? t('free') : formatEGP(coursePriceEGP)}
                     </span>
                 </div>
 
@@ -163,7 +165,7 @@ export default function AffiliateCourseCard({
                             ? 'bg-red-600 text-white'
                             : 'bg-gray-800 text-white'
                     }`}>
-                        {course.courseType === 'LIVE' ? '🔴 LIVE' : '▶ RECORDED'}
+                        {course.courseType === 'LIVE' ? t('live') : t('recorded')}
                     </span>
                 </div>
             </div>
@@ -189,9 +191,12 @@ export default function AffiliateCourseCard({
                 {!course.isFree && (
                     <div className="bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">
                         <div className="flex items-center justify-between gap-2">
-                            <p className="text-xs font-medium text-emerald-700">
-                                💰 You earn <strong>{formatEGP(Math.round(coursePriceEGP * commissionRate))}</strong> per sale
-                            </p>
+                            <p
+                                className="text-xs font-medium text-emerald-700"
+                                dangerouslySetInnerHTML={{
+                                    __html: t.raw('earnPerSale', { amount: formatEGP(Math.round(coursePriceEGP * commissionRate)) })
+                                }}
+                            />
                             <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-600 text-white shrink-0">
                                 {tierName} · {tierLabel}
                             </span>
@@ -202,7 +207,7 @@ export default function AffiliateCourseCard({
                 {course.isFree && (
                     <div className="bg-gray-50 border border-gray-100 rounded-lg px-3 py-2">
                         <p className="text-xs text-gray-500">
-                            ℹ️ No commission on free courses — but sharing builds goodwill!
+                            {t('noCommissionFree')}
                         </p>
                     </div>
                 )}
@@ -227,11 +232,11 @@ export default function AffiliateCourseCard({
                         }`}
                     >
                         {isCopied ? (
-                            <><Check className="h-4 w-4" aria-hidden="true" /> Copied!</>
+                            <><Check className="h-4 w-4" aria-hidden="true" /> {t('copied')}</>
                         ) : isError ? (
-                            <><Copy className="h-4 w-4" aria-hidden="true" /> Failed</>
+                            <><Copy className="h-4 w-4" aria-hidden="true" /> {t('copyFailed')}</>
                         ) : (
-                            <><Copy className="h-4 w-4" aria-hidden="true" /> Copy &amp; Share</>
+                            <><Copy className="h-4 w-4" aria-hidden="true" /> {t('copyAndShare')}</>
                         )}
                     </button>
 
