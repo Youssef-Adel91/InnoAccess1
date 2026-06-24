@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { GraduationCap, Copy, Check, ExternalLink } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
@@ -61,13 +61,17 @@ export default function AffiliateCourseCard({
     const locale = useLocale();
     const [copyState, setCopyState] = useState<'idle' | 'copied' | 'error'>('idle');
     const [announcement, setAnnouncement] = useState('');
+    const [baseUrl, setBaseUrl] = useState('');
+
+    useEffect(() => {
+        setBaseUrl(window.location.origin);
+    }, []);
 
     // Normalize price from cents to EGP
     const coursePriceEGP = course.price / 100;
 
     // ── Build the affiliate URL ──────────────────────────────────────────────
-    const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://innoaccess.vercel.app';
-    const affiliateUrl = `${baseUrl}/${locale}/courses/${course._id}?ref=${affiliateCode}`;
+    const affiliateUrl = baseUrl ? `${baseUrl}/${locale}/courses/${course._id}?ref=${affiliateCode}` : '';
 
     // ── Smart Copy ───────────────────────────────────────────────────────────
     /**
