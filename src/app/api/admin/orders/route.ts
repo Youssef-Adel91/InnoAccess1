@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { connectDB } from '@/lib/db';
+import User from '@/models/User';
+import Course from '@/models/Course';
 import Order, { OrderStatus, PaymentMethod } from '@/models/Order';
 
 /**

@@ -94,7 +94,10 @@ export async function submitManualPayment(courseId: string, formData: FormData) 
         // Order so the commission can be attributed at approval time without
         // needing a browser session.
         const cookieStore = await cookies();
-        const affiliateRef = cookieStore.get('innoaccess_ref')?.value ?? undefined;
+        let affiliateRef = cookieStore.get('innoaccess_ref')?.value;
+        if (affiliateRef && !/^VOL_[A-Z0-9]{6}$/i.test(affiliateRef)) {
+            affiliateRef = undefined;
+        }
 
         // Create order
         const order = await Order.create({
@@ -171,7 +174,10 @@ export async function initPaymobPayment(
         // Same pattern as submitManualPayment — capture now while browser is
         // present. The Paymob webhook fires server-to-server with no cookies.
         const cookieStore = await cookies();
-        const affiliateRef = cookieStore.get('innoaccess_ref')?.value ?? undefined;
+        let affiliateRef = cookieStore.get('innoaccess_ref')?.value;
+        if (affiliateRef && !/^VOL_[A-Z0-9]{6}$/i.test(affiliateRef)) {
+            affiliateRef = undefined;
+        }
 
         // Create order first
         const order = await Order.create({
