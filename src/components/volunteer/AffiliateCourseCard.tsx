@@ -191,12 +191,12 @@ export default function AffiliateCourseCard({
                 {!course.isFree && (
                     <div className="bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">
                         <div className="flex items-center justify-between gap-2">
-                            <p
-                                className="text-xs font-medium text-emerald-700"
-                                dangerouslySetInnerHTML={{
-                                    __html: t.raw('earnPerSale', { amount: formatEGP(Math.round(coursePriceEGP * commissionRate)) })
-                                }}
-                            />
+                            <p className="text-xs font-medium text-emerald-700">
+                                {t.rich('earnPerSale', {
+                                    amount: formatEGP(Math.round(coursePriceEGP * commissionRate)),
+                                    strong: (chunks) => <strong>{chunks}</strong>
+                                })}
+                            </p>
                             <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-600 text-white shrink-0">
                                 {tierName} · {tierLabel}
                             </span>
