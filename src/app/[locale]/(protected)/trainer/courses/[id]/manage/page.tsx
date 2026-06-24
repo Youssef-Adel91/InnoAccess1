@@ -8,8 +8,9 @@ import { saveLessonVideo } from '@/app/actions/bunnyUpload';
 import { VideoUploader } from '@/components/trainer/VideoUploader';
 import { YouTubeUploader } from '@/components/trainer/YouTubeUploader';
 import LiveCourseManagement from '@/components/trainer/LiveCourseManagement';
-import { ArrowLeft, Plus, ChevronDown, ChevronUp, Video, CheckCircle, Clock, XCircle, Trash2, Edit2, Youtube, Upload } from 'lucide-react';
+import { ArrowLeft, Plus, ChevronDown, ChevronUp, Video, CheckCircle, Clock, XCircle, Trash2, Edit2, Youtube, Upload, Share2 } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 
 interface Course {
     _id: string;
@@ -59,8 +60,10 @@ export default function ManageCoursePage() {
     const router = useRouter();
     const params = useParams();
     const courseId = params.id as string;
+    const t = useTranslations('Trainer.manageCourse');
 
     const [course, setCourse] = useState<Course | null>(null);
+    const [showToast, setShowToast] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -152,6 +155,19 @@ export default function ManageCoursePage() {
         console.log('Video uploaded successfully:', data);
         setShowAddLesson(null);
         await fetchCourse(); // Refresh to show new lesson
+    };
+
+    const handleShare = async () => {
+        if (!course) return;
+        const url = `${window.location.origin}/courses/${courseId}`;
+        const template = t('shareTemplate', { courseTitle: course.title, url });
+        try {
+            await navigator.clipboard.writeText(template);
+            setShowToast(true);
+            setTimeout(() => setShowToast(false), 3000);
+        } catch (err) {
+            console.error('Failed to copy text', err);
+        }
     };
 
     const handlePublish = async () => {
@@ -280,6 +296,13 @@ export default function ManageCoursePage() {
 
     return (
         <div className="min-h-screen bg-gray-50 py-8">
+            {/* Toast Notification */}
+            {showToast && (
+                <div className="fixed bottom-4 right-4 bg-gray-900 text-white px-6 py-3 rounded-lg shadow-lg flex items-center z-50">
+                    <CheckCircle className="h-5 w-5 text-green-400 mr-2" />
+                    {t('shareCopied')}
+                </div>
+            )}
             <div className="max-w-5xl mx-auto px-4">
                 {/* Back Link */}
                 <Link
@@ -307,15 +330,24 @@ export default function ManageCoursePage() {
                                 </span>
                             </div>
                         </div>
-                        <button
-                            onClick={handlePublish}
-                            className={`px-6 py-2 rounded-lg font-medium transition-colors ${course.isPublished
-                                ? 'bg-gray-600 text-white hover:bg-gray-700'
-                                : 'bg-green-600 text-white hover:bg-green-700'
-                                }`}
-                        >
-                            {course.isPublished ? 'Unpublish' : 'Publish Course'}
-                        </button>
+                        <div className="flex flex-col sm:flex-row gap-3">
+                            <button
+                                onClick={handleShare}
+                                className="inline-flex items-center justify-center px-6 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg font-medium transition-colors border border-blue-200"
+                            >
+                                <Share2 className="h-4 w-4 mr-2" />
+                                {t('shareCourse')}
+                            </button>
+                            <button
+                                onClick={handlePublish}
+                                className={`px-6 py-2 rounded-lg font-medium transition-colors ${course.isPublished
+                                    ? 'bg-gray-600 text-white hover:bg-gray-700'
+                                    : 'bg-green-600 text-white hover:bg-green-700'
+                                    }`}
+                            >
+                                {course.isPublished ? 'Unpublish' : 'Publish Course'}
+                            </button>
+                        </div>
                     </div>
                 </div>
 

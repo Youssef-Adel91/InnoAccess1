@@ -208,6 +208,11 @@
         "dashboard": {
             "heading": "لوحة تحكم المدرب",
             "myCourses": "دوراتي"
+        },
+        "manageCourse": {
+            "shareCourse": "شارك الدورة",
+            "shareCopied": "تم النسخ إلى الحافظة!",
+            "shareTemplate": "يسعدني الإعلان عن دورتي: {courseTitle}! 🚀 \n\nسجل الآن مباشرة من هنا: {url}"
         }
     },
     "Volunteer": {

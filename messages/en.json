@@ -208,6 +208,11 @@
         "dashboard": {
             "heading": "Trainer Dashboard",
             "myCourses": "My Courses"
+        },
+        "manageCourse": {
+            "shareCourse": "Share Course",
+            "shareCopied": "Copied to clipboard!",
+            "shareTemplate": "I'm thrilled to announce my course: {courseTitle}! 🚀 \n\nEnroll now directly here: {url}"
         }
     },
     "Volunteer": {
