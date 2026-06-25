@@ -95,7 +95,7 @@ export default function TrainerRegistrationForm({
         // The endpoint URL must include the filename as a query param.
         // The existing /api/blob/upload route accepts POST with Content-Type.
         // We need a separate CV endpoint that accepts PDFs — see note below.
-        const endpoint = `/api/blob/upload-cv?filename=${encodeURIComponent(file.name)}`;
+        const endpoint = `/api/blob/public-upload-cv?filename=${encodeURIComponent(file.name)}`;
 
         try {
             const url = await upload(file, endpoint);
