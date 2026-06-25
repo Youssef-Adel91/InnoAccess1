@@ -240,6 +240,21 @@
             "shareTemplate": "يسعدني الإعلان عن دورتي: {courseTitle}! 🚀 \n\nسجل الآن مباشرة من هنا: {url}"
         }
     },
+    "TrainerFinance": {
+        "loading": "جارٍ تحميل لوحة التحكم...",
+        "pageTitle": "اللوحة المالية",
+        "pageSubtitle": "تتبع مبيعات دوراتك وإدارة عمليات السحب",
+        "commissionHistory": "سجل العمولات",
+        "entries": "إدخالات",
+        "noCommissions": "لا توجد عمولات بعد",
+        "course": "الدورة",
+        "date": "التاريخ",
+        "commission": "العمولة",
+        "status": "الحالة",
+        "Locked": "مقفل",
+        "Available": "متاح",
+        "Paid Out": "مدفوع"
+    },
     "Volunteer": {
         "affiliate": {
             "heading": "لوحة تحكم الشريك",
@@ -519,17 +534,31 @@
         "subtitle": "إيرادات المنصة، التقسيمات، المصروفات، والربحية",
         "tabs": {
             "overview":  "نظرة عامة",
+            "orders":    "ملخص الطلبات",
             "payouts":   "المدفوعات",
             "expenses":  "المصروفات",
-            "ledger":    "سجل المراجعة"
+            "ledger":    "سجل التدقيق"
         },
         "kpi": {
             "grossRevenue":    "إجمالي الإيرادات",
             "netProfit":       "صافي ربح المنصة",
-            "pendingPayouts":  "المدفوعات المعلقة",
+            "pendingPayouts":  "مدفوعات قيد الانتظار",
             "totalExpenses":   "إجمالي المصروفات",
-            "trainerOwed":     "المدربون المستحقون",
-            "volunteerOwed":   "المتطوعون المستحقون"
+            "trainerOwed":     "مستحقات المدربين",
+            "volunteerOwed":   "مستحقات المتطوعين"
+        },
+        "orders": {
+            "heading":         "سجل ملخص الطلبات",
+            "exportBtn":       "تصدير إلى CSV",
+            "empty":           "لم يتم العثور على طلبات.",
+            "colDate":         "التاريخ",
+            "colCourse":       "الدورة",
+            "colPaymentMethod":"طريقة الدفع",
+            "colGross":        "الإجمالي",
+            "colFee":          "الرسوم",
+            "colTrainerCut":   "حصة المدرب",
+            "colAffiliateCut": "حصة المسوق",
+            "colNetProfit":    "صافي الربح"
         },
         "payouts": {
             "heading":         "الأرصدة المستحقة",

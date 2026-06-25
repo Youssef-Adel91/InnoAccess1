@@ -50,12 +50,14 @@ import LedgerEntry, { LedgerEntryType } from '@/models/LedgerEntry';
 import Wallet from '@/models/Wallet';
 import { attributeAffiliateCommission } from '@/lib/affiliateUtils';
 
-// ─── Configurable fee rate ────────────────────────────────────────────────────
-// Default: 0 (no gateway fee — all transactions are manual E-Wallet transfers).
-// To integrate a payment gateway later, set GATEWAY_FEE_RATE=0.03 in .env
-// for a 3% Paymob fee, or any other decimal fraction.
-export const GATEWAY_FEE_RATE: number =
-    parseFloat(process.env.GATEWAY_FEE_RATE ?? '0') || 0;
+// ─── Configurable fee rates ───────────────────────────────────────────────────
+export const GATEWAY_FEES: Record<string, { percentage: number; fixed: number }> = {
+    'VODAFONE_CASH': { percentage: 0.01, fixed: 0 }, 
+    'INSTAPAY': { percentage: 0, fixed: 0 }, 
+    'VISA': { percentage: 0.0275, fixed: 3.00 }, // 2.75% + 3 EGP fixed
+    'PAYMOB': { percentage: 0.0275, fixed: 3.00 }, // Fallback for PAYMOB
+    'MANUAL': { percentage: 0, fixed: 0 }
+};
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -72,7 +74,7 @@ export interface SplitResult {
     volunteerCommissionEGP:  number;
     /** Remainder kept by the platform */
     platformNetProfitEGP:    number;
-    /** Trainer's commission rate snapshot (e.g. 0.40) */
+    /** The actual commission rate applied (e.g. 0.40 or 0) */
     trainerCommissionRate:   number;
 }
 
@@ -87,8 +89,14 @@ interface ExecuteSplitInput {
     courseId: Types.ObjectId;
     /** Sale amount in CENTS (e.g. 20000 for a 200 EGP course) — matches Order.amount */
     amountCents: number;
-    /** The trainer's commission rate for this specific course (e.g. 0.40) */
-    trainerCommissionRate: number;
+    /** Payment Method from the Order */
+    paymentMethod: string;
+    /** The trainer's contract for this course */
+    contract?: {
+        paymentType: 'COMMISSION' | 'CASH';
+        commissionRate?: number;
+        endDate?: Date;
+    };
     /** Affiliate ref code from Order.affiliateRef, or null if no referral */
     affiliateRef: string | null | undefined;
 }
@@ -130,7 +138,8 @@ export async function executeRevenueSplit(
         trainerId,
         courseId,
         amountCents,
-        trainerCommissionRate,
+        paymentMethod,
+        contract,
         affiliateRef,
     } = input;
 
@@ -146,15 +155,30 @@ export async function executeRevenueSplit(
             return { success: true, split: {
                 grossAmountEGP: 0, gatewayFeeEGP: 0, netAfterFeeEGP: 0,
                 trainerCommissionEGP: 0, volunteerCommissionEGP: 0,
-                platformNetProfitEGP: 0, trainerCommissionRate,
+                platformNetProfitEGP: 0, trainerCommissionRate: 0,
             }};
         }
 
-        const gatewayFeeEGP    = Math.round(grossAmountEGP * GATEWAY_FEE_RATE * 100) / 100;
-        const netAfterFeeEGP   = grossAmountEGP - gatewayFeeEGP;
+        const feeConfig = GATEWAY_FEES[paymentMethod] || { percentage: 0, fixed: 0 };
+        const gatewayFeeEGP = Math.round((grossAmountEGP * feeConfig.percentage + feeConfig.fixed) * 100) / 100;
+        const netAfterFeeEGP = grossAmountEGP - gatewayFeeEGP;
 
-        // Trainer commission — clamped to [0, 1]
-        const safeTrainerRate      = Math.min(1, Math.max(0, trainerCommissionRate));
+        // Trainer commission logic based on contract
+        let safeTrainerRate = 0;
+
+        if (contract?.paymentType === 'COMMISSION') {
+            // Check if active
+            if (!contract.endDate || Date.now() <= new Date(contract.endDate).getTime()) {
+                const rate = contract.commissionRate ?? 0.40;
+                safeTrainerRate = Math.min(1, Math.max(0, rate));
+            } else {
+                console.log(`⚠️ Contract expired for course ${courseId}. Trainer gets 0%.`);
+            }
+        } else if (contract?.paymentType === 'CASH') {
+            console.log(`ℹ️ Course ${courseId} is on CASH contract. Trainer gets 0% commission per sale.`);
+            safeTrainerRate = 0;
+        }
+
         const trainerCommissionEGP = Math.round(netAfterFeeEGP * safeTrainerRate);
 
         // Volunteer commission — computed by attributeAffiliateCommission later.
@@ -221,7 +245,7 @@ export async function executeRevenueSplit(
                 amount:    gatewayFeeEGP,
                 orderId,
                 courseId,
-                note:      `Gateway fee (${(GATEWAY_FEE_RATE * 100).toFixed(1)}%) — Order ${orderId}`,
+                note:      `Gateway fee (${(feeConfig.percentage * 100).toFixed(2)}% + ${feeConfig.fixed} EGP) — Order ${orderId}`,
             }] : []),
             {
                 entryType: LedgerEntryType.TRAINER_COMMISSION,
@@ -230,6 +254,8 @@ export async function executeRevenueSplit(
                 courseId,
                 userId:    trainerId,
                 note:      `Trainer commission (${(safeTrainerRate * 100).toFixed(0)}%) — Order ${orderId}`,
+                status:    'PENDING',
+                unlocksAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14-day hold
             },
             ...(volunteerCommissionEGP > 0 ? [{
                 entryType: LedgerEntryType.VOLUNTEER_COMMISSION,
@@ -251,18 +277,18 @@ export async function executeRevenueSplit(
         console.log(`✅ ${ledgerDocs.length} ledger entries created for order ${orderId}`);
 
         // ── Step 3: Credit trainer Wallet ────────────────────────────────────
-        // Trainers' earnings are immediately available (no hold period —
-        // the admin has already manually verified the receipt before approving).
+        // Trainers' earnings are held for 14 days (anti-refund), similar to volunteers.
+        // We increment pendingBalance. A cron job or dashboard claim will move this to available.
         await Wallet.findOneAndUpdate(
             { userId: trainerId, userType: 'trainer' },
             {
                 $inc: {
-                    availableBalance: trainerCommissionEGP,
-                    totalEarned:      trainerCommissionEGP,
+                    pendingBalance: trainerCommissionEGP,
+                    totalEarned:    trainerCommissionEGP,
                 },
                 $setOnInsert: {
-                    pendingBalance: 0,
-                    totalPaidOut:   0,
+                    availableBalance: 0,
+                    totalPaidOut:     0,
                 },
             },
             { upsert: true, new: true }

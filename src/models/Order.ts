@@ -15,6 +15,9 @@ export enum OrderStatus {
 export enum PaymentMethod {
     PAYMOB = 'PAYMOB',
     MANUAL = 'MANUAL',
+    VODAFONE_CASH = 'VODAFONE_CASH',
+    INSTAPAY = 'INSTAPAY',
+    VISA = 'VISA',
 }
 
 /**

@@ -240,6 +240,21 @@
             "shareTemplate": "I'm thrilled to announce my course: {courseTitle}! 🚀 \n\nEnroll now directly here: {url}"
         }
     },
+    "TrainerFinance": {
+        "loading": "Loading your dashboard…",
+        "pageTitle": "Financial Dashboard",
+        "pageSubtitle": "Track your course sales and manage withdrawals",
+        "commissionHistory": "Commission History",
+        "entries": "entries",
+        "noCommissions": "No commissions yet",
+        "course": "Course",
+        "date": "Date",
+        "commission": "Commission",
+        "status": "Status",
+        "Locked": "Locked",
+        "Available": "Available",
+        "Paid Out": "Paid Out"
+    },
     "Volunteer": {
         "affiliate": {
             "heading": "Affiliate Dashboard",
@@ -519,6 +534,7 @@
         "subtitle": "Platform revenue, splits, expenses, and profitability",
         "tabs": {
             "overview":  "Overview",
+            "orders":    "Order Summary",
             "payouts":   "Payouts",
             "expenses":  "Expenses",
             "ledger":    "Audit Ledger"
@@ -530,6 +546,19 @@
             "totalExpenses":   "Total Expenses",
             "trainerOwed":     "Trainers Owed",
             "volunteerOwed":   "Volunteers Owed"
+        },
+        "orders": {
+            "heading":         "Order Summary Ledger",
+            "exportBtn":       "Export to CSV",
+            "empty":           "No orders found.",
+            "colDate":         "Date",
+            "colCourse":       "Course",
+            "colPaymentMethod":"Payment Method",
+            "colGross":        "Gross",
+            "colFee":          "Fee",
+            "colTrainerCut":   "Trainer Cut",
+            "colAffiliateCut": "Affiliate Cut",
+            "colNetProfit":    "Net Profit"
         },
         "payouts": {
             "heading":         "Outstanding Balances",

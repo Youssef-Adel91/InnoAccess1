@@ -23,6 +23,18 @@ interface FinanceSummary {
     revenueByMonth:      { month: string; gross: number; profit: number }[];
 }
 
+interface TransactionRow {
+    id: string;
+    date: string;
+    course: string;
+    paymentMethod: string;
+    gross: number;
+    fee: number;
+    trainerCut: number;
+    affiliateCut: number;
+    netProfit: number;
+}
+
 interface WalletRow {
     _id:              string;
     userType:         'trainer' | 'volunteer';
@@ -160,7 +172,7 @@ function SparklineChart({ data }: { data: { month: string; gross: number; profit
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 
-type ActiveTab = 'overview' | 'payouts' | 'expenses' | 'ledger';
+type ActiveTab = 'overview' | 'orders' | 'payouts' | 'expenses' | 'ledger';
 
 const EXPENSE_CATEGORIES = ['SERVERS', 'MARKETING', 'SALARIES', 'TOOLS', 'OTHER'] as const;
 const LEDGER_TYPES       = [
@@ -177,6 +189,7 @@ export default function AdminFinancePage() {
     const [wallets,   setWallets]         = useState<WalletRow[]>([]);
     const [expenses,  setExpenses]        = useState<ExpenseRow[]>([]);
     const [ledger,    setLedger]          = useState<LedgerRow[]>([]);
+    const [orders,    setOrders]          = useState<TransactionRow[]>([]);
     const [loading,   setLoading]         = useState(true);
     const [tabLoading, setTabLoading]     = useState(false);
     const [toast,     setToast]           = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
@@ -228,6 +241,12 @@ export default function AdminFinancePage() {
         if (json.success) setLedger(json.data.entries);
     }, []);
 
+    const fetchOrders = useCallback(async () => {
+        const res  = await fetch('/api/admin/finance/orders');
+        const json = await res.json();
+        if (json.success) setOrders(json.data.transactions);
+    }, []);
+
     // Initial load
     useEffect(() => {
         if (status !== 'authenticated') return;
@@ -243,13 +262,14 @@ export default function AdminFinancePage() {
         if (status !== 'authenticated') return;
         setTabLoading(true);
         const load = async () => {
+            if (activeTab === 'orders')   await fetchOrders();
             if (activeTab === 'payouts')  await fetchWallets();
             if (activeTab === 'expenses') await fetchExpenses();
             if (activeTab === 'ledger')   await fetchLedger(ledgerFilter);
             setTabLoading(false);
         };
         load();
-    }, [activeTab, status, fetchWallets, fetchExpenses, fetchLedger, ledgerFilter]);
+    }, [activeTab, status, fetchWallets, fetchExpenses, fetchLedger, fetchOrders, ledgerFilter]);
 
     // ── Settle handler ────────────────────────────────────────────────────────
     const handleSettle = async (wallet: WalletRow) => {
@@ -307,6 +327,35 @@ export default function AdminFinancePage() {
         });
     };
 
+    const downloadOrdersCSV = () => {
+        const headers = ['Date', 'Course', 'Payment Method', 'Gross (EGP)', 'Gateway Fee (EGP)', 'Trainer Cut (EGP)', 'Affiliate Cut (EGP)', 'Net Profit (EGP)'];
+        
+        const rows = orders.map(t => [
+            formatDate(t.date),
+            `"${t.course.replace(/"/g, '""')}"`, // escape quotes
+            t.paymentMethod,
+            t.gross,
+            t.fee,
+            t.trainerCut,
+            t.affiliateCut,
+            t.netProfit
+        ]);
+
+        const csvContent = [
+            headers.join(','),
+            ...rows.map(e => e.join(','))
+        ].join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `financial_orders_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     // ── Loading state ──────────────────────────────────────────────────────────
     if (status === 'loading' || loading) {
         return (
@@ -321,6 +370,7 @@ export default function AdminFinancePage() {
 
     const tabs: { id: ActiveTab; label: string }[] = [
         { id: 'overview',  label: t('tabs.overview')  },
+        { id: 'orders',    label: t('tabs.orders')    },
         { id: 'payouts',   label: t('tabs.payouts')   },
         { id: 'expenses',  label: t('tabs.expenses')  },
         { id: 'ledger',    label: t('tabs.ledger')    },
@@ -481,6 +531,101 @@ export default function AdminFinancePage() {
                             </div>
                         </div>
                     )}
+                </div>
+
+                {/* ── ORDERS TAB ────────────────────────────────────────────── */}
+                <div
+                    role="tabpanel"
+                    id="panel-orders"
+                    aria-labelledby="tab-orders"
+                    hidden={activeTab !== 'orders'}
+                >
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                            <h2 className="text-base font-semibold text-gray-900">{t('orders.heading')}</h2>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={fetchOrders}
+                                    className="text-xs text-gray-400 hover:text-blue-600 transition-colors flex items-center gap-1"
+                                >
+                                    <RefreshCw className="h-3 w-3" />Refresh
+                                </button>
+                                <button 
+                                    onClick={downloadOrdersCSV}
+                                    className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md shadow-sm text-xs font-medium text-gray-700 bg-white hover:bg-gray-50"
+                                >
+                                    <Download className="h-3 w-3 mr-1" />
+                                    {t('orders.exportBtn')}
+                                </button>
+                            </div>
+                        </div>
+
+                        {tabLoading ? (
+                            <div className="py-16 flex justify-center">
+                                <Loader2 className="h-6 w-6 text-blue-500 animate-spin" />
+                            </div>
+                        ) : orders.length === 0 ? (
+                            <div className="py-16 text-center text-gray-400">
+                                <CheckCircle2 className="h-10 w-10 mx-auto mb-3 text-emerald-400" />
+                                <p className="text-sm">{t('orders.empty')}</p>
+                            </div>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            {[
+                                                t('orders.colDate'),
+                                                t('orders.colCourse'),
+                                                t('orders.colPaymentMethod'),
+                                                t('orders.colGross'),
+                                                t('orders.colFee'),
+                                                t('orders.colTrainerCut'),
+                                                t('orders.colAffiliateCut'),
+                                                t('orders.colNetProfit'),
+                                            ].map(h => (
+                                                <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                                    {h}
+                                                </th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-50">
+                                        {orders.map(o => (
+                                            <tr key={o.id} className="hover:bg-gray-50/70 transition-colors">
+                                                <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">
+                                                    {formatDate(o.date)}
+                                                </td>
+                                                <td className="px-4 py-3 font-medium text-gray-900">
+                                                    {o.course}
+                                                </td>
+                                                <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                                        {o.paymentMethod}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3 text-gray-900 font-medium whitespace-nowrap tabular-nums">
+                                                    {formatEGP(o.gross)}
+                                                </td>
+                                                <td className="px-4 py-3 text-red-600 whitespace-nowrap tabular-nums">
+                                                    -{formatEGP(o.fee)}
+                                                </td>
+                                                <td className="px-4 py-3 text-orange-600 whitespace-nowrap tabular-nums">
+                                                    -{formatEGP(o.trainerCut)}
+                                                </td>
+                                                <td className="px-4 py-3 text-orange-600 whitespace-nowrap tabular-nums">
+                                                    -{formatEGP(o.affiliateCut)}
+                                                </td>
+                                                <td className="px-4 py-3 text-emerald-600 font-bold whitespace-nowrap tabular-nums">
+                                                    {formatEGP(o.netProfit)}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {/* ── PAYOUTS TAB ───────────────────────────────────────────── */}

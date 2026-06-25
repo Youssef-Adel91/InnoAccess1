@@ -85,8 +85,12 @@ export async function submitManualPayment(courseId: string, formData: FormData) 
             }
         );
 
-        // Get phone number from form
+        // Get phone number and method from form
         const phoneNumber = formData.get('phoneNumber') as string;
+        const submittedMethod = formData.get('paymentMethod') as string;
+        const paymentMethod = (submittedMethod === 'VODAFONE_CASH' || submittedMethod === 'INSTAPAY') 
+            ? submittedMethod 
+            : PaymentMethod.MANUAL;
 
         // ── Affiliate referral: read the httpOnly cookie set by middleware ────
         // The cookie was set when the user visited any page with ?ref=VOL_XXXX.
@@ -106,7 +110,7 @@ export async function submitManualPayment(courseId: string, formData: FormData) 
             amount: course.price,
             currency: CURRENCY,
             status: OrderStatus.PENDING,
-            paymentMethod: PaymentMethod.MANUAL,
+            paymentMethod: paymentMethod as PaymentMethod,
             receiptUrl: blob.url,
             manualTransferNumber: phoneNumber || undefined,
             affiliateRef,  // undefined if no referral cookie — Mongoose omits undefined fields
@@ -186,7 +190,7 @@ export async function initPaymobPayment(
             amount: course.price,
             currency: CURRENCY,
             status: OrderStatus.PENDING,
-            paymentMethod: PaymentMethod.PAYMOB,
+            paymentMethod: paymentType === 'CARD' ? PaymentMethod.VISA : PaymentMethod.VODAFONE_CASH,
             affiliateRef,  // undefined if no referral cookie
         });
 
@@ -312,7 +316,7 @@ export async function approveManualPayment(orderId: string) {
         // The populate above only fetched 'title', so we need a separate query.
         // This is non-throwing — a split failure must NOT reverse enrollment.
         const courseDoc = await Course.findById(order.courseId)
-            .select('trainerId trainerCommissionRate').lean();
+            .select('trainerId contract').lean();
 
         const splitResult = await executeRevenueSplit({
             orderId:               order._id as Types.ObjectId,
@@ -320,7 +324,8 @@ export async function approveManualPayment(orderId: string) {
             trainerId:             courseDoc?.trainerId as Types.ObjectId,
             courseId:              order.courseId as Types.ObjectId,
             amountCents:           order.amount,
-            trainerCommissionRate: courseDoc?.trainerCommissionRate ?? 0.40,
+            paymentMethod:         order.paymentMethod,
+            contract:              courseDoc?.contract,
             affiliateRef:          order.affiliateRef ?? null,
         });
 
@@ -589,8 +594,8 @@ export async function verifyPaymentStatus(orderId: string) {
             };
         }
 
-        // Only verify Paymob payments
-        if (order.paymentMethod !== PaymentMethod.PAYMOB) {
+        // Only verify Paymob payments (which we mapped to VISA or VODAFONE_CASH if created via Paymob init)
+        if (!order.paymobOrderId && order.paymentMethod !== PaymentMethod.PAYMOB && order.paymentMethod !== PaymentMethod.VISA && order.paymentMethod !== PaymentMethod.VODAFONE_CASH) {
             throw new Error('Can only verify Paymob payments');
         }
 

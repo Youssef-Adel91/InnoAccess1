@@ -3,6 +3,21 @@ import { CourseType, ILiveSession } from '@/types/course';
 import { UserRole } from '@/models/User';
 import { sanitizeHtml } from '@/lib/sanitize-html';
 
+export enum CourseStatus {
+    DRAFT = 'DRAFT',
+    PENDING_APPROVAL = 'PENDING_APPROVAL',
+    PUBLISHED = 'PUBLISHED',
+    REJECTED = 'REJECTED'
+}
+
+export interface ICourseContract {
+    paymentType: 'COMMISSION' | 'CASH';
+    commissionRate?: number; // E.g. 0.25 for 25%
+    startDate?: Date;
+    durationMonths?: number;
+    endDate?: Date;
+}
+
 /**
  * Video Type Enum
  * Determines where the video is hosted
@@ -62,12 +77,8 @@ export interface ICourse extends Document {
     isFree: boolean; // Is entire course free?
     price: number; // Required if not free (in cents)
     originalPrice?: number; // Original price before discount (in cents)
-    /**
-     * Fraction of the NET sale amount (after gateway fees) paid to the trainer.
-     * e.g. 0.40 = 40% to trainer, 0.60 retained by platform before volunteer commission.
-     * Defaults to 0.40 if not set by admin. Range: 0–1.
-     */
-    trainerCommissionRate: number;
+    status: CourseStatus;
+    contract?: ICourseContract;
     thumbnail?: string; // Cloudinary URL
     courseType: CourseType; // NEW: RECORDED or LIVE
     liveSession?: ILiveSession; // NEW: Live Zoom session details
@@ -211,13 +222,25 @@ const CourseSchema = new Schema<ICourse>(
             type: Number,
             min: [0, 'Original price cannot be negative'],
         },
-        trainerCommissionRate: {
-            type:    Number,
-            default: 0.40,
-            min:     [0,    'Trainer commission rate cannot be negative'],
-            max:     [1,    'Trainer commission rate cannot exceed 100%'],
-            // Admin-configurable per course. Stored as a decimal fraction.
-            // Default 0.40 means the trainer earns 40% of the net sale amount.
+        status: {
+            type: String,
+            enum: Object.values(CourseStatus),
+            default: CourseStatus.DRAFT,
+        },
+        contract: {
+            paymentType: {
+                type: String,
+                enum: ['COMMISSION', 'CASH'],
+                default: 'COMMISSION',
+            },
+            commissionRate: {
+                type: Number,
+                min: [0, 'Trainer commission rate cannot be negative'],
+                max: [1, 'Trainer commission rate cannot exceed 100%'],
+            },
+            startDate: { type: Date },
+            durationMonths: { type: Number },
+            endDate: { type: Date },
         },
         thumbnail: String,
         modules: {
@@ -307,6 +330,10 @@ CourseSchema.index({ rating: -1 });
 CourseSchema.index({ enrollmentCount: -1 });
 
 CourseSchema.pre('save', function (next) {
+    if (this.isModified('status')) {
+        this.isPublished = (this.status === CourseStatus.PUBLISHED);
+    }
+
     if (this.isModified('description') && this.description) {
         this.description = sanitizeHtml(this.description);
     }

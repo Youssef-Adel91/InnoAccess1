@@ -84,6 +84,17 @@ export interface ILedgerEntry extends Document {
      */
     note: string;
 
+    /**
+     * For TRAINER_COMMISSION, represents the unlock status.
+     * 'PENDING' during the 14-day hold, 'AVAILABLE' after, 'PAID' when withdrawn.
+     */
+    status?: 'PENDING' | 'AVAILABLE' | 'PAID';
+
+    /**
+     * For TRAINER_COMMISSION, when this entry becomes available (createdAt + 14 days).
+     */
+    unlocksAt?: Date;
+
     createdAt: Date;
 }
 
@@ -121,9 +132,16 @@ const LedgerEntrySchema = new Schema<ILedgerEntry>(
             trim:     true,
             maxlength: [500, 'Note cannot exceed 500 characters'],
         },
+        status: {
+            type: String,
+            enum: ['PENDING', 'AVAILABLE', 'PAID'],
+        },
+        unlocksAt: {
+            type: Date,
+        },
     },
     {
-        timestamps: { createdAt: true, updatedAt: false }, // immutable — no updatedAt
+        timestamps: true, // Need updatedAt if we are going to change status
     }
 );
 

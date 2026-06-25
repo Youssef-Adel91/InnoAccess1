@@ -11,6 +11,8 @@ interface PayoutRequestFormProps {
     onSuccess: () => void;
     /** Whether a payout is already pending (disables the form) */
     hasPendingPayout: boolean;
+    /** The API endpoint to hit. Defaults to /api/volunteer/payout */
+    apiEndpoint?: string;
 }
 
 type PayoutMethod = 'vodafone_cash' | 'instapay';
@@ -29,6 +31,7 @@ export default function PayoutRequestForm({
     availableBalance,
     onSuccess,
     hasPendingPayout,
+    apiEndpoint = '/api/volunteer/payout',
 }: PayoutRequestFormProps) {
     const [amount,        setAmount]        = useState<string>('');
     const [method,        setMethod]        = useState<PayoutMethod>('vodafone_cash');
@@ -58,7 +61,7 @@ export default function PayoutRequestForm({
 
         setIsLoading(true);
         try {
-            const res = await fetch('/api/volunteer/payout', {
+            const res = await fetch(apiEndpoint, {
                 method:  'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body:    JSON.stringify({

@@ -37,6 +37,7 @@ export default function CheckoutPage() {
     // Manual payment state
     const [receipt, setReceipt] = useState<File | null>(null);
     const [phoneNumber, setPhoneNumber] = useState('');
+    const [manualMethod, setManualMethod] = useState<'VODAFONE_CASH' | 'INSTAPAY'>('INSTAPAY');
     const [submitting, setSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
 
@@ -121,6 +122,7 @@ export default function CheckoutPage() {
             const formData = new FormData();
             formData.append('receipt', receipt);
             formData.append('phoneNumber', phoneNumber);
+            formData.append('paymentMethod', manualMethod);
 
             const result = await submitManualPayment(courseId, formData);
 
@@ -384,6 +386,37 @@ export default function CheckoutPage() {
                                         <li>Take a screenshot of the transfer confirmation</li>
                                         <li>Upload the screenshot below and submit</li>
                                     </ol>
+                                </div>
+
+                                {/* Payment Method Selection */}
+                                <div className="mb-4">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Transfer Method *
+                                    </label>
+                                    <div className="flex gap-4">
+                                        <label className="flex items-center">
+                                            <input
+                                                type="radio"
+                                                name="manualMethod"
+                                                value="INSTAPAY"
+                                                checked={manualMethod === 'INSTAPAY'}
+                                                onChange={() => setManualMethod('INSTAPAY')}
+                                                className="mr-2 h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                                            />
+                                            InstaPay
+                                        </label>
+                                        <label className="flex items-center">
+                                            <input
+                                                type="radio"
+                                                name="manualMethod"
+                                                value="VODAFONE_CASH"
+                                                checked={manualMethod === 'VODAFONE_CASH'}
+                                                onChange={() => setManualMethod('VODAFONE_CASH')}
+                                                className="mr-2 h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                                            />
+                                            Vodafone Cash
+                                        </label>
+                                    </div>
                                 </div>
 
                                 {/* Phone Number */}

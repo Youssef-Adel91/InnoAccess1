@@ -21,6 +21,14 @@ interface Course {
     enrollmentCount: number;
     isPublished: boolean;
     modules: any[];
+    status?: 'DRAFT' | 'PENDING_APPROVAL' | 'PUBLISHED' | 'REJECTED';
+    contract?: {
+        paymentType: 'COMMISSION' | 'CASH';
+        commissionRate: number;
+        startDate: string;
+        durationMonths: number | null;
+        endDate: string | null;
+    };
 }
 
 export default function TrainerDashboard() {
@@ -221,11 +229,34 @@ export default function TrainerDashboard() {
                                             <BookOpen className="h-16 w-16 text-white opacity-50" />
                                         </div>
                                     )}
-                                    <div className="absolute top-3 right-3">
-                                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${course.isPublished ? 'bg-green-500 text-white' : 'bg-yellow-500 text-white'}`}>
-                                            {course.isPublished ? 'Published' : 'Draft'}
+                                    <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
+                                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                            course.status === 'PUBLISHED' ? 'bg-green-500 text-white' :
+                                            course.status === 'PENDING_APPROVAL' ? 'bg-amber-500 text-white' :
+                                            course.status === 'REJECTED' ? 'bg-red-500 text-white' :
+                                            'bg-gray-500 text-white'
+                                        }`}>
+                                            {course.status ? course.status.replace('_', ' ') : (course.isPublished ? 'PUBLISHED' : 'DRAFT')}
                                         </span>
                                     </div>
+                                    {course.contract && (
+                                        <div className="absolute bottom-3 left-3 right-3">
+                                            <div className="bg-black/70 backdrop-blur-sm text-white text-xs font-medium px-3 py-2 rounded-lg shadow border border-white/10">
+                                                {course.contract.paymentType === 'CASH' ? (
+                                                    <span>Contract: Cash Paid • 0% Commission</span>
+                                                ) : (
+                                                    <span>
+                                                        Contract: {(course.contract.commissionRate * 100).toFixed(0)}% •{' '}
+                                                        {course.contract.durationMonths ? (
+                                                            <span>Expires in {course.contract.durationMonths} months</span>
+                                                        ) : (
+                                                            <span>Lifetime</span>
+                                                        )}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Content */}
