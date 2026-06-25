@@ -283,7 +283,7 @@ export async function getAllCategories() {
 /**
  * Publish/Unpublish course
  */
-export async function publishCourse(courseId: string, isPublished: boolean) {
+export async function publishCourse(courseId: string, isPublishing: boolean) {
     try {
         const session = await getServerSession(authOptions);
 
@@ -303,15 +303,24 @@ export async function publishCourse(courseId: string, isPublished: boolean) {
             throw new Error('Unauthorized - you can only publish your own courses');
         }
 
-        course.isPublished = isPublished;
+        // Instead of setting isPublished directly, we set the status.
+        // The Mongoose pre-save hook handles the isPublished boolean automatically.
+        if (isPublishing) {
+            course.status = 'PENDING_APPROVAL';
+            // course.isPublished will be forced to false by the hook since status !== PUBLISHED
+        } else {
+            course.status = 'DRAFT';
+        }
         await course.save();
 
-        console.log(`✅ Course ${isPublished ? 'published' : 'unpublished'}:`, courseId);
+        console.log(`✅ Course status updated to ${course.status}:`, courseId);
 
         return {
             success: true,
             data: {
-                message: `Course ${isPublished ? 'published' : 'unpublished'} successfully`,
+                message: isPublishing 
+                    ? 'Course submitted for admin approval' 
+                    : 'Course moved back to draft',
             },
         };
     } catch (error: any) {

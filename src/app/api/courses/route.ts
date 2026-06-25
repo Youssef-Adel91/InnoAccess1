@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
             const userRole = session?.user?.role || 'user';
 
             // Build query
-            const query: any = { isPublished: true };
+            const query: any = { status: 'PUBLISHED', isPublished: true };
             query.$and = [];
 
             if (userRole !== 'admin') {

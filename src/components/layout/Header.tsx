@@ -201,10 +201,16 @@ export function Header({ locale = 'en' }: HeaderProps) {
                             </Link>
                         )}
                         {session?.user?.role === 'trainer' && (
-                            <Link href="/trainer/dashboard" className={navLink('/trainer')} aria-current={isActive('/trainer') ? 'page' : undefined}>
-                                <GraduationCap className="mr-2 h-4 w-4" aria-hidden="true" />
-                                {t('nav.myCourses')}
-                            </Link>
+                            <>
+                                <Link href="/trainer/dashboard" className={navLink('/trainer')} aria-current={isActive('/trainer') ? 'page' : undefined}>
+                                    <GraduationCap className="mr-2 h-4 w-4" aria-hidden="true" />
+                                    {t('nav.myCourses')}
+                                </Link>
+                                <Link href="/trainer/finance" className={navLink('/trainer/finance')} aria-current={isActive('/trainer/finance') ? 'page' : undefined}>
+                                    <CreditCard className="mr-2 h-4 w-4" aria-hidden="true" />
+                                    {t('nav.trainerFinance', { fallback: 'Analytics & Finance' })}
+                                </Link>
+                            </>
                         )}
                         {session?.user?.role === 'admin' && (
                             <>
@@ -356,10 +362,16 @@ export function Header({ locale = 'en' }: HeaderProps) {
                             </Link>
                         )}
                         {session?.user?.role === 'trainer' && (
-                            <Link href="/trainer/dashboard" className={mobileLink('/trainer')} onClick={() => setMobileMenuOpen(false)} aria-current={isActive('/trainer') ? 'page' : undefined}>
-                                <GraduationCap className="mr-3 h-5 w-5 shrink-0" aria-hidden="true" />
-                                {t('nav.myCourses')}
-                            </Link>
+                            <>
+                                <Link href="/trainer/dashboard" className={mobileLink('/trainer')} onClick={() => setMobileMenuOpen(false)} aria-current={isActive('/trainer') ? 'page' : undefined}>
+                                    <GraduationCap className="mr-3 h-5 w-5 shrink-0" aria-hidden="true" />
+                                    {t('nav.myCourses')}
+                                </Link>
+                                <Link href="/trainer/finance" className={mobileLink('/trainer/finance')} onClick={() => setMobileMenuOpen(false)} aria-current={isActive('/trainer/finance') ? 'page' : undefined}>
+                                    <CreditCard className="mr-3 h-5 w-5 shrink-0" aria-hidden="true" />
+                                    {t('nav.trainerFinance', { fallback: 'Analytics & Finance' })}
+                                </Link>
+                            </>
                         )}
                         {session?.user?.role === 'admin' && (
                             <>
