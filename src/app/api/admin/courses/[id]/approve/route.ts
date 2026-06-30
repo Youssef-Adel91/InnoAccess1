@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
-import { connectToDatabase } from '@/lib/db';
+import { connectDB } from '@/lib/db';
 import Course, { CourseStatus, ICourseContract } from '@/models/Course';
 import { Types } from 'mongoose';
 
@@ -29,7 +29,7 @@ export async function POST(
             return NextResponse.json({ error: 'Invalid payment type' }, { status: 400 });
         }
 
-        await connectToDatabase();
+        await connectDB();
 
         const course = await Course.findById(params.id);
         if (!course) {
