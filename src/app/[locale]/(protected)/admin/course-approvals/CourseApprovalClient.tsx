@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import {
     CheckCircle, XCircle, Clock, GraduationCap, User,
@@ -19,7 +18,6 @@ type PaymentType = 'COMMISSION' | 'CASH';
 type ModalMode = 'approve' | 'reject' | null;
 
 export default function CourseApprovalClient({ courses: initialCourses }: { courses: Course[] }) {
-    const t = useTranslations('AdminCourseApprovals');
     const router = useRouter();
 
     // ── Local list state (optimistic removal after action) ───────────────────
@@ -142,7 +140,7 @@ export default function CourseApprovalClient({ courses: initialCourses }: { cour
                 <CheckCircle className="h-16 w-16 text-emerald-400 mb-4" aria-hidden="true" />
                 <h2 className="text-xl font-semibold text-gray-800">All Clear!</h2>
                 <p className="mt-2 text-gray-500 max-w-sm">
-                    {t('noCoursesPending')}
+                    No courses pending approval. All clear!
                 </p>
             </div>
         );
@@ -269,7 +267,7 @@ export default function CourseApprovalClient({ courses: initialCourses }: { cour
                                     {/* Payment type */}
                                     <div>
                                         <label htmlFor="payment-type" className="block text-sm font-semibold text-gray-700 mb-1.5">
-                                            {t('contractType')}
+                                            Contract Type
                                         </label>
                                         <select
                                             id="payment-type"
@@ -277,8 +275,8 @@ export default function CourseApprovalClient({ courses: initialCourses }: { cour
                                             onChange={(e) => setPaymentType(e.target.value as PaymentType)}
                                             className="block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                         >
-                                            <option value="COMMISSION">{t('commission')}</option>
-                                            <option value="CASH">{t('cashNoCommission')}</option>
+                                            <option value="COMMISSION">Commission (platform takes a %)</option>
+                                            <option value="CASH">Cash / No Commission</option>
                                         </select>
                                     </div>
 
@@ -288,7 +286,7 @@ export default function CourseApprovalClient({ courses: initialCourses }: { cour
                                             {/* Commission Rate */}
                                             <div>
                                                 <label htmlFor="commission-rate" className="block text-sm font-semibold text-gray-700 mb-1.5">
-                                                    {t('commissionRate')} (%)
+                                                    Commission Rate (%)
                                                 </label>
                                                 <div className="relative">
                                                     <input
@@ -308,7 +306,7 @@ export default function CourseApprovalClient({ courses: initialCourses }: { cour
                                             <div>
                                                 <div className="flex items-center justify-between mb-1.5">
                                                     <label htmlFor="duration-months" className="text-sm font-semibold text-gray-700">
-                                                        {t('durationMonths')}
+                                                        Duration (months)
                                                     </label>
                                                     <label className="flex items-center gap-2 cursor-pointer select-none">
                                                         <input
@@ -383,7 +381,7 @@ export default function CourseApprovalClient({ courses: initialCourses }: { cour
                                 disabled={isLoading}
                                 className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 disabled:opacity-50 transition-colors"
                             >
-                                {t('cancel')}
+                                Cancel
                             </button>
 
                             {modalMode === 'approve' && (
@@ -393,8 +391,8 @@ export default function CourseApprovalClient({ courses: initialCourses }: { cour
                                     className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
                                 >
                                     {isLoading
-                                        ? <><Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> {t('approving')}</>
-                                        : <><CheckCircle className="h-4 w-4" aria-hidden="true" /> {t('approve')} &amp; Publish</>
+                                        ? <><Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> Approving…</>
+                                        : <><CheckCircle className="h-4 w-4" aria-hidden="true" /> Approve &amp; Publish</>
                                     }
                                 </button>
                             )}
