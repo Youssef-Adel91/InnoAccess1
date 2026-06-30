@@ -1,15 +1,18 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import React from 'react';
 import { useSession }   from 'next-auth/react';
 import { redirect }     from 'next/navigation';
 import Link             from 'next/link';
 import {
     GraduationCap, ChevronLeft, TrendingUp, Users, Banknote,
-    Search, Radio, PlayCircle, CheckCircle, XCircle,
+    Search, Radio, PlayCircle, CheckCircle, XCircle, Clock,
 } from 'lucide-react';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
+
+type CourseStatus = 'DRAFT' | 'PENDING_APPROVAL' | 'PUBLISHED' | 'REJECTED';
 
 interface CourseIntelligence {
     courseId:              string;
@@ -18,6 +21,9 @@ interface CourseIntelligence {
     courseType:            'RECORDED' | 'LIVE';
     isFree:                boolean;
     price:                 number;
+    /** Canonical 4-state enum returned by the intelligence API */
+    status:                CourseStatus;
+    /** Legacy boolean — kept for backward compat; use `status` for display */
     isPublished:           boolean;
     liveEnrollmentCount:   number;
     cachedEnrollmentCount: number;
@@ -314,19 +320,25 @@ export default function AdminCoursesPage() {
                                                 </span>
                                             </td>
 
-                                            {/* Published status */}
+                                            {/* Status — 4-state badge driven by the canonical status enum */}
                                             <td className="px-5 py-4 text-center">
-                                                {course.isPublished ? (
-                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                                        <CheckCircle className="h-3 w-3" aria-hidden="true" />
-                                                        Published
-                                                    </span>
-                                                ) : (
-                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200">
-                                                        <XCircle className="h-3 w-3" aria-hidden="true" />
-                                                        Draft
-                                                    </span>
-                                                )}
+                                                {(() => {
+                                                    // Prefer the canonical status field; fall back to isPublished for legacy docs
+                                                    const s: CourseStatus = course.status ?? (course.isPublished ? 'PUBLISHED' : 'DRAFT');
+                                                    const cfg: Record<CourseStatus, { label: string; cls: string; icon: React.ReactNode }> = {
+                                                        PUBLISHED:        { label: 'Published',        cls: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: <CheckCircle className="h-3 w-3" aria-hidden="true" /> },
+                                                        PENDING_APPROVAL: { label: 'Pending Approval', cls: 'bg-amber-50 text-amber-700 border-amber-200',    icon: <Clock className="h-3 w-3" aria-hidden="true" /> },
+                                                        DRAFT:            { label: 'Draft',             cls: 'bg-gray-100 text-gray-600 border-gray-200',       icon: <XCircle className="h-3 w-3" aria-hidden="true" /> },
+                                                        REJECTED:         { label: 'Rejected',          cls: 'bg-red-50 text-red-700 border-red-200',           icon: <XCircle className="h-3 w-3" aria-hidden="true" /> },
+                                                    };
+                                                    const { label, cls, icon } = cfg[s] ?? cfg.DRAFT;
+                                                    return (
+                                                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border ${cls}`}>
+                                                            {icon}
+                                                            {label}
+                                                        </span>
+                                                    );
+                                                })()}
                                             </td>
 
                                             {/* Enrollments */}

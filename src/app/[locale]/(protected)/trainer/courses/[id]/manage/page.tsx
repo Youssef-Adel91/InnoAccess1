@@ -12,6 +12,8 @@ import { ArrowLeft, Plus, ChevronDown, ChevronUp, Video, CheckCircle, Clock, XCi
 import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
 
+type CourseStatus = 'DRAFT' | 'PENDING_APPROVAL' | 'PUBLISHED' | 'REJECTED';
+
 interface Course {
     _id: string;
     title: string;
@@ -23,6 +25,8 @@ interface Course {
     price: number;
     thumbnail?: string;
     modules: Module[];
+    /** Canonical state-machine field — always prefer this over isPublished */
+    status: CourseStatus;
     isPublished: boolean;
     courseType: 'RECORDED' | 'LIVE';
     liveSession?: {
@@ -175,18 +179,56 @@ export default function ManageCoursePage() {
     const handlePublish = async () => {
         if (!course) return;
 
+        // PUBLISHED → Unpublish (revert to DRAFT)
+        // DRAFT | REJECTED → Submit for approval (→ PENDING_APPROVAL)
+        // PENDING_APPROVAL → button is disabled; this branch is unreachable
+        const isPublishing = course.status !== 'PUBLISHED';
+
         setError(null);
         try {
-            const result = await publishCourse(courseId, !course.isPublished);
+            const result = await publishCourse(courseId, isPublishing);
 
             if (!result.success) {
-                throw new Error(result.error?.message || 'Failed to publish course');
+                throw new Error(result.error?.message || 'Failed to update course status');
             }
 
             await fetchCourse(); // Refresh to update status
         } catch (err: any) {
             setError(err.message);
         }
+    };
+
+    /** Returns a colour-coded pill for the course's current status enum */
+    const getCoursStatusBadge = (status: CourseStatus) => {
+        const styles: Record<CourseStatus, string> = {
+            PUBLISHED:        'bg-green-100 text-green-800',
+            PENDING_APPROVAL: 'bg-amber-100 text-amber-800',
+            DRAFT:            'bg-gray-100 text-gray-700',
+            REJECTED:         'bg-red-100 text-red-800',
+        };
+        const labels: Record<CourseStatus, string> = {
+            PUBLISHED:        'Published',
+            PENDING_APPROVAL: 'Pending Approval',
+            DRAFT:            'Draft',
+            REJECTED:         'Rejected',
+        };
+        return (
+            <span className={`px-3 py-1 rounded-full font-medium text-sm ${styles[status] ?? styles.DRAFT}`}>
+                {labels[status] ?? status}
+            </span>
+        );
+    };
+
+    /** Returns publish button label & disabled state from current status */
+    const getPublishButton = (status: CourseStatus) => {
+        if (status === 'PUBLISHED') {
+            return { label: 'Unpublish', disabled: false, cls: 'bg-gray-600 hover:bg-gray-700 text-white' };
+        }
+        if (status === 'PENDING_APPROVAL') {
+            return { label: 'Pending Admin Approval…', disabled: true, cls: 'bg-amber-400 text-white cursor-not-allowed opacity-70' };
+        }
+        // DRAFT or REJECTED
+        return { label: 'Submit for Approval', disabled: false, cls: 'bg-green-600 hover:bg-green-700 text-white' };
     };
 
     const handleDeleteModule = async (moduleIndex: number) => {
@@ -327,9 +369,8 @@ export default function ManageCoursePage() {
                                 <span className="font-semibold text-gray-900">
                                     {course.isFree ? 'Free Course' : `$${(course.price / 100).toFixed(2)}`}
                                 </span>
-                                <span className={`px-3 py-1 rounded-full font-medium ${course.isPublished ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                                    {course.isPublished ? 'Published' : 'Draft'}
-                                </span>
+                                {/* 4-state status badge — driven by the canonical status enum */}
+                                {getCoursStatusBadge(course.status ?? (course.isPublished ? 'PUBLISHED' : 'DRAFT'))}
                             </div>
                         </div>
                         <div className="flex flex-col sm:flex-row gap-3">
@@ -340,15 +381,20 @@ export default function ManageCoursePage() {
                                 <Share2 className="h-4 w-4 mr-2" />
                                 {t('shareCourse')}
                             </button>
-                            <button
-                                onClick={handlePublish}
-                                className={`px-6 py-2 rounded-lg font-medium transition-colors ${course.isPublished
-                                    ? 'bg-gray-600 text-white hover:bg-gray-700'
-                                    : 'bg-green-600 text-white hover:bg-green-700'
-                                    }`}
-                            >
-                                {course.isPublished ? 'Unpublish' : 'Publish Course'}
-                            </button>
+                            {/* State-machine publish button */}
+                            {(() => {
+                                const btn = getPublishButton(course.status ?? (course.isPublished ? 'PUBLISHED' : 'DRAFT'));
+                                return (
+                                    <button
+                                        onClick={handlePublish}
+                                        disabled={btn.disabled}
+                                        title={btn.disabled ? 'Awaiting admin review before this course goes live' : undefined}
+                                        className={`px-6 py-2 rounded-lg font-medium transition-colors ${btn.cls}`}
+                                    >
+                                        {btn.label}
+                                    </button>
+                                );
+                            })()}
                         </div>
                     </div>
                 </div>

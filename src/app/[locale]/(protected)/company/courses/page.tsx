@@ -7,6 +7,8 @@ import Link from 'next/link';
 import { getCreatorCourses } from '@/app/actions/courseManagement';
 import { Plus, BookOpen, Users, Video, Trash2 } from 'lucide-react';
 
+type CourseStatus = 'DRAFT' | 'PENDING_APPROVAL' | 'PUBLISHED' | 'REJECTED';
+
 interface Course {
     _id: string;
     title: string;
@@ -16,6 +18,8 @@ interface Course {
     price: number;
     thumbnail?: string;
     enrollmentCount: number;
+    /** Canonical 4-state enum — prefer over isPublished for display */
+    status: CourseStatus;
     isPublished: boolean;
     modules: any[];
 }
@@ -64,7 +68,8 @@ export default function CompanyCoursesDashboard() {
 
     const stats = {
         total: courses.length,
-        published: courses.filter(c => c.isPublished).length,
+        // Use canonical status as source of truth; fall back to isPublished for legacy docs
+        published: courses.filter(c => (c.status ?? (c.isPublished ? 'PUBLISHED' : 'DRAFT')) === 'PUBLISHED').length,
         students: courses.reduce((s, c) => s + (c.enrollmentCount || 0), 0),
         lessons: courses.reduce((s, c) => s + c.modules.reduce((ms: number, m: any) => ms + (m.videos?.length || 0), 0), 0),
     };
@@ -152,9 +157,22 @@ export default function CompanyCoursesDashboard() {
                                             <BookOpen className="h-14 w-14 text-white opacity-40" aria-hidden="true" />
                                         </div>
                                     )}
-                                    <span className={`absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-semibold ${course.isPublished ? 'bg-green-500 text-white' : 'bg-yellow-400 text-gray-900'}`}>
-                                        {course.isPublished ? 'Published' : 'Draft'}
-                                    </span>
+                                    {/* 4-state status badge */}
+                                    {(() => {
+                                        const s: CourseStatus = course.status ?? (course.isPublished ? 'PUBLISHED' : 'DRAFT');
+                                        const cfg: Record<CourseStatus, { label: string; cls: string }> = {
+                                            PUBLISHED:        { label: 'Published',        cls: 'bg-green-500 text-white' },
+                                            PENDING_APPROVAL: { label: 'Pending Approval', cls: 'bg-amber-400 text-gray-900' },
+                                            DRAFT:            { label: 'Draft',            cls: 'bg-yellow-400 text-gray-900' },
+                                            REJECTED:         { label: 'Rejected',         cls: 'bg-red-500 text-white' },
+                                        };
+                                        const { label, cls } = cfg[s] ?? cfg.DRAFT;
+                                        return (
+                                            <span className={`absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-semibold ${cls}`}>
+                                                {label}
+                                            </span>
+                                        );
+                                    })()}
                                 </div>
 
                                 {/* Content */}

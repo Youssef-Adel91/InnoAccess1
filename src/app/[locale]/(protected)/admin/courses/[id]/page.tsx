@@ -64,9 +64,23 @@ export default async function AdminCourseAnalyticsPage({ params }: { params: { i
                                 {t('trainer')}: <span className="font-medium text-gray-900">{course.trainerId?.name || t('unknownTrainer')}</span>
                             </span>
                             <span className="text-gray-300">•</span>
-                            <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${course.isPublished ? 'bg-green-50 text-green-700 border-green-200' : 'bg-yellow-50 text-yellow-700 border-yellow-200'}`}>
-                                {course.isPublished ? t('statusPublished') : t('statusDraft')}
-                            </span>
+                            {/* 4-state status badge — canonical status enum with isPublished fallback */}
+                            {(() => {
+                                type S = 'DRAFT' | 'PENDING_APPROVAL' | 'PUBLISHED' | 'REJECTED';
+                                const s: S = course.status ?? (course.isPublished ? 'PUBLISHED' : 'DRAFT');
+                                const cfg: Record<S, { label: string; cls: string }> = {
+                                    PUBLISHED:        { label: t('statusPublished'),    cls: 'bg-green-50 text-green-700 border-green-200' },
+                                    PENDING_APPROVAL: { label: 'Pending Approval',      cls: 'bg-amber-50 text-amber-700 border-amber-200' },
+                                    DRAFT:            { label: t('statusDraft'),        cls: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
+                                    REJECTED:         { label: 'Rejected',              cls: 'bg-red-50 text-red-700 border-red-200' },
+                                };
+                                const { label, cls } = cfg[s] ?? cfg.DRAFT;
+                                return (
+                                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${cls}`}>
+                                        {label}
+                                    </span>
+                                );
+                            })()}
                         </div>
                     </div>
 

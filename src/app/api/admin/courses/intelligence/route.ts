@@ -50,10 +50,20 @@ export async function GET(req: NextRequest) {
         const skip      = (page - 1) * limit;
         const published = searchParams.get('published');
 
-        // Build the initial match: always exclude soft-deleted courses
+        // Build the initial match: always exclude soft-deleted courses.
+        // During the transition period, check both the canonical status enum AND the
+        // legacy isPublished boolean so no courses are accidentally hidden.
         const matchStage: Record<string, unknown> = { isDeleted: { $ne: true } };
-        if (published === 'true')  matchStage.isPublished = true;
-        if (published === 'false') matchStage.isPublished = false;
+        if (published === 'true') {
+            // Show courses that are published by either field (handles legacy docs)
+            matchStage.$or = [{ status: 'PUBLISHED' }, { isPublished: true }];
+        } else if (published === 'false') {
+            // Show courses that are NOT published by either field
+            matchStage.$and = [
+                { status: { $ne: 'PUBLISHED' } },
+                { isPublished: { $ne: true } },
+            ];
+        }
 
         const [courses, total] = await Promise.all([
             Course.aggregate([
@@ -144,7 +154,8 @@ export async function GET(req: NextRequest) {
                         courseType:    1,
                         isFree:        1,
                         price:         1,
-                        isPublished:   1,
+                        status:        1,   // canonical 4-state enum (DRAFT|PENDING_APPROVAL|PUBLISHED|REJECTED)
+                        isPublished:   1,   // legacy boolean — kept for backward compat
                         createdAt:     1,
 
                         // Live enrollment count (from Enrollment collection)
