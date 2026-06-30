@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { Users, Briefcase, GraduationCap, Building2, CheckCircle, XCircle, Eye, X, Mail, Banknote, TrendingUp, BarChart3, FileText, ClipboardList } from 'lucide-react';
+import { Users, Briefcase, GraduationCap, Building2, CheckCircle, XCircle, Eye, X, Mail, Banknote, TrendingUp, BarChart3, FileText, ClipboardList, AlertTriangle, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 interface Stats {
@@ -96,6 +96,7 @@ export default function AdminDashboardPage() {
     const { data: session, status } = useSession();
     const [stats, setStats] = useState<Stats | null>(null);
     const [pendingCompanies, setPendingCompanies] = useState<PendingCompany[]>([]);
+    const [pendingCoursesCount, setPendingCoursesCount] = useState<number>(0);
     const [loading, setLoading] = useState(true);
     const [reviewModalOpen, setReviewModalOpen] = useState(false);
     const [selectedCompany, setSelectedCompany] = useState<PendingCompany | null>(null);
@@ -113,19 +114,22 @@ export default function AdminDashboardPage() {
 
     const fetchData = useCallback(async () => {
         try {
-            const [statsRes, companiesRes, analyticsRes] = await Promise.all([
+            const [statsRes, companiesRes, analyticsRes, pendingCoursesRes] = await Promise.all([
                 fetch('/api/admin/stats'),
                 fetch('/api/admin/companies/pending'),
                 fetch('/api/admin/analytics'),
+                fetch('/api/admin/pending-courses-count'),
             ]);
 
-            const statsData     = await statsRes.json();
-            const companiesData = await companiesRes.json();
-            const analyticsData = await analyticsRes.json();
+            const statsData          = await statsRes.json();
+            const companiesData      = await companiesRes.json();
+            const analyticsData      = await analyticsRes.json();
+            const pendingCoursesData = await pendingCoursesRes.json();
 
-            if (statsData.success)     setStats(statsData.data);
-            if (companiesData.success) setPendingCompanies(companiesData.data.companies);
-            if (analyticsData.success) setAnalytics(analyticsData.data);
+            if (statsData.success)          setStats(statsData.data);
+            if (companiesData.success)      setPendingCompanies(companiesData.data.companies);
+            if (analyticsData.success)      setAnalytics(analyticsData.data);
+            if (pendingCoursesData.success) setPendingCoursesCount(pendingCoursesData.data.count ?? 0);
 
         } catch (error) {
             console.error('Failed to fetch admin data:', error);
@@ -198,6 +202,34 @@ export default function AdminDashboardPage() {
                     <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
                     <p className="mt-2 text-gray-600">Manage platform users, jobs, and courses</p>
                 </div>
+
+                {/* ── Pending Course Approvals Alert Banner ──────────────────── */}
+                {pendingCoursesCount > 0 && (
+                    <Link
+                        href="/admin/course-approvals"
+                        className="group mb-8 flex items-center justify-between gap-4 rounded-xl border border-amber-300 bg-amber-50 px-5 py-4 shadow-sm hover:border-amber-400 hover:bg-amber-100 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+                        aria-label={`${pendingCoursesCount} course${pendingCoursesCount > 1 ? 's' : ''} awaiting approval — click to review`}
+                    >
+                        <div className="flex items-center gap-3">
+                            <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-100">
+                                {/* Pulsing ring to draw attention */}
+                                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-300 opacity-60" aria-hidden="true" />
+                                <AlertTriangle className="h-5 w-5 text-amber-600 relative" aria-hidden="true" />
+                            </span>
+                            <div>
+                                <p className="font-semibold text-amber-900">
+                                    {pendingCoursesCount} Course{pendingCoursesCount > 1 ? 's' : ''} Awaiting Your Approval
+                                </p>
+                                <p className="text-sm text-amber-700">
+                                    موافقات الكورسات — Trainers are waiting for review before going live.
+                                </p>
+                            </div>
+                        </div>
+                        <span className="shrink-0 rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white shadow-sm group-hover:bg-amber-700 transition-colors">
+                            Review Now →
+                        </span>
+                    </Link>
+                )}
 
                 {/* Stats Grid */}
                 {stats && (
@@ -604,6 +636,25 @@ export default function AdminDashboardPage() {
                         <BarChart3 className="h-8 w-8 text-rose-600 mb-3" aria-hidden="true" />
                         <h3 className="text-lg font-semibold text-gray-900">Course Intelligence</h3>
                         <p className="mt-1 text-sm text-gray-600">Enrollments &amp; revenue data</p>
+                    </Link>
+
+                    {/* Course Approvals — prominent card with live pending badge */}
+                    <Link
+                        href="/admin/course-approvals"
+                        className="relative bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md hover:border-amber-300 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+                    >
+                        {/* Live badge — only rendered when there are pending courses */}
+                        {pendingCoursesCount > 0 && (
+                            <span
+                                className="absolute -top-2 -right-2 flex h-6 min-w-[1.5rem] items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold text-white shadow"
+                                aria-label={`${pendingCoursesCount} pending`}
+                            >
+                                {pendingCoursesCount}
+                            </span>
+                        )}
+                        <BookOpen className="h-8 w-8 text-amber-600 mb-3" aria-hidden="true" />
+                        <h3 className="text-lg font-semibold text-gray-900">Course Approvals</h3>
+                        <p className="mt-1 text-sm text-gray-600">موافقات الكورسات — Review &amp; publish trainer courses</p>
                     </Link>
                 </div>
 

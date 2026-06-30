@@ -4,6 +4,9 @@ import { connectToDatabase } from '@/lib/db';
 import Course, { CourseStatus } from '@/models/Course';
 import CourseApprovalClient from './CourseApprovalClient';
 
+/** Never cache — always show the real-time pending queue */
+export const dynamic = 'force-dynamic';
+
 export default async function AdminCourseApprovalsPage() {
     const t = await getTranslations('AdminCourseApprovals');
 
