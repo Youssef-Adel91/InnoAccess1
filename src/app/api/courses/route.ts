@@ -36,6 +36,13 @@ const createCourseSchema = z.object({
 });
 
 /**
+ * Force dynamic rendering — never serve a stale cached response.
+ * This ensures every request hits MongoDB directly, which is critical
+ * after data migrations (e.g. the sync-course-status endpoint).
+ */
+export const dynamic = 'force-dynamic';
+
+/**
  * GET /api/courses
  * Get all published courses with filters
  * 
@@ -65,32 +72,51 @@ export async function GET(request: NextRequest) {
             const session = await getServerSession(authOptions);
             const userRole = session?.user?.role || 'user';
 
-            // Build query
-            const query: any = { status: 'PUBLISHED', isPublished: true };
-            query.$and = [];
+            // ── Base query ────────────────────────────────────────────────────
+            // After the sync-course-status migration both fields are always in
+            // sync, but we keep isPublished as a defensive double-lock.
+            const query: any = {
+                status:      'PUBLISHED',
+                isPublished: true,
+                // Defensive guard: never surface soft-deleted courses.
+                // Legacy courses that predate this field will have it undefined,
+                // which correctly evaluates to "not equal to true".
+                isDeleted: { $ne: true },
+            };
 
+            const andClauses: any[] = [];
+
+            // ── Role filter ───────────────────────────────────────────────────
+            // Courses are visible if:
+            //   a) allowedRoles does not exist on the document (legacy course, open to all), OR
+            //   b) allowedRoles is an empty array (explicitly open to all), OR
+            //   c) allowedRoles explicitly contains the current user's role.
+            //
+            // NOTE: { $size: 0 } does NOT match a missing field — that case is
+            // handled separately by { $exists: false }. Both are needed.
             if (userRole !== 'admin') {
-                query.$and.push({
+                andClauses.push({
                     $or: [
-                        { allowedRoles: userRole },
-                        { allowedRoles: { $exists: false } },
-                        { allowedRoles: { $size: 0 } }
-                    ]
+                        { allowedRoles: { $exists: false } },  // field absent → open to all
+                        { allowedRoles: { $size: 0 } },        // empty array  → open to all
+                        { allowedRoles: userRole },             // role explicitly allowed
+                    ],
                 });
             }
 
             if (search) {
-                query.$and.push({
+                andClauses.push({
                     $or: [
-                        { title: { $regex: search, $options: 'i' } },
+                        { title:       { $regex: search, $options: 'i' } },
                         { description: { $regex: search, $options: 'i' } },
-                    ]
+                    ],
                 });
             }
 
-            // Clean up $and if empty
-            if (query.$and.length === 0) {
-                delete query.$and;
+            // Only attach $and when there are real clauses to avoid a MongoDB
+            // error on an empty $and array.
+            if (andClauses.length > 0) {
+                query.$and = andClauses;
             }
 
             // Special handling for Zoom Meetings category (shows all LIVE courses)
