@@ -47,25 +47,30 @@ export async function POST(
 
         if (paymentType === 'COMMISSION') {
             if (typeof commissionRate !== 'number' || commissionRate < 0 || commissionRate > 1) {
-                return NextResponse.json({ error: 'Invalid commission rate (must be 0-1)' }, { status: 400 });
-            }
-            if (typeof durationMonths !== 'number' || durationMonths <= 0) {
-                return NextResponse.json({ error: 'Invalid duration months (must be > 0)' }, { status: 400 });
+                return NextResponse.json({ error: 'Invalid commission rate (must be 0–1)' }, { status: 400 });
             }
 
             contract.commissionRate = commissionRate;
-            contract.startDate = now;
-            contract.durationMonths = durationMonths;
+            contract.startDate      = now;
 
-            // Calculate end date
-            const endDate = new Date(now);
-            endDate.setMonth(endDate.getMonth() + durationMonths);
-            contract.endDate = endDate;
+            if (durationMonths === null) {
+                // Lifetime contract — no expiry date
+                contract.durationMonths = undefined;
+                contract.endDate        = undefined;
+            } else {
+                if (typeof durationMonths !== 'number' || durationMonths <= 0) {
+                    return NextResponse.json({ error: 'Invalid duration months (must be > 0 or null for lifetime)' }, { status: 400 });
+                }
+                contract.durationMonths = durationMonths;
+                const endDate = new Date(now);
+                endDate.setMonth(endDate.getMonth() + durationMonths);
+                contract.endDate = endDate;
+            }
         } else if (paymentType === 'CASH') {
             contract.commissionRate = 0;
-            contract.startDate = now;
+            contract.startDate      = now;
             contract.durationMonths = undefined;
-            contract.endDate = undefined;
+            contract.endDate        = undefined;
         }
 
         course.status = CourseStatus.PUBLISHED;
