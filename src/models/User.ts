@@ -229,6 +229,8 @@ UserSchema.index({ verificationToken: 1 });
 // Affiliate code — sparse so only volunteers with a code are indexed
 // unique ensures no two volunteers can ever share the same code
 UserSchema.index({ affiliateCode: 1 }, { unique: true, sparse: true });
+// FIX: compound index to efficiently surface ghost (inactive) accounts by email
+UserSchema.index({ email: 1, isActive: 1 });
 
 // Prevent returning password in JSON
 UserSchema.methods.toJSON = function () {

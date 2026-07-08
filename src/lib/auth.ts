@@ -38,8 +38,13 @@ export const authOptions: NextAuthOptions = {
                 try {
                     await connectDB();
 
+                    // FIX: Sanitize email — trim whitespace and normalize to lowercase.
+                    // Prevents ghost-email sign-in failures where the stored email is
+                    // lowercase but the user types extra spaces or uppercase characters.
+                    const sanitizedEmail = credentials.email.trim().toLowerCase();
+
                     // Find user by email (include password for verification)
-                    const user = await User.findOne({ email: credentials.email }).select('+password');
+                    const user = await User.findOne({ email: sanitizedEmail }).select('+password');
 
                     if (!user) {
                         throw new Error('Invalid email or password');

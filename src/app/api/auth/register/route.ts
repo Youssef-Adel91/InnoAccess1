@@ -64,8 +64,10 @@ export async function POST(request: NextRequest) {
         const formData = await request.formData();
 
         // Extract basic fields
-        const name = formData.get('name') as string;
-        const email = formData.get('email') as string;
+        // FIX: Sanitize email immediately — trim whitespace and normalize to lowercase
+        // to prevent ghost-email conflicts caused by accidental spaces or mixed case.
+        const name = (formData.get('name') as string)?.trim();
+        const email = (formData.get('email') as string)?.trim().toLowerCase();
         const password = formData.get('password') as string;
         const role = (formData.get('role') as UserRole) || UserRole.USER;
         const turnstileToken = formData.get('turnstileToken') as string;
@@ -197,10 +199,38 @@ export async function POST(request: NextRequest) {
         // Connect to database
         await connectDB();
 
-        // Check if user already exists
-        const existingUser = await User.findOne({ email: email.toLowerCase() });
+        // FIX: Check if user already exists (email is already sanitized above)
+        // Also catches soft-deleted / deactivated accounts (isActive: false)
+        const existingUser = await User.findOne({ email }).select('+password');
 
         if (existingUser) {
+            // FIX: If the account is inactive (soft-deleted), REACTIVATE it instead
+            // of blocking the registration. This fixes the "ghost email" scenario
+            // where isActive:false accounts block new registrations but are invisible
+            // to the admin in normal dashboard queries.
+            if (!existingUser.isActive) {
+                const hashedPassword = await hashPassword(password);
+                existingUser.password = hashedPassword;
+                existingUser.isActive = true;
+                existingUser.isVerified = true;
+                existingUser.name = name || existingUser.name;
+                await existingUser.save();
+
+                console.log(`[Register] Reactivated soft-deleted account for: ${email}`);
+
+                return NextResponse.json(
+                    {
+                        success: true,
+                        data: {
+                            email: existingUser.email,
+                            message: 'Account reactivated successfully! You can now sign in.',
+                        },
+                    },
+                    { status: 200 }
+                );
+            }
+
+            // Account is active — genuinely already exists
             return NextResponse.json(
                 {
                     success: false,
@@ -217,9 +247,10 @@ export async function POST(request: NextRequest) {
         const hashedPassword = await hashPassword(password);
 
         // Create new user (auto-verified — OTP email flow is disabled)
+        // NOTE: email is already sanitized (.trim().toLowerCase()) earlier in the handler
         const userData: any = {
             name,
-            email: email.toLowerCase(),
+            email, // already sanitized
             password: hashedPassword,
             role: role === UserRole.TRAINER ? UserRole.USER : role, // Trainers start as 'user' role until approved
             isVerified: true, // Auto-verify: bypass OTP to guarantee frictionless onboarding
