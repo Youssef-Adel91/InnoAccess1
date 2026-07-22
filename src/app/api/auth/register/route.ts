@@ -214,9 +214,13 @@ export async function POST(request: NextRequest) {
                 existingUser.isActive = true;
                 existingUser.isVerified = true;
                 existingUser.name = name || existingUser.name;
+                // FIX: Also update the role to the newly-requested one.
+                // Without this, a Volunteer re-registering with a ghost email would
+                // be silently reactivated with their OLD role (e.g. 'user'), not 'volunteer'.
+                existingUser.role = (role === UserRole.TRAINER ? UserRole.USER : role) as any;
                 await existingUser.save();
 
-                console.log(`[Register] Reactivated soft-deleted account for: ${email}`);
+                console.log(`[Register] Reactivated soft-deleted account for: ${email} with role: ${existingUser.role}`);
 
                 return NextResponse.json(
                     {
@@ -268,6 +272,10 @@ export async function POST(request: NextRequest) {
             };
         }
 
+        // DEBUG: Log the payload being written so any Mongoose validation failure
+        // is immediately traceable in server logs (especially for Volunteer role).
+        console.log(`[Register] Creating user — role: "${userData.role}", email: "${userData.email}"`);
+
         const user = await User.create(userData);
 
         // Handle Trainer Profile Creation
@@ -318,7 +326,28 @@ export async function POST(request: NextRequest) {
             { status: 201 }
         );
     } catch (error: any) {
-        console.error('Registration error:', error);
+        // Log the full error object — error.errors contains Mongoose field-level
+        // validation details that are invisible if you only log error.message.
+        console.error('[Register] Registration error:', error);
+        if (error.errors) {
+            // Mongoose ValidationError: surface every failing field
+            console.error('[Register] Mongoose validation details:', JSON.stringify(error.errors, null, 2));
+        }
+
+        // Duplicate key (E11000) — treat as a 409 conflict instead of 500
+        if (error.code === 11000) {
+            const field = Object.keys(error.keyValue ?? {})[0] ?? 'field';
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: {
+                        message: `An account with this ${field} already exists.`,
+                        code: 'EMAIL_EXISTS',
+                    },
+                },
+                { status: 409 }
+            );
+        }
 
         return NextResponse.json(
             {

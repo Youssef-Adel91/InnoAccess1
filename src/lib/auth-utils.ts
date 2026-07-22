@@ -42,6 +42,13 @@ export function validatePassword(password: string): { valid: boolean; error?: st
         return { valid: false, error: 'Password must contain at least one number' };
     }
 
+    // FIX: Align with the Zod passwordRegex in route.ts — special character is required.
+    // Previously this check was missing, creating a silent inconsistency between the
+    // two validation layers (Zod schema vs. validatePassword utility).
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/.test(password)) {
+        return { valid: false, error: 'Password must contain at least one special character (e.g. @, #, !, _)' };
+    }
+
     return { valid: true };
 }
 

@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { Users, Briefcase, GraduationCap, Building2, CheckCircle, XCircle, Eye, X, Mail, Banknote, TrendingUp, BarChart3, FileText, ClipboardList, AlertTriangle, BookOpen } from 'lucide-react';
+import { Users, Briefcase, GraduationCap, Building2, CheckCircle, XCircle, Eye, X, Mail, Banknote, TrendingUp, BarChart3, FileText, ClipboardList, AlertTriangle, BookOpen, Handshake, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 interface Stats {
@@ -91,6 +91,25 @@ interface PendingCompany {
     createdAt: string;
 }
 
+interface Volunteer {
+    _id: string;
+    name: string;
+    email: string;
+    isActive: boolean;
+    isVerified: boolean;
+    affiliateCode?: string;
+    createdAt: string;
+}
+
+interface VolunteerPagination {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+}
+
 export default function AdminDashboardPage() {
     const t = useTranslations('AdminDashboard');
     const { data: session, status } = useSession();
@@ -101,6 +120,14 @@ export default function AdminDashboardPage() {
     const [reviewModalOpen, setReviewModalOpen] = useState(false);
     const [selectedCompany, setSelectedCompany] = useState<PendingCompany | null>(null);
     const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+
+    // ── Volunteers panel state ────────────────────────────────────────────────
+    const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
+    const [volunteerPagination, setVolunteerPagination] = useState<VolunteerPagination | null>(null);
+    const [volunteerPage, setVolunteerPage] = useState(1);
+    const [volunteerSearch, setVolunteerSearch] = useState('');
+    const [volunteersLoading, setVolunteersLoading] = useState(false);
+    const [volunteersError, setVolunteersError] = useState('');
 
     useEffect(() => {
         if (status === 'unauthenticated' || (session && session.user.role !== 'admin')) {
@@ -137,6 +164,30 @@ export default function AdminDashboardPage() {
             setLoading(false);
         }
     }, []);
+
+    const fetchVolunteers = useCallback(async (page = 1, search = '') => {
+        setVolunteersLoading(true);
+        setVolunteersError('');
+        try {
+            const params = new URLSearchParams({ page: String(page), limit: '10' });
+            if (search.trim()) params.set('search', search.trim());
+            const res  = await fetch(`/api/admin/volunteers?${params}`);
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.error?.message || 'Failed to load volunteers');
+            setVolunteers(json.data.volunteers);
+            setVolunteerPagination(json.data.pagination);
+        } catch (err: any) {
+            setVolunteersError(err.message || 'Something went wrong');
+        } finally {
+            setVolunteersLoading(false);
+        }
+    }, []);
+
+    // Fetch volunteers whenever page or search changes
+    useEffect(() => {
+        if (status === 'authenticated') fetchVolunteers(volunteerPage, volunteerSearch);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [volunteerPage, status]);
 
     const handleApprove = async (companyId: string) => {
         if (!confirm('Approve this company?')) return;
@@ -560,6 +611,168 @@ export default function AdminDashboardPage() {
                                     )}
                                 </div>
                             ))}
+                        </div>
+                    )}
+                </div>
+
+                {/* ── Volunteers Section ───────────────────────────────────── */}
+                <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    {/* Header */}
+                    <div className="px-6 py-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                            <Handshake className="h-5 w-5 text-emerald-600" aria-hidden="true" />
+                            <h2 className="text-lg font-semibold text-gray-900">
+                                Volunteers
+                                {volunteerPagination && (
+                                    <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                                        {volunteerPagination.total}
+                                    </span>
+                                )}
+                            </h2>
+                        </div>
+                        {/* Search box */}
+                        <div className="relative w-full sm:w-64">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" aria-hidden="true" />
+                            <input
+                                id="volunteer-search"
+                                type="search"
+                                placeholder="Search name or email…"
+                                value={volunteerSearch}
+                                onChange={(e) => {
+                                    setVolunteerSearch(e.target.value);
+                                    setVolunteerPage(1);
+                                }}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') fetchVolunteers(1, volunteerSearch);
+                                }}
+                                className="w-full rounded-lg border border-gray-300 pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                                aria-label="Search volunteers by name or email"
+                            />
+                        </div>
+                        <button
+                            onClick={() => fetchVolunteers(volunteerPage, volunteerSearch)}
+                            className="shrink-0 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                            aria-label="Search volunteers"
+                        >
+                            Search
+                        </button>
+                    </div>
+
+                    {/* Table body */}
+                    {volunteersError ? (
+                        <div className="px-6 py-10 text-center" role="alert">
+                            <XCircle className="mx-auto h-10 w-10 text-red-400 mb-2" aria-hidden="true" />
+                            <p className="text-sm font-medium text-red-600">{volunteersError}</p>
+                            <button
+                                onClick={() => fetchVolunteers(volunteerPage, volunteerSearch)}
+                                className="mt-3 text-sm text-red-500 underline hover:text-red-700"
+                            >
+                                Retry
+                            </button>
+                        </div>
+                    ) : volunteersLoading ? (
+                        /* Skeleton rows */
+                        <div className="divide-y divide-gray-50" aria-busy="true" aria-label="Loading volunteers…">
+                            {Array.from({ length: 5 }).map((_, i) => (
+                                <div key={i} className="px-6 py-4 flex items-center gap-4 animate-pulse">
+                                    <div className="h-4 bg-gray-200 rounded w-1/4" />
+                                    <div className="h-4 bg-gray-200 rounded w-1/3" />
+                                    <div className="h-5 bg-gray-200 rounded-full w-16" />
+                                    <div className="h-4 bg-gray-200 rounded w-24" />
+                                    <div className="h-4 bg-gray-200 rounded w-24 ml-auto" />
+                                </div>
+                            ))}
+                        </div>
+                    ) : volunteers.length === 0 ? (
+                        <div className="px-6 py-12 text-center">
+                            <Handshake className="mx-auto h-12 w-12 text-gray-300 mb-3" aria-hidden="true" />
+                            <p className="text-sm font-medium text-gray-500">No volunteers found</p>
+                            {volunteerSearch && (
+                                <p className="text-xs text-gray-400 mt-1">Try clearing your search filter.</p>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm" aria-label="Volunteers table">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th scope="col" className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
+                                        <th scope="col" className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</th>
+                                        <th scope="col" className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                                        <th scope="col" className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Affiliate Code</th>
+                                        <th scope="col" className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Joined</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-50">
+                                    {volunteers.map((vol) => (
+                                        <tr key={vol._id} className="hover:bg-gray-50/70 transition-colors">
+                                            <td className="px-5 py-3.5 font-medium text-gray-900 whitespace-nowrap">{vol.name}</td>
+                                            <td className="px-5 py-3.5 text-gray-600 whitespace-nowrap">{vol.email}</td>
+                                            <td className="px-5 py-3.5">
+                                                {vol.isActive ? (
+                                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
+                                                        <CheckCircle className="h-3 w-3" aria-hidden="true" /> Active
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+                                                        <XCircle className="h-3 w-3" aria-hidden="true" /> Inactive
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td className="px-5 py-3.5">
+                                                {vol.affiliateCode ? (
+                                                    <code className="px-2 py-0.5 rounded bg-gray-100 text-gray-800 text-xs font-mono tracking-wide">
+                                                        {vol.affiliateCode}
+                                                    </code>
+                                                ) : (
+                                                    <span className="text-xs text-gray-400 italic">Not generated</span>
+                                                )}
+                                            </td>
+                                            <td className="px-5 py-3.5 text-gray-500 whitespace-nowrap">
+                                                {new Date(vol.createdAt).toLocaleDateString('en-GB', {
+                                                    day: '2-digit', month: 'short', year: 'numeric',
+                                                })}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+
+                    {/* Pagination footer */}
+                    {volunteerPagination && volunteerPagination.totalPages > 1 && (
+                        <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between text-sm">
+                            <span className="text-gray-500">
+                                Page {volunteerPagination.page} of {volunteerPagination.totalPages}
+                                <span className="ml-2 text-gray-400">({volunteerPagination.total} total)</span>
+                            </span>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => {
+                                        const next = volunteerPage - 1;
+                                        setVolunteerPage(next);
+                                        fetchVolunteers(next, volunteerSearch);
+                                    }}
+                                    disabled={!volunteerPagination.hasPrevPage}
+                                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                    aria-label="Previous page"
+                                >
+                                    <ChevronLeft className="h-4 w-4" aria-hidden="true" /> Prev
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        const next = volunteerPage + 1;
+                                        setVolunteerPage(next);
+                                        fetchVolunteers(next, volunteerSearch);
+                                    }}
+                                    disabled={!volunteerPagination.hasNextPage}
+                                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                    aria-label="Next page"
+                                >
+                                    Next <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>
