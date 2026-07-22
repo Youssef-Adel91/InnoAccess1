@@ -17,6 +17,7 @@ import { ProfileCompletenessCard } from '@/components/dashboard/ProfileCompleten
 import { LiveSessionAlert } from '@/components/dashboard/LiveSessionAlert';
 import { calculateProfileCompleteness } from '@/lib/profileCompleteness';
 import { useTranslations } from 'next-intl';
+import AdminVolunteersPanel from '@/components/admin/AdminVolunteersPanel';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -144,6 +145,17 @@ export default function DashboardPage() {
                         </span>
                     </p>
                 </div>
+
+                {/* ── Admin: See Volunteers ──────────────────────────────── */}
+                {session?.user?.role === 'admin' && (
+                    <div className="mb-8 flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
+                        <div className="flex-1">
+                            <p className="text-sm font-semibold text-gray-800">Volunteer Management</p>
+                            <p className="text-xs text-gray-500">View registered volunteers, their sales count, and commission owed.</p>
+                        </div>
+                        <AdminVolunteersPanel />
+                    </div>
+                )}
 
                 {/* Company Pending Approval */}
                 {session?.user?.role === 'company' && !session?.user?.isApproved && (
