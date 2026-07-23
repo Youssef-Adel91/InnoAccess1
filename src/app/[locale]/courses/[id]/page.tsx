@@ -140,13 +140,18 @@ export default function CourseDetailPage() {
             const result = await response.json();
             if (!result.success) throw new Error(result.error?.message);
 
-            const code = result.data.affiliateCode;
+            const code    = result.data.affiliateCode as string;
             const baseUrl = window.location.origin;
-            const link = `${baseUrl}/${params.locale}/courses/${courseId}?ref=${code}`;
-            
+
+            // Use the URL constructor + URLSearchParams so every component is
+            // correctly percent-encoded — safe against special chars in any field.
+            const url = new URL(`/${params.locale as string}/courses/${courseId}`, baseUrl);
+            url.searchParams.set('ref', code);
+            const link = url.toString();
+
             const copyText = t('affiliateCopyText', {
                 description: course?.title || 'Check out this course!',
-                url: link
+                url: link,
             });
 
             await navigator.clipboard.writeText(copyText);

@@ -159,8 +159,13 @@ export default function VolunteerAffiliatePage() {
     }
 
     // ── Copy helpers ──────────────────────────────────────────────────────────
-    const baseUrl     = typeof window !== 'undefined' ? window.location.origin : 'https://innoaccess.vercel.app';
-    const affiliateUrl = `${baseUrl}/courses?ref=${affiliateCode}`;
+    const baseUrl      = typeof window !== 'undefined' ? window.location.origin : 'https://innoaccess.vercel.app';
+    // Build the affiliate URL with the default locale prefix explicitly so the
+    // link points to the final destination without a redirect hop.
+    // Using URL + URLSearchParams ensures the code is always correctly encoded.
+    const _affiliateUrl = new URL('/en/courses', baseUrl);
+    _affiliateUrl.searchParams.set('ref', affiliateCode);
+    const affiliateUrl  = _affiliateUrl.toString();
 
     async function copyText(text: string, setter: (v: boolean) => void) {
         try {

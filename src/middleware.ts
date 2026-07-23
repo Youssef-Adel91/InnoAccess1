@@ -94,6 +94,15 @@ export default withAuth(
         const token = req.nextauth.token;
         const path  = req.nextUrl.pathname;
 
+        // ── Trailing-slash normalizer ────────────────────────────────────────
+        // Redirect /en/courses/ID/ → /en/courses/ID preserving all query params.
+        // Must run before intlMiddleware so the normalized URL is what gets routed.
+        if (path !== '/' && path.endsWith('/')) {
+            const cleanUrl = req.nextUrl.clone();
+            cleanUrl.pathname = path.replace(/\/+$/, '');
+            return NextResponse.redirect(cleanUrl);
+        }
+
         // ── Real client IP (behind Cloudflare) ──────────────────────────────
         const ip =
             req.headers.get('cf-connecting-ip')
@@ -128,19 +137,24 @@ export default withAuth(
         }
 
         // ── Affiliate referral cookie ────────────────────────────────────────
+        // We MUST call intlMiddleware first to obtain the correct response
+        // (which may be a locale-prefix redirect, e.g. /courses/ID → /en/courses/ID).
+        // Returning NextResponse.next() here would bypass intlMiddleware and cause
+        // 404s on locale-less URLs. Instead we attach the cookie to the intl response.
         const refCode = req.nextUrl.searchParams.get('ref');
         if (refCode && AFFILIATE_CODE_REGEX.test(refCode)) {
             const existingCookie = req.cookies.get(REF_COOKIE_NAME)?.value;
             if (existingCookie !== refCode) {
-                const response = NextResponse.next();
-                response.cookies.set(REF_COOKIE_NAME, refCode, {
+                // Let intlMiddleware handle locale routing (redirect or rewrite).
+                const intlResponse = intlMiddleware(req as unknown as NextRequest);
+                intlResponse.cookies.set(REF_COOKIE_NAME, refCode, {
                     httpOnly: true,
                     secure:   process.env.NODE_ENV === 'production',
                     sameSite: 'lax',
                     maxAge:   REF_COOKIE_MAX_AGE,
                     path:     '/',
                 });
-                return response;
+                return intlResponse;
             }
         }
 
