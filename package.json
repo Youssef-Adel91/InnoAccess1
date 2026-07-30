@@ -12,6 +12,7 @@
     "migrate:verification": "tsx scripts/add-verification-fields.ts"
   },
   "dependencies": {
+    "@clerk/nextjs": "^7.6.2",
     "@hookform/resolvers": "^5.4.0",
     "@radix-ui/react-slot": "^1.2.4",
     "@react-pdf/renderer": "^4.5.1",

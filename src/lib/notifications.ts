@@ -116,7 +116,7 @@ export async function notifyApplicationViewed(
         type: NotificationType.APPLICATION_VIEWED,
         title: 'Application Viewed! 👀',
         message: `Your application for "${jobTitle}" at ${companyName} was viewed by the hiring team.`,
-        link: `/user/applications`,
+        link: `/student/applications`,
     });
 }
 

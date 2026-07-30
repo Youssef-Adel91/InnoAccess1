@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
                         ],
                     },
                 },
-                { $unwind: { path: '$volunteer', preserveNullAndEmpty: true } },
+                { $unwind: { path: '$volunteer', preserveNullAndEmptyArrays: true } },
 
                 // Join with admin who processed it (if any)
                 {
@@ -81,7 +81,7 @@ export async function GET(req: NextRequest) {
                     },
                 },
                 {
-                    $unwind: { path: '$processor', preserveNullAndEmpty: true },
+                    $unwind: { path: '$processor', preserveNullAndEmptyArrays: true },
                 },
 
                 // Project clean fields

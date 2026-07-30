@@ -29,14 +29,16 @@ export async function GET(request: NextRequest) {
         const orderMap = new Map();
 
         for (const entry of orderEntries) {
-            const orderIdStr = entry.orderId?._id?.toString() || 'unknown';
+            const orderObj = entry.orderId as any;
+            const courseObj = entry.courseId as any;
+            const orderIdStr = orderObj?._id?.toString() || 'unknown';
             
             if (!orderMap.has(orderIdStr)) {
                 orderMap.set(orderIdStr, {
                     id: orderIdStr,
-                    date: entry.orderId?.createdAt || entry.createdAt,
-                    course: entry.courseId?.title || 'Unknown Course',
-                    paymentMethod: entry.orderId?.paymentMethod || 'UNKNOWN',
+                    date: orderObj?.createdAt || entry.createdAt,
+                    course: courseObj?.title || 'Unknown Course',
+                    paymentMethod: orderObj?.paymentMethod || 'UNKNOWN',
                     gross: 0,
                     fee: 0,
                     trainerCut: 0,

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { currentUser } from '@clerk/nextjs/server';
 import { connectDB } from '@/lib/db';
+import User from '@/models/User';
 import Commission from '@/models/Commission';
 import { getCommissionTier } from '@/lib/affiliateUtils';
 
@@ -11,42 +11,30 @@ import { getCommissionTier } from '@/lib/affiliateUtils';
  * Returns the top 10 volunteers globally, ranked by total number of
  * commissions (= total referral sales), with their tier information.
  *
- * Response shape:
- * {
- *   success: true,
- *   data: {
- *     leaderboard: Array<{
- *       rank:       number;
- *       volunteerId: string;
- *       name:       string;
- *       totalSales: number;
- *       tier:       { tier: 1|2|3; rate: number; label: string; name: string };
- *     }>;
- *     currentUserRank: number | null;  // null if current user not in top 10
- *   }
- * }
- *
- * Auth: Volunteer role only.
+ * Auth: Volunteer role only (using Clerk currentUser).
  */
 export async function GET() {
     try {
-        const session = await getServerSession(authOptions);
+        const clerkUser = await currentUser();
 
-        if (!session) {
+        if (!clerkUser) {
             return NextResponse.json(
                 { success: false, error: { message: 'Authentication required', code: 'UNAUTHORIZED' } },
                 { status: 401 }
             );
         }
 
-        if (session.user.role !== 'volunteer') {
+        const email = clerkUser.emailAddresses[0]?.emailAddress?.toLowerCase().trim();
+        await connectDB();
+
+        const user = await User.findOne({ email }).select('_id role');
+
+        if (!user || (user.role !== 'volunteer' && user.role !== 'admin')) {
             return NextResponse.json(
                 { success: false, error: { message: 'Volunteers only', code: 'FORBIDDEN' } },
                 { status: 403 }
             );
         }
-
-        await connectDB();
 
         // ── Aggregate: count commissions per volunteer ──────────────────────
         // We count ALL commissions (all statuses) as "total sales".
@@ -101,7 +89,7 @@ export async function GET() {
         });
 
         // ── Determine current user's rank in the leaderboard ─────────────────
-        const currentUserId   = session.user.id;
+        const currentUserId   = user._id.toString();
         const currentUserEntry = leaderboard.find((e) => e.volunteerId === currentUserId);
         const currentUserRank  = currentUserEntry?.rank ?? null;
 

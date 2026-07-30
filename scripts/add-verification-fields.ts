@@ -12,7 +12,7 @@ import mongoose from 'mongoose';
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 
 // Get MongoDB URI
-const MONGODB_URI = process.env.MONGODB_URI;
+const MONGODB_URI = process.env.MONGODB_URI as string;
 
 if (!MONGODB_URI) {
     console.error('❌ MONGODB_URI not found in .env.local');

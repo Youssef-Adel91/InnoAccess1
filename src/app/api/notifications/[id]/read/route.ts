@@ -10,7 +10,7 @@ import { authOptions } from '@/lib/auth';
  */
 export async function PATCH(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await getServerSession(authOptions);
@@ -30,7 +30,7 @@ export async function PATCH(
 
         await connectDB();
 
-        const notificationId = params.id;
+        const { id: notificationId } = await params;
 
         // Find the notification and verify ownership
         const notification = await Notification.findById(notificationId);

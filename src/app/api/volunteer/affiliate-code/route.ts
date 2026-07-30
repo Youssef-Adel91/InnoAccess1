@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { currentUser } from '@clerk/nextjs/server';
 import { connectDB } from '@/lib/db';
 import User from '@/models/User';
 import { generateAffiliateCode } from '@/lib/affiliateUtils';
@@ -9,33 +8,25 @@ import { generateAffiliateCode } from '@/lib/affiliateUtils';
  * GET /api/volunteer/affiliate-code
  *
  * Returns the volunteer's existing affiliate code, or generates a new one
- * lazily on first call. This "lazy generation" pattern means:
- *   - No codes are wasted on volunteers who never use the affiliate feature
- *   - The code generation is atomic thanks to MongoDB's unique sparse index
+ * lazily on first call.
  *
- * Auth: Volunteer role only.
+ * Auth: Volunteer role only (using Clerk currentUser).
  */
 export async function GET() {
     try {
-        const session = await getServerSession(authOptions);
+        const clerkUser = await currentUser();
 
-        if (!session) {
+        if (!clerkUser) {
             return NextResponse.json(
                 { success: false, error: { message: 'Authentication required', code: 'UNAUTHORIZED' } },
                 { status: 401 }
             );
         }
 
-        if (session.user.role !== 'volunteer') {
-            return NextResponse.json(
-                { success: false, error: { message: 'Volunteers only', code: 'FORBIDDEN' } },
-                { status: 403 }
-            );
-        }
-
+        const email = clerkUser.emailAddresses[0]?.emailAddress?.toLowerCase().trim();
         await connectDB();
 
-        const user = await User.findById(session.user.id).select('affiliateCode affiliateCodeGeneratedAt');
+        const user = await User.findOne({ email }).select('_id role affiliateCode affiliateCodeGeneratedAt');
 
         if (!user) {
             return NextResponse.json(
@@ -44,12 +35,19 @@ export async function GET() {
             );
         }
 
+        if (user.role !== 'volunteer' && user.role !== 'admin') {
+            return NextResponse.json(
+                { success: false, error: { message: 'Volunteers only', code: 'FORBIDDEN' } },
+                { status: 403 }
+            );
+        }
+
         // ── Fast path: code already exists ───────────────────────────────────
         if (user.affiliateCode) {
             return NextResponse.json({
                 success: true,
                 data: {
-                    affiliateCode:          user.affiliateCode,
+                    affiliateCode:            user.affiliateCode,
                     affiliateCodeGeneratedAt: user.affiliateCodeGeneratedAt,
                     isNew: false,
                 },
@@ -57,16 +55,15 @@ export async function GET() {
         }
 
         // ── Slow path: generate a new unique code ─────────────────────────────
-        // Retry up to 5 times to handle the astronomically rare collision on the
-        // unique sparse index (36^6 ≈ 2.18 billion possibilities).
         let code = '';
         let saved = false;
+        const userId = user._id;
 
         for (let attempt = 1; attempt <= 5; attempt++) {
             code = generateAffiliateCode();
             try {
                 await User.findByIdAndUpdate(
-                    session.user.id,
+                    userId,
                     {
                         $set: {
                             affiliateCode:            code,
@@ -78,13 +75,12 @@ export async function GET() {
                 saved = true;
                 break;
             } catch (indexError: unknown) {
-                // MongoDB duplicate key error code
                 const isE11000 = (indexError as { code?: number }).code === 11000;
                 if (isE11000 && attempt < 5) {
                     console.warn(`⚠️ Affiliate code collision on attempt ${attempt}, retrying...`);
                     continue;
                 }
-                throw indexError; // Non-collision error — re-throw
+                throw indexError;
             }
         }
 
@@ -92,7 +88,7 @@ export async function GET() {
             throw new Error('Failed to generate a unique affiliate code after 5 attempts');
         }
 
-        console.log(`✅ Affiliate code generated for volunteer ${session.user.id}: ${code}`);
+        console.log(`✅ Affiliate code generated for volunteer ${userId}: ${code}`);
 
         return NextResponse.json({
             success: true,

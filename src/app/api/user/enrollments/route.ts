@@ -1,19 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { currentUser } from '@clerk/nextjs/server';
 import { connectDB } from '@/lib/db';
+import Course from '@/models/Course';
 import Enrollment from '@/models/Enrollment';
-import Course from '@/models/Course'; // Required for Mongoose populate to work
-import { authOptions } from '@/lib/auth';
+import User from '@/models/User';
+import Category from '@/models/Category';
+
+// Explicitly register all Mongoose models used in populate
+Course; Enrollment; User; Category;
 
 /**
  * GET /api/user/enrollments
- * Get current user's course enrollments
+ * Get current user's course enrollments using Clerk auth
  */
 export async function GET(request: NextRequest) {
     try {
-        const session = await getServerSession(authOptions);
+        const clerkUser = await currentUser();
 
-        if (!session) {
+        if (!clerkUser) {
             return NextResponse.json(
                 {
                     success: false,
@@ -26,26 +30,28 @@ export async function GET(request: NextRequest) {
             );
         }
 
-        // Only users can have enrollments
-        if (session.user.role !== 'user') {
-            return NextResponse.json(
-                {
-                    success: false,
-                    error: {
-                        message: 'Only users can access enrollments',
-                        code: 'FORBIDDEN',
-                    },
-                },
-                { status: 403 }
-            );
-        }
-
+        const email = clerkUser.emailAddresses[0]?.emailAddress?.toLowerCase().trim();
         await connectDB();
 
-        const enrollments = await Enrollment.find({ userId: session.user.id })
+        const mongoUser = await User.findOne({ email });
+        if (!mongoUser) {
+            return NextResponse.json({
+                success: true,
+                data: {
+                    enrollments: [],
+                    count: 0,
+                },
+            });
+        }
+
+        const enrollments = await Enrollment.find({ userId: mongoUser._id })
             .populate({
                 path: 'courseId',
-                select: '_id title description thumbnail courseType liveSession',
+                select: '_id title description thumbnail courseType liveSession trainerId categoryId modules',
+                populate: [
+                    { path: 'trainerId', select: 'name email' },
+                    { path: 'categoryId', select: 'name' }
+                ],
             })
             .sort({ enrolledAt: -1 })
             .lean();
@@ -58,7 +64,7 @@ export async function GET(request: NextRequest) {
             },
         });
     } catch (error: any) {
-        console.error('Get enrollments error:', error);
+        console.error('Enrollments Error:', error);
         return NextResponse.json(
             {
                 success: false,

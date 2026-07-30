@@ -3,7 +3,7 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { connectDB } from '@/lib/db';
-import Course from '@/models/Course';
+import Course, { CourseStatus } from '@/models/Course';
 import { CourseType } from '@/types/course';
 import Category from '@/models/Category';
 import { Types } from 'mongoose';
@@ -306,10 +306,10 @@ export async function publishCourse(courseId: string, isPublishing: boolean) {
         // Instead of setting isPublished directly, we set the status.
         // The Mongoose pre-save hook handles the isPublished boolean automatically.
         if (isPublishing) {
-            course.status = 'PENDING_APPROVAL';
+            course.status = CourseStatus.PENDING_APPROVAL;
             // course.isPublished will be forced to false by the hook since status !== PUBLISHED
         } else {
-            course.status = 'DRAFT';
+            course.status = CourseStatus.DRAFT;
         }
         await course.save();
 

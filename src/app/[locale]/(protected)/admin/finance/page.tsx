@@ -7,7 +7,7 @@ import { redirect }        from 'next/navigation';
 import {
     TrendingUp, Banknote, ReceiptText, DollarSign,
     ChevronDown, CheckCircle2, AlertTriangle, Loader2,
-    ListFilter, PlusCircle, RefreshCw, ShieldCheck,
+    ListFilter, PlusCircle, RefreshCw, ShieldCheck, Download,
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────

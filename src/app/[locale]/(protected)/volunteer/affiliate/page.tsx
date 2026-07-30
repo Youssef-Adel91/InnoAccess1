@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { useSession }   from 'next-auth/react';
+import { useUser }        from '@clerk/nextjs';
 import { redirect }     from 'next/navigation';
 import Link             from 'next/link';
 import {
@@ -54,8 +54,9 @@ interface LeaderboardEntry {
 }
 
 interface LeaderboardData {
-    leaderboard:     LeaderboardEntry[];
-    currentUserRank: number | null;
+    leaderboard:        LeaderboardEntry[];
+    currentUserRank:    number | null;
+    currentVolunteerId?: string;
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
@@ -99,7 +100,7 @@ function tierColors(tier: 1 | 2 | 3) {
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 export default function VolunteerAffiliatePage() {
-    const { data: session, status } = useSession();
+    const { user, isLoaded, isSignedIn } = useUser();
 
     const [data,          setData]          = useState<DashboardData | null>(null);
     const [affiliateCode, setAffiliateCode] = useState<string>('');
@@ -137,13 +138,13 @@ export default function VolunteerAffiliatePage() {
     }, []);
 
     useEffect(() => {
-        if (session?.user?.role === 'volunteer') {
+        if (isSignedIn) {
             fetchAll();
         }
-    }, [session, fetchAll]);
+    }, [isSignedIn, fetchAll]);
 
     // ── Auth guards ───────────────────────────────────────────────────────────
-    if (status === 'loading' || isLoading) {
+    if (!isLoaded || isLoading) {
         return (
             <main id="main-content" className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
@@ -154,7 +155,7 @@ export default function VolunteerAffiliatePage() {
         );
     }
 
-    if (status === 'unauthenticated' || session?.user?.role !== 'volunteer') {
+    if (!isSignedIn) {
         redirect('/dashboard');
     }
 
@@ -193,7 +194,7 @@ export default function VolunteerAffiliatePage() {
     const nextTierThresholds = [50, 100];
     const nextThreshold = nextTierThresholds.find((t) => totalSales < t);
 
-    const currentUserId = session?.user?.id;
+    const currentUserId = leaderboard?.currentVolunteerId || user?.id;
 
     return (
         <main id="main-content" className="min-h-screen bg-gray-50 py-8">

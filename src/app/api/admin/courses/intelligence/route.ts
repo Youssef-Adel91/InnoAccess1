@@ -122,7 +122,7 @@ export async function GET(req: NextRequest) {
                         ],
                     },
                 },
-                { $unwind: { path: '$trainer', preserveNullAndEmpty: true } },
+                { $unwind: { path: '$trainer', preserveNullAndEmptyArrays: true } },
 
                 // ── Join 3: TrainerProfile (specialization, cvUrl) ────────────────
                 {
@@ -142,7 +142,7 @@ export async function GET(req: NextRequest) {
                         ],
                     },
                 },
-                { $unwind: { path: '$trainerProfile', preserveNullAndEmpty: true } },
+                { $unwind: { path: '$trainerProfile', preserveNullAndEmptyArrays: true } },
 
                 // ── Final projection ─────────────────────────────────────────────
                 {

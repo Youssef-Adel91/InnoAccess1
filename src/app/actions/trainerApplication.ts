@@ -1,12 +1,32 @@
 'use server';
 
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { currentUser } from '@clerk/nextjs/server';
 import { connectDB } from '@/lib/db';
 import TrainerProfile, { TrainerStatus } from '@/models/TrainerProfile';
 import User from '@/models/User';
 import { Types } from 'mongoose';
 import { sendEmail, getTrainerApprovalEmailTemplate, getTrainerRejectionEmailTemplate } from '@/lib/mail';
+
+/**
+ * Helper: Resolve MongoDB User document from Clerk currentUser
+ */
+async function getMongoUserFromClerk(clerkUser: any) {
+    const email = clerkUser.emailAddresses[0]?.emailAddress?.toLowerCase().trim();
+    if (!email) throw new Error('No valid email found on account');
+
+    await connectDB();
+    let user = await User.findOne({ email });
+
+    if (!user) {
+        user = await User.create({
+            name: `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || 'Student',
+            email,
+            role: 'user',
+        });
+    }
+
+    return user;
+}
 
 /**
  * Submit trainer application
@@ -20,41 +40,39 @@ export async function submitTrainerApplication(data: {
     specialization: string;
 }) {
     try {
-        const session = await getServerSession(authOptions);
-
-        if (!session || session.user.role !== 'user') {
-            throw new Error('You must be logged in as a user to apply');
+        const clerkUser = await currentUser();
+        if (!clerkUser) {
+            throw new Error('You must be logged in to apply');
         }
 
-        await connectDB();
+        const mongoUser = await getMongoUserFromClerk(clerkUser);
 
         // Check if user already has a trainer profile
         const existingProfile = await TrainerProfile.findOne({
-            userId: session.user.id,
+            userId: mongoUser._id,
         });
 
         if (existingProfile) {
-            if (existingProfile.status === TrainerStatus.PENDING) {
-                throw new Error('You already have a pending application');
-            }
             if (existingProfile.status === TrainerStatus.APPROVED) {
                 throw new Error('You are already an approved trainer');
             }
-
-            // If rejected, check 24-hour cooldown before allowing reapplication
+            if (existingProfile.status === TrainerStatus.PENDING) {
+                throw new Error('You already have a pending application');
+            }
+            // If rejected, allow resubmission after 24 hours
             if (existingProfile.status === TrainerStatus.REJECTED) {
                 if (existingProfile.rejectedAt) {
-                    const hoursSinceRejection = (Date.now() - existingProfile.rejectedAt.getTime()) / (1000 * 60 * 60);
-
+                    const hoursSinceRejection =
+                        (Date.now() - existingProfile.rejectedAt.getTime()) / (1000 * 60 * 60);
                     if (hoursSinceRejection < 24) {
                         const hoursRemaining = Math.ceil(24 - hoursSinceRejection);
                         throw new Error(
-                            `You must wait 24 hours after rejection before reapplying. Please try again in ${hoursRemaining} hour${hoursRemaining === 1 ? '' : 's'}.`
+                            `Please wait ${hoursRemaining} hour(s) before resubmitting your application.`
                         );
                     }
                 }
 
-                // Allow reapplication by updating existing profile
+                // Resubmit application
                 existingProfile.bio = data.bio;
                 existingProfile.linkedInUrl = data.linkedInUrl;
                 existingProfile.websiteUrl = data.websiteUrl;
@@ -62,11 +80,11 @@ export async function submitTrainerApplication(data: {
                 existingProfile.specialization = data.specialization;
                 existingProfile.status = TrainerStatus.PENDING;
                 existingProfile.rejectionReason = undefined;
-                existingProfile.rejectedAt = undefined; // Clear rejection timestamp
+                existingProfile.rejectedAt = undefined;
 
                 await existingProfile.save();
 
-                console.log('✅ Trainer application resubmitted:', session.user.id);
+                console.log('✅ Trainer application resubmitted:', mongoUser._id);
 
                 return {
                     success: true,
@@ -80,7 +98,7 @@ export async function submitTrainerApplication(data: {
 
         // Create new trainer profile
         const trainerProfile = await TrainerProfile.create({
-            userId: new Types.ObjectId(session.user.id),
+            userId: mongoUser._id,
             bio: data.bio,
             linkedInUrl: data.linkedInUrl,
             websiteUrl: data.websiteUrl,
@@ -89,7 +107,7 @@ export async function submitTrainerApplication(data: {
             status: TrainerStatus.PENDING,
         });
 
-        console.log('✅ New trainer application submitted:', session.user.id);
+        console.log('✅ New trainer application submitted:', mongoUser._id);
 
         return {
             success: true,
@@ -115,16 +133,24 @@ export async function submitTrainerApplication(data: {
  */
 export async function getUserTrainerProfile() {
     try {
-        const session = await getServerSession(authOptions);
-
-        if (!session) {
+        const clerkUser = await currentUser();
+        if (!clerkUser) {
             throw new Error('Not authenticated');
         }
 
+        const email = clerkUser.emailAddresses[0]?.emailAddress?.toLowerCase().trim();
         await connectDB();
 
+        const mongoUser = await User.findOne({ email });
+        if (!mongoUser) {
+            return {
+                success: true,
+                data: { profile: null },
+            };
+        }
+
         const profile = await TrainerProfile.findOne({
-            userId: session.user.id,
+            userId: mongoUser._id,
         }).lean();
 
         return {
@@ -145,21 +171,19 @@ export async function getUserTrainerProfile() {
 
 /**
  * Approve trainer application (Admin only)
- * Updates TrainerProfile status to APPROVED and User role to 'trainer'
  */
 export async function approveTrainer(profileId: string) {
     try {
-        const session = await getServerSession(authOptions);
+        const clerkUser = await currentUser();
+        const userRole = (clerkUser?.publicMetadata as { role?: string })?.role;
 
-        if (!session || session.user.role !== 'admin') {
+        if (!clerkUser || userRole !== 'admin') {
             throw new Error('Unauthorized - admin access required');
         }
 
         await connectDB();
 
-        // Find the trainer profile
         const profile = await TrainerProfile.findById(profileId);
-
         if (!profile) {
             throw new Error('Trainer profile not found');
         }
@@ -168,19 +192,16 @@ export async function approveTrainer(profileId: string) {
             throw new Error('This application is already approved');
         }
 
-        // Update profile status
         profile.status = TrainerStatus.APPROVED;
         profile.rejectionReason = undefined;
         await profile.save();
 
-        // Update user role to trainer
         await User.findByIdAndUpdate(profile.userId, {
             role: 'trainer',
         });
 
         console.log('✅ Trainer approved:', profile.userId);
 
-        // Send approval email
         try {
             const populatedProfile = await TrainerProfile.findById(profileId)
                 .populate('userId', 'name email')
@@ -190,25 +211,14 @@ export async function approveTrainer(profileId: string) {
                 const userName = ('name' in populatedProfile.userId ? populatedProfile.userId.name : 'Trainer') as string;
                 const emailHtml = getTrainerApprovalEmailTemplate(userName);
 
-                console.log(`📧 Sending approval email to: ${populatedProfile.userId.email}`);
-
-                const emailSent = await sendEmail({
+                await sendEmail({
                     to: populatedProfile.userId.email as string,
                     subject: '🎉 Trainer Application Approved - Welcome to InnoAccess!',
                     html: emailHtml,
                 });
-
-                if (emailSent) {
-                    console.log(`✅ Approval email sent successfully to ${populatedProfile.userId.email}`);
-                } else {
-                    console.error(`❌ Failed to send approval email to ${populatedProfile.userId.email}`);
-                }
-            } else {
-                console.log('⚠️ Could not send approval email - user email not found');
             }
         } catch (emailError) {
             console.error('❌ Error sending approval email:', emailError);
-            // Don't fail the approval if email fails
         }
 
         return {
@@ -232,21 +242,19 @@ export async function approveTrainer(profileId: string) {
 
 /**
  * Reject trainer application (Admin only)
- * Updates TrainerProfile status to REJECTED with reason
- * Deletes CV from Blob storage to save costs
  */
 export async function rejectTrainer(profileId: string, reason: string) {
     try {
-        const session = await getServerSession(authOptions);
+        const clerkUser = await currentUser();
+        const userRole = (clerkUser?.publicMetadata as { role?: string })?.role;
 
-        if (!session || session.user.role !== 'admin') {
+        if (!clerkUser || userRole !== 'admin') {
             throw new Error('Unauthorized - admin access required');
         }
 
         await connectDB();
 
         const profile = await TrainerProfile.findById(profileId);
-
         if (!profile) {
             throw new Error('Trainer profile not found');
         }
@@ -255,7 +263,6 @@ export async function rejectTrainer(profileId: string, reason: string) {
             throw new Error('This application is already rejected');
         }
 
-        // 🗑️ Delete CV from Vercel Blob to save storage costs
         if (profile.cvUrl) {
             try {
                 const { del } = await import('@vercel/blob');
@@ -263,20 +270,17 @@ export async function rejectTrainer(profileId: string, reason: string) {
                 console.log('🗑️ CV deleted from Vercel Blob:', profile.cvUrl);
             } catch (blobError) {
                 console.error('⚠️ Failed to delete CV from Blob (continuing anyway):', blobError);
-                // Don't fail the rejection if blob deletion fails
             }
         }
 
-        // Update profile status
         profile.status = TrainerStatus.REJECTED;
         profile.rejectionReason = reason;
-        profile.cvUrl = undefined as any; // Clear CV URL since file is deleted
-        profile.rejectedAt = new Date(); // Set rejection timestamp for 24h cooldown
-        await profile.save({ validateBeforeSave: false }); // Skip validation for rejected profiles
+        profile.cvUrl = undefined as any;
+        profile.rejectedAt = new Date();
+        await profile.save({ validateBeforeSave: false });
 
         console.log('✅ Trainer rejected:', profile.userId);
 
-        // Send rejection email
         try {
             const populatedProfile = await TrainerProfile.findById(profileId)
                 .populate('userId', 'name email')
@@ -284,30 +288,18 @@ export async function rejectTrainer(profileId: string, reason: string) {
 
             if (populatedProfile?.userId && typeof populatedProfile.userId === 'object' && 'email' in populatedProfile.userId && populatedProfile.userId.email) {
                 const userName = ('name' in populatedProfile.userId ? populatedProfile.userId.name : 'User') as string;
-                const emailHtml = getTrainerRejectionEmailTemplate(userName, reason);
+                const emailHtml = getTrainerRejectionEmailTemplate(userName);
 
-                console.log(`📧 Sending rejection email to: ${populatedProfile.userId.email}`);
-
-                const emailSent = await sendEmail({
+                await sendEmail({
                     to: populatedProfile.userId.email as string,
                     subject: '❌ Trainer Application Update - InnoAccess',
                     html: emailHtml,
                 });
-
-                if (emailSent) {
-                    console.log(`✅ Rejection email sent successfully to ${populatedProfile.userId.email}`);
-                } else {
-                    console.error(`❌ Failed to send rejection email to ${populatedProfile.userId.email}`);
-                }
-            } else {
-                console.log('⚠️ Could not send rejection email - user email not found');
             }
         } catch (emailError) {
             console.error('❌ Error sending rejection email:', emailError);
-            // Don't fail the rejection if email fails
         }
 
-        // Create in-app notification for the user
         try {
             const { createNotification } = await import('@/lib/notifications');
             const { NotificationType } = await import('@/models/Notification');
@@ -318,10 +310,8 @@ export async function rejectTrainer(profileId: string, reason: string) {
                 message: `Unfortunately, your trainer application has been rejected. Reason: ${reason}. You can reapply after 24 hours.`,
                 link: '/trainer/apply',
             });
-            console.log('✅ Rejection notification created');
         } catch (notifError) {
             console.error('❌ Error creating rejection notification:', notifError);
-            // Don't fail the rejection if notification fails
         }
 
         return {

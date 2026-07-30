@@ -127,9 +127,10 @@ export const getPasswordResetEmailTemplate = (userName: string, resetUrl: string
   <p>Click <a href="${resetUrl}">here</a> to reset your password. This link expires in 1 hour.</p>
 `;
 
-export const getWorkshopReminderEmailTemplate = (userName: string, workshopTitle: string, date: string) => `
+export const getWorkshopReminderEmailTemplate = (userName: string, workshopTitle: string, date: string, joinUrl?: string) => `
   <h1>Workshop Reminder</h1>
   <p>Hello ${userName}, this is a reminder for your workshop "${workshopTitle}" on ${date}.</p>
+  ${joinUrl ? `<p><a href="${joinUrl}">Click here to join the workshop</a></p>` : ''}
 `;
 
 export const getJobAcceptanceEmailTemplate = (userName: string, jobTitle: string) => `

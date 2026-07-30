@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { useSession }   from 'next-auth/react';
+import { useUser }        from '@clerk/nextjs';
 import { redirect }     from 'next/navigation';
 import Link             from 'next/link';
 import { GraduationCap, Search, LayoutGrid, Wallet, TrendingUp } from 'lucide-react';
@@ -19,7 +19,7 @@ interface TierInfo {
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 export default function VolunteerCoursesPage() {
-    const { data: session, status } = useSession();
+    const { user, isLoaded, isSignedIn } = useUser();
 
     const [courses,       setCourses]       = useState<AffiliateCourse[]>([]);
     const [affiliateCode, setAffiliateCode] = useState<string>('');
@@ -82,15 +82,15 @@ export default function VolunteerCoursesPage() {
     }, []);
 
     useEffect(() => {
-        if (session?.user?.role === 'volunteer') {
+        if (isSignedIn) {
             fetchAffiliateCode();
             fetchCourses();
             fetchTier();
         }
-    }, [session, fetchAffiliateCode, fetchCourses, fetchTier]);
+    }, [isSignedIn, fetchAffiliateCode, fetchCourses, fetchTier]);
 
     // ── Auth guards ───────────────────────────────────────────────────────────
-    if (status === 'loading') {
+    if (!isLoaded) {
         return (
             <main id="main-content" className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
@@ -101,7 +101,7 @@ export default function VolunteerCoursesPage() {
         );
     }
 
-    if (status === 'unauthenticated' || session?.user?.role !== 'volunteer') {
+    if (!isSignedIn) {
         redirect('/dashboard');
     }
 

@@ -41,8 +41,11 @@ export async function POST(
             );
         }
 
+        const jobObj = application.jobId as any;
+        const userObj = application.userId as any;
+
         // Check if user is the job owner or admin
-        const isOwner = application.jobId.companyId.toString() === session.user.id;
+        const isOwner = jobObj?.companyId?.toString() === session.user.id;
         const isAdmin = session.user.role === 'admin';
 
         if (!isOwner && !isAdmin) {
@@ -56,19 +59,19 @@ export async function POST(
         await Application.findByIdAndUpdate(id, { status: 'accepted' });
 
         // Send acceptance email
-        if (application.userId?.email) {
+        if (userObj?.email) {
             const emailHtml = getJobAcceptanceEmailTemplate(
-                application.jobId.title,
-                application.userId.name || 'Applicant'
+                userObj.name || 'Applicant',
+                jobObj.title
             );
 
             await sendEmail({
-                to: application.userId.email,
-                subject: `Congratulations! You've been accepted for ${application.jobId.title}`,
+                to: userObj.email,
+                subject: `Congratulations! You've been accepted for ${jobObj.title}`,
                 html: emailHtml,
             });
 
-            console.log(`✅ Acceptance email sent to ${application.userId.email} for job: ${application.jobId.title}`);
+            console.log(`✅ Acceptance email sent to ${userObj.email} for job: ${jobObj.title}`);
         }
 
         return NextResponse.json({

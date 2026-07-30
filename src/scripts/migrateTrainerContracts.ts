@@ -19,7 +19,7 @@ async function migrateCourses() {
         console.log('✅ Connected to MongoDB.');
 
         const db = mongoose.connection.db;
-        const coursesCollection = db.collection('courses');
+        const coursesCollection = db!.collection('courses');
 
         // Find courses that don't have a status or contract yet
         const courses = await coursesCollection.find({

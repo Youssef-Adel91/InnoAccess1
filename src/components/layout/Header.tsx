@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useSession, signOut } from 'next-auth/react';
+import { useUser, useClerk, UserButton } from '@clerk/nextjs';
 import { useTranslations } from 'next-intl';
 // ⚠️  Both useRouter AND usePathname must come from @/i18n/navigation (next-intl's
 //     localized wrappers), NOT from next/navigation.
@@ -94,19 +94,21 @@ interface HeaderProps {
 export function Header({ locale = 'en' }: HeaderProps) {
     const t = useTranslations('Header');
     const pathname = usePathname();
-    const { data: session, status } = useSession();
+    const { user, isLoaded, isSignedIn } = useUser();
+    const { signOut } = useClerk();
+    const userRole = (user?.publicMetadata as { role?: string })?.role;
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [pendingCount, setPendingCount] = useState(0);
 
     const { data: notificationsData } = useSWR(
-        session ? '/api/notifications?unreadOnly=true' : null,
+        isSignedIn === true ? '/api/notifications?unreadOnly=true' : null,
         fetcher,
         { refreshInterval: 60000, revalidateOnFocus: true }
     );
 
     const unreadNotificationsCount = notificationsData?.data?.unreadCount || 0;
 
-    const navigation = session
+    const navigation = user
         ? [
             { name: t('nav.jobs'),    href: `/${locale}/jobs`,    icon: Briefcase },
             { name: t('nav.courses'), href: `/${locale}/courses`,  icon: GraduationCap },
@@ -118,14 +120,14 @@ export function Header({ locale = 'en' }: HeaderProps) {
         ];
 
     useEffect(() => {
-        if (session?.user?.role === 'user') fetchPendingCount();
-    }, [session]);
+        if (isSignedIn === true && userRole === 'student') fetchPendingCount();
+    }, [isSignedIn, userRole]);
 
     useEffect(() => { setMobileMenuOpen(false); }, [pathname]);
 
     const fetchPendingCount = async () => {
         try {
-            const response = await fetch('/api/user/applications?status=pending');
+            const response = await fetch('/api/student/applications?status=pending');
             const data = await response.json();
             if (data.success) setPendingCount(data.data.count || 0);
         } catch (error) {
@@ -172,38 +174,44 @@ export function Header({ locale = 'en' }: HeaderProps) {
                                 </Link>
                             );
                         })}
-                        {session?.user?.role === 'user' && (
-                            <Link href="/user/applications" className={navLink('/user/applications')} aria-current={isActive('/user/applications') ? 'page' : undefined}>
-                                <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
-                                {t('nav.myApplications')}
-                                {pendingCount > 0 && (
-                                    <span className="ml-2 px-2 py-0.5 text-xs font-bold rounded-full bg-blue-600 text-white" aria-label={t('nav.pendingApplications', { count: pendingCount })}>
-                                        {pendingCount}
-                                    </span>
-                                )}
-                            </Link>
-                        )}
-                        {session?.user?.role === 'user' && (
-                            <Link href="/join-trainer" className={navLink('/join-trainer')} aria-current={isActive('/join-trainer') ? 'page' : undefined}>
-                                <UserCheck className="mr-2 h-4 w-4" aria-hidden="true" />
-                                {t('nav.becomeTrainer')}
-                            </Link>
-                        )}
-                        {session?.user?.role === 'company' && (
-                            <Link href="/company/jobs" className={navLink('/company/jobs')} aria-current={isActive('/company/jobs') ? 'page' : undefined}>
-                                <Briefcase className="mr-2 h-4 w-4" aria-hidden="true" />
-                                {t('nav.myJobs')}
-                            </Link>
-                        )}
-                        {session?.user?.role === 'company' && (
-                            <Link href="/company/courses" className={navLink('/company/courses')} aria-current={isActive('/company/courses') ? 'page' : undefined}>
-                                <GraduationCap className="mr-2 h-4 w-4" aria-hidden="true" />
-                                {t('nav.myCourses')}
-                            </Link>
-                        )}
-                        {session?.user?.role === 'trainer' && (
+                        {userRole === 'student' && (
                             <>
-                                <Link href="/trainer/dashboard" className={navLink('/trainer')} aria-current={isActive('/trainer') ? 'page' : undefined}>
+                                <Link href="/student/applications" className={navLink('/student/applications')} aria-current={isActive('/student/applications') ? 'page' : undefined}>
+                                    <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
+                                    {t('nav.myApplications')}
+                                    {pendingCount > 0 && (
+                                        <span className="ml-2 px-2 py-0.5 text-xs font-bold rounded-full bg-blue-600 text-white" aria-label={t('nav.pendingApplications', { count: pendingCount })}>
+                                            {pendingCount}
+                                        </span>
+                                    )}
+                                </Link>
+                                <Link href="/join-trainer" className={navLink('/join-trainer')} aria-current={isActive('/join-trainer') ? 'page' : undefined}>
+                                    <UserCheck className="mr-2 h-4 w-4" aria-hidden="true" />
+                                    {t('nav.becomeTrainer')}
+                                </Link>
+                            </>
+                        )}
+                        {(userRole === 'student' || userRole === 'volunteer') && (
+                            <Link href="/dashboard" className={navLink('/dashboard')} aria-current={isActive('/dashboard') ? 'page' : undefined}>
+                                <GraduationCap className="mr-2 h-4 w-4" aria-hidden="true" />
+                                {t('nav.myCourses', { fallback: 'My Learning' })}
+                            </Link>
+                        )}
+                        {userRole === 'company' && (
+                            <>
+                                <Link href="/company/jobs" className={navLink('/company/jobs')} aria-current={isActive('/company/jobs') ? 'page' : undefined}>
+                                    <Briefcase className="mr-2 h-4 w-4" aria-hidden="true" />
+                                    {t('nav.myJobs')}
+                                </Link>
+                                <Link href="/company/courses" className={navLink('/company/courses')} aria-current={isActive('/company/courses') ? 'page' : undefined}>
+                                    <GraduationCap className="mr-2 h-4 w-4" aria-hidden="true" />
+                                    {t('nav.myCourses')}
+                                </Link>
+                            </>
+                        )}
+                        {userRole === 'trainer' && (
+                            <>
+                                <Link href="/trainer" className={navLink('/trainer')} aria-current={isActive('/trainer') ? 'page' : undefined}>
                                     <GraduationCap className="mr-2 h-4 w-4" aria-hidden="true" />
                                     {t('nav.myCourses')}
                                 </Link>
@@ -213,7 +221,7 @@ export function Header({ locale = 'en' }: HeaderProps) {
                                 </Link>
                             </>
                         )}
-                        {session?.user?.role === 'admin' && (
+                        {userRole === 'admin' && (
                             <>
                                 <Link href="/admin/trainers" className={navLink('/admin/trainers')} aria-current={isActive('/admin/trainers') ? 'page' : undefined}>
                                     <Users className="mr-2 h-4 w-4" aria-hidden="true" />
@@ -237,8 +245,8 @@ export function Header({ locale = 'en' }: HeaderProps) {
                                 </Link>
                             </>
                         )}
-                        {session?.user?.role === 'volunteer' && (
-                            <Link href="/volunteer/affiliate" className={navLink('/volunteer/affiliate')} aria-current={isActive('/volunteer/affiliate') ? 'page' : undefined}>
+                        {userRole === 'volunteer' && (
+                            <Link href="/volunteer" className={navLink('/volunteer')} aria-current={isActive('/volunteer') ? 'page' : undefined}>
                                 <Briefcase className="mr-2 h-4 w-4" aria-hidden="true" />
                                 {t('nav.volunteerDashboard')}
                             </Link>
@@ -250,12 +258,18 @@ export function Header({ locale = 'en' }: HeaderProps) {
                         {/* Language Switcher — always visible */}
                         <LanguageSwitcher currentLocale={locale} />
 
-                        {status === 'loading' ? (
+                        {!isLoaded ? (
                             <div className="h-8 w-20 animate-pulse rounded-lg bg-gray-200" aria-label={t('auth.loading')} />
-                        ) : session ? (
+                        ) : null}
+
+                        {user ? (
                             <>
                                 <Link
-                                    href="/dashboard"
+                                    href={
+                                        userRole === 'student' || userRole === 'volunteer' || !userRole
+                                            ? '/dashboard'
+                                            : `/${userRole}`
+                                    }
                                     className="hidden sm:inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-700 transition-all duration-200 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 min-h-[44px]"
                                     aria-label={t('auth.dashboard')}
                                 >
@@ -280,19 +294,30 @@ export function Header({ locale = 'en' }: HeaderProps) {
                                         )}
                                     </div>
                                 </Link>
-                                <button
-                                    onClick={() => signOut({ callbackUrl: `/${locale}` })}
-                                    className="hidden sm:inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium text-red-600 transition-all duration-200 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 min-h-[44px]"
-                                    aria-label={t('auth.signOut')}
-                                >
-                                    <LogOut className="h-4 w-4 mr-1.5" aria-hidden="true" />
-                                    <span className="hidden sm:inline">{t('auth.signOut')}</span>
-                                </button>
+                                <div className="flex items-center gap-2">
+                                    <UserButton
+                                        appearance={{
+                                            elements: {
+                                                avatarBox: 'w-10 h-10 ring-2 ring-blue-600/20',
+                                            },
+                                        }}
+                                    />
+                                    <button
+                                        onClick={() => signOut({ redirectUrl: `/${locale}` })}
+                                        className="hidden sm:inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium text-red-600 transition-all duration-200 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 min-h-[44px]"
+                                        aria-label={t('auth.signOut')}
+                                    >
+                                        <LogOut className="h-4 w-4 mr-1.5" aria-hidden="true" />
+                                        <span className="hidden sm:inline">{t('auth.signOut')}</span>
+                                    </button>
+                                </div>
                             </>
-                        ) : (
+                        ) : null}
+
+                        {!user ? (
                             <>
                                 <Link
-                                    href={`/${locale}/auth/signin`}
+                                    href={`/${locale}/auth/login`}
                                     className="hidden sm:inline-flex items-center px-4 py-2 rounded-xl text-sm font-semibold text-gray-700 transition-all duration-200 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 min-h-[44px]"
                                 >
                                     {t('auth.signIn')}
@@ -304,7 +329,7 @@ export function Header({ locale = 'en' }: HeaderProps) {
                                     {t('auth.getStarted')}
                                 </Link>
                             </>
-                        )}
+                        ) : null}
 
                         {/* Mobile menu button */}
                         <button
@@ -335,40 +360,50 @@ export function Header({ locale = 'en' }: HeaderProps) {
                             );
                         })}
 
-                        {session?.user?.role === 'user' && (
-                            <Link href="/user/applications" className={`${mobileLink('/user/applications')} justify-between`} onClick={() => setMobileMenuOpen(false)} aria-current={isActive('/user/applications') ? 'page' : undefined}>
-                                <span className="flex items-center">
-                                    <FileText className="mr-3 h-5 w-5 shrink-0" aria-hidden="true" />
-                                    {t('nav.myApplications')}
-                                </span>
-                                {pendingCount > 0 && (
-                                    <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-blue-600 text-white" aria-label={t('nav.pendingApplications', { count: pendingCount })}>
-                                        {pendingCount}
-                                    </span>
-                                )}
-                            </Link>
-                        )}
-                        {session?.user?.role === 'user' && (
-                            <Link href="/join-trainer" className={mobileLink('/join-trainer')} onClick={() => setMobileMenuOpen(false)} aria-current={isActive('/join-trainer') ? 'page' : undefined}>
-                                <UserCheck className="mr-3 h-5 w-5 shrink-0" aria-hidden="true" />
-                                {t('nav.becomeTrainer')}
-                            </Link>
-                        )}
-                        {session?.user?.role === 'company' && (
-                            <Link href="/company/jobs" className={mobileLink('/company/jobs')} onClick={() => setMobileMenuOpen(false)} aria-current={isActive('/company/jobs') ? 'page' : undefined}>
-                                <Briefcase className="mr-3 h-5 w-5 shrink-0" aria-hidden="true" />
-                                {t('nav.myJobs')}
-                            </Link>
-                        )}
-                        {session?.user?.role === 'company' && (
-                            <Link href="/company/courses" className={mobileLink('/company/courses')} onClick={() => setMobileMenuOpen(false)} aria-current={isActive('/company/courses') ? 'page' : undefined}>
-                                <GraduationCap className="mr-3 h-5 w-5 shrink-0" aria-hidden="true" />
-                                {t('nav.myCourses')}
-                            </Link>
-                        )}
-                        {session?.user?.role === 'trainer' && (
+                        {userRole === 'student' && (
                             <>
-                                <Link href="/trainer/dashboard" className={mobileLink('/trainer')} onClick={() => setMobileMenuOpen(false)} aria-current={isActive('/trainer') ? 'page' : undefined}>
+                                <Link href="/student/applications" className={`${mobileLink('/student/applications')} justify-between`} onClick={() => setMobileMenuOpen(false)} aria-current={isActive('/student/applications') ? 'page' : undefined}>
+                                    <span className="flex items-center">
+                                        <FileText className="mr-3 h-5 w-5 shrink-0" aria-hidden="true" />
+                                        {t('nav.myApplications')}
+                                    </span>
+                                    {pendingCount > 0 && (
+                                        <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-blue-600 text-white" aria-label={t('nav.pendingApplications', { count: pendingCount })}>
+                                            {pendingCount}
+                                        </span>
+                                    )}
+                                </Link>
+                                <Link href="/join-trainer" className={mobileLink('/join-trainer')} onClick={() => setMobileMenuOpen(false)} aria-current={isActive('/join-trainer') ? 'page' : undefined}>
+                                    <UserCheck className="mr-3 h-5 w-5 shrink-0" aria-hidden="true" />
+                                    {t('nav.becomeTrainer')}
+                                </Link>
+                                <Link href="/dashboard" className={mobileLink('/dashboard')} onClick={() => setMobileMenuOpen(false)} aria-current={isActive('/dashboard') ? 'page' : undefined}>
+                                    <GraduationCap className="mr-3 h-5 w-5 shrink-0" aria-hidden="true" />
+                                    {t('nav.myCourses', { fallback: 'My Learning' })}
+                                </Link>
+                            </>
+                        )}
+                        {userRole === 'volunteer' && (
+                            <Link href="/dashboard" className={mobileLink('/dashboard')} onClick={() => setMobileMenuOpen(false)} aria-current={isActive('/dashboard') ? 'page' : undefined}>
+                                <GraduationCap className="mr-3 h-5 w-5 shrink-0" aria-hidden="true" />
+                                {t('nav.myCourses', { fallback: 'My Learning' })}
+                            </Link>
+                        )}
+                        {userRole === 'company' && (
+                            <>
+                                <Link href="/company/jobs" className={mobileLink('/company/jobs')} onClick={() => setMobileMenuOpen(false)} aria-current={isActive('/company/jobs') ? 'page' : undefined}>
+                                    <Briefcase className="mr-3 h-5 w-5 shrink-0" aria-hidden="true" />
+                                    {t('nav.myJobs')}
+                                </Link>
+                                <Link href="/company/courses" className={mobileLink('/company/courses')} onClick={() => setMobileMenuOpen(false)} aria-current={isActive('/company/courses') ? 'page' : undefined}>
+                                    <GraduationCap className="mr-3 h-5 w-5 shrink-0" aria-hidden="true" />
+                                    {t('nav.myCourses')}
+                                </Link>
+                            </>
+                        )}
+                        {userRole === 'trainer' && (
+                            <>
+                                <Link href="/trainer" className={mobileLink('/trainer')} onClick={() => setMobileMenuOpen(false)} aria-current={isActive('/trainer') ? 'page' : undefined}>
                                     <GraduationCap className="mr-3 h-5 w-5 shrink-0" aria-hidden="true" />
                                     {t('nav.myCourses')}
                                 </Link>
@@ -378,7 +413,7 @@ export function Header({ locale = 'en' }: HeaderProps) {
                                 </Link>
                             </>
                         )}
-                        {session?.user?.role === 'admin' && (
+                        {userRole === 'admin' && (
                             <>
                                 <Link href="/admin/trainers" className={mobileLink('/admin/trainers')} onClick={() => setMobileMenuOpen(false)} aria-current={isActive('/admin/trainers') ? 'page' : undefined}>
                                     <Users className="mr-3 h-5 w-5 shrink-0" aria-hidden="true" />
@@ -402,18 +437,18 @@ export function Header({ locale = 'en' }: HeaderProps) {
                                 </Link>
                             </>
                         )}
-                        {session?.user?.role === 'volunteer' && (
-                            <Link href="/volunteer/affiliate" className={mobileLink('/volunteer/affiliate')} onClick={() => setMobileMenuOpen(false)} aria-current={isActive('/volunteer/affiliate') ? 'page' : undefined}>
+                        {userRole === 'volunteer' && (
+                            <Link href="/volunteer" className={mobileLink('/volunteer')} onClick={() => setMobileMenuOpen(false)} aria-current={isActive('/volunteer') ? 'page' : undefined}>
                                 <Briefcase className="mr-3 h-5 w-5 shrink-0" aria-hidden="true" />
                                 {t('nav.volunteerDashboard')}
                             </Link>
                         )}
 
                         {/* Mobile Auth Buttons */}
-                        {!session && (
+                        {!user ? (
                             <div className="pt-3 mt-2 border-t border-gray-100 flex flex-col gap-2 px-1">
                                 <Link
-                                    href={`/${locale}/auth/signin`}
+                                    href={`/${locale}/auth/login`}
                                     className="flex items-center justify-center w-full min-h-[44px] px-4 py-3 rounded-xl text-sm font-semibold text-gray-700 border-2 border-gray-200 hover:bg-gray-50 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
                                     onClick={() => setMobileMenuOpen(false)}
                                 >
@@ -427,13 +462,17 @@ export function Header({ locale = 'en' }: HeaderProps) {
                                     {t('mobile.getStartedFree')}
                                 </Link>
                             </div>
-                        )}
+                        ) : null}
 
                         {/* Mobile Dashboard / Sign Out */}
-                        {session && (
+                        {user ? (
                             <div className="pt-3 mt-2 border-t border-gray-100 flex flex-col gap-2 px-1">
                                 <Link
-                                    href="/dashboard"
+                                    href={
+                                        userRole === 'student' || userRole === 'volunteer' || !userRole
+                                            ? '/dashboard'
+                                            : `/${userRole}`
+                                    }
                                     className="flex items-center w-full min-h-[44px] px-4 py-3 rounded-xl text-sm font-semibold text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
                                     onClick={() => setMobileMenuOpen(false)}
                                     aria-label={t('auth.dashboard')}
@@ -442,7 +481,7 @@ export function Header({ locale = 'en' }: HeaderProps) {
                                     {t('auth.dashboard')}
                                 </Link>
                                 <button
-                                    onClick={() => { setMobileMenuOpen(false); signOut({ callbackUrl: `/${locale}` }); }}
+                                    onClick={() => { setMobileMenuOpen(false); signOut({ redirectUrl: `/${locale}` }); }}
                                     className="flex items-center w-full min-h-[44px] px-4 py-3 rounded-xl text-sm font-semibold text-red-600 hover:bg-red-50 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600"
                                     aria-label={t('auth.signOut')}
                                 >
@@ -450,7 +489,7 @@ export function Header({ locale = 'en' }: HeaderProps) {
                                     {t('auth.signOut')}
                                 </button>
                             </div>
-                        )}
+                        ) : null}
                     </nav>
                 )}
             </nav>

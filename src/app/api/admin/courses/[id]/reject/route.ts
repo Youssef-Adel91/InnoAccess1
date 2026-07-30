@@ -14,7 +14,7 @@ import { Types } from 'mongoose';
  */
 export async function POST(
     request: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const token = await getToken({
@@ -26,7 +26,8 @@ export async function POST(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        if (!Types.ObjectId.isValid(params.id)) {
+        const { id } = await params;
+        if (!Types.ObjectId.isValid(id)) {
             return NextResponse.json({ error: 'Invalid course ID' }, { status: 400 });
         }
 
@@ -35,7 +36,7 @@ export async function POST(
 
         await connectDB();
 
-        const course = await Course.findById(params.id);
+        const course = await Course.findById(id);
         if (!course) {
             return NextResponse.json({ error: 'Course not found' }, { status: 404 });
         }

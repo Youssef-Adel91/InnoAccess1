@@ -79,6 +79,15 @@ export async function connectDB(): Promise<typeof mongoose> {
 
     try {
         cached.conn = await cached.promise;
+        // Drop legacy unique index on volunteerId that causes E11000 dup key { volunteerId: null }
+        try {
+            const db = mongoose.connection.db;
+            if (db) {
+                await db.collection('wallets').dropIndex('volunteerId_1').catch(() => {});
+            }
+        } catch (idxError) {
+            // Ignore if index does not exist or collection is not created
+        }
     } catch (error) {
         cached.promise = null;
         console.error('❌ MongoDB connection error:', error);

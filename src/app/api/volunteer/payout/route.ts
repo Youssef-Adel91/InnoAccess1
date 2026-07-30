@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { currentUser } from '@clerk/nextjs/server';
 import { connectDB } from '@/lib/db';
+import User from '@/models/User';
 import Commission, { CommissionStatus } from '@/models/Commission';
 import Wallet from '@/models/Wallet';
 import Payout, { PayoutMethod, PayoutStatus } from '@/models/Payout';
@@ -29,20 +29,25 @@ const VALID_METHODS: PayoutMethod[] = [PayoutMethod.VODAFONE_CASH, PayoutMethod.
  *
  * Body: { amount: number; method: 'vodafone_cash'|'instapay'; accountNumber: string }
  *
- * Auth: Volunteer role only.
+ * Auth: Volunteer role only (using Clerk currentUser).
  */
 export async function POST(req: NextRequest) {
     try {
-        const session = await getServerSession(authOptions);
+        const clerkUser = await currentUser();
 
-        if (!session) {
+        if (!clerkUser) {
             return NextResponse.json(
                 { success: false, error: { message: 'Authentication required', code: 'UNAUTHORIZED' } },
                 { status: 401 }
             );
         }
 
-        if (session.user.role !== 'volunteer') {
+        const email = clerkUser.emailAddresses[0]?.emailAddress?.toLowerCase().trim();
+        await connectDB();
+
+        const user = await User.findOne({ email }).select('_id role');
+
+        if (!user || (user.role !== 'volunteer' && user.role !== 'admin')) {
             return NextResponse.json(
                 { success: false, error: { message: 'Volunteers only', code: 'FORBIDDEN' } },
                 { status: 403 }
@@ -75,9 +80,7 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        await connectDB();
-
-        const volunteerId = new Types.ObjectId(session.user.id);
+        const volunteerId = user._id;
         const now = new Date();
 
         // ── Step 1: Lazy unlock (same as commissions route) ───────────────────
@@ -95,13 +98,21 @@ export async function POST(req: NextRequest) {
             );
             await Wallet.findOneAndUpdate(
                 { userId: volunteerId, userType: 'volunteer' },
-                { $inc: { pendingBalance: -totalUnlocked, availableBalance: +totalUnlocked } },
+                {
+                    $inc: { pendingBalance: -totalUnlocked, availableBalance: +totalUnlocked },
+                    $setOnInsert: { volunteerId, userType: 'volunteer' },
+                },
                 { upsert: true }
             );
         }
 
         // ── Step 2: Fetch current wallet (after unlock) ───────────────────────
-        const wallet = await Wallet.findOne({ userId: volunteerId, userType: 'volunteer' });
+        const wallet = await Wallet.findOne({
+            $or: [
+                { userId: volunteerId, userType: 'volunteer' },
+                { volunteerId: volunteerId },
+            ],
+        });
 
         if (!wallet || wallet.availableBalance < amount) {
             return NextResponse.json(

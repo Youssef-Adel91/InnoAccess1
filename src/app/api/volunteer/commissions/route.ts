@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { currentUser } from '@clerk/nextjs/server';
 import { connectDB } from '@/lib/db';
+import User from '@/models/User';
 import Commission, { CommissionStatus } from '@/models/Commission';
 import Wallet from '@/models/Wallet';
 import { Types } from 'mongoose';
@@ -17,32 +17,32 @@ import { getCommissionTier } from '@/lib/affiliateUtils';
  * any "pending" commissions whose 14-day lock period has expired into
  * "available" status, then updates the wallet balances accordingly.
  *
- * This is the agreed "lazy unlock" approach — no cron job needed. The unlock
- * fires whenever the volunteer views their dashboard or requests a payout.
- *
- * Auth: Volunteer role only.
+ * Auth: Volunteer role only (using Clerk currentUser).
  */
 export async function GET() {
     try {
-        const session = await getServerSession(authOptions);
+        const clerkUser = await currentUser();
 
-        if (!session) {
+        if (!clerkUser) {
             return NextResponse.json(
                 { success: false, error: { message: 'Authentication required', code: 'UNAUTHORIZED' } },
                 { status: 401 }
             );
         }
 
-        if (session.user.role !== 'volunteer') {
+        const email = clerkUser.emailAddresses[0]?.emailAddress?.toLowerCase().trim();
+        await connectDB();
+
+        const user = await User.findOne({ email }).select('_id role');
+
+        if (!user || (user.role !== 'volunteer' && user.role !== 'admin')) {
             return NextResponse.json(
                 { success: false, error: { message: 'Volunteers only', code: 'FORBIDDEN' } },
                 { status: 403 }
             );
         }
 
-        await connectDB();
-
-        const volunteerId = new Types.ObjectId(session.user.id);
+        const volunteerId = user._id;
         const now = new Date();
 
         // ── Step 1: Lazy unlock ───────────────────────────────────────────────
@@ -72,6 +72,7 @@ export async function GET() {
                         pendingBalance:   -totalUnlocked,
                         availableBalance: +totalUnlocked,
                     },
+                    $setOnInsert: { volunteerId, userType: 'volunteer' },
                 },
                 { upsert: true, new: true }
             );
@@ -116,7 +117,12 @@ export async function GET() {
         ]);
 
         // ── Step 3: Fetch wallet (or return zero-state if first time) ─────────
-        const wallet = await Wallet.findOne({ userId: volunteerId, userType: 'volunteer' }).lean() ?? {
+        const wallet = await Wallet.findOne({
+            $or: [
+                { userId: volunteerId, userType: 'volunteer' },
+                { volunteerId: volunteerId },
+            ],
+        }).lean() ?? {
             pendingBalance:   0,
             availableBalance: 0,
             totalEarned:      0,

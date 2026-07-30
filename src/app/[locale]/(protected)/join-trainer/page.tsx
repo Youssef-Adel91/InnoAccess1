@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
@@ -12,7 +12,7 @@ import { uploadTrainerCV } from '@/app/actions/uploadTrainerCV';
 import TrainerRegistrationForm from '@/components/auth/TrainerRegistrationForm';
 
 export default function JoinTrainerPage() {
-    const { data: session, status } = useSession();
+    const { user, isLoaded, isSignedIn } = useUser();
     const router = useRouter();
     const t = useTranslations('JoinTrainer');
 
@@ -30,22 +30,23 @@ export default function JoinTrainerPage() {
     const [cvFile, setCvFile] = useState<File | null>(null);
     const [cvUrl, setCvUrl] = useState('');
 
-    // Check authentication and existing profile
+    // Check authentication and existing profile using Clerk
     useEffect(() => {
-        if (status === 'loading') return;
+        if (!isLoaded) return;
 
-        if (!session) {
-            router.push('/api/auth/signin');
+        if (!isSignedIn) {
+            router.push('/en/auth/login');
             return;
         }
 
-        if (session.user.role !== 'user') {
-            router.push('/');
+        const userRole = (user?.publicMetadata as { role?: string })?.role;
+        if (userRole === 'trainer') {
+            router.push('/trainer');
             return;
         }
 
         fetchProfile();
-    }, [session, status, router]);
+    }, [isLoaded, isSignedIn, user, router]);
 
     const fetchProfile = async () => {
         setLoading(true);
@@ -60,8 +61,6 @@ export default function JoinTrainerPage() {
             setLoading(false);
         }
     };
-
-
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -82,7 +81,6 @@ export default function JoinTrainerPage() {
             if (cvFile) {
                 console.log('📤 Uploading CV to Vercel Blob...');
 
-                // Create FormData for server action
                 const formData = new FormData();
                 formData.append('cv', cvFile);
 
@@ -114,7 +112,6 @@ export default function JoinTrainerPage() {
 
             console.log('✅ Application submitted successfully');
 
-            // Refresh profile
             await fetchProfile();
         } catch (err: any) {
             console.error('❌ Submit error:', err);
@@ -125,7 +122,7 @@ export default function JoinTrainerPage() {
         }
     };
 
-    if (status === 'loading' || loading) {
+    if (!isLoaded || loading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
@@ -193,7 +190,6 @@ export default function JoinTrainerPage() {
         }
 
         if (profile.status === 'rejected') {
-            // Show rejection reason and allow reapplication
             return (
                 <div className="min-h-screen bg-gray-100 py-12">
                     <div className="max-w-2xl mx-auto px-4">
@@ -238,7 +234,6 @@ export default function JoinTrainerPage() {
         }
     }
 
-    // Show application form
     return (
         <div className="min-h-screen bg-gray-100 py-12">
             <div className="max-w-3xl mx-auto px-4">
@@ -262,12 +257,12 @@ export default function JoinTrainerPage() {
                             }}
                             onChange={(field, value) => {
                                 switch (field) {
-                                    case 'bio': setBio(value); break;
-                                    case 'specialization': setSpecialization(value); break;
-                                    case 'linkedInUrl': setLinkedInUrl(value); break;
-                                    case 'websiteUrl': setWebsiteUrl(value); break;
-                                    case 'cvFile': setCvFile(value); break;
-                                    case 'cvError': setError(value); break;
+                                    case 'bio': setBio(value as string); break;
+                                    case 'specialization': setSpecialization(value as string); break;
+                                    case 'linkedInUrl': setLinkedInUrl(value as string); break;
+                                    case 'websiteUrl': setWebsiteUrl(value as string); break;
+                                    case 'cvFile': setCvFile(value as File | null); break;
+                                    case 'cvError': setError(value as string); break;
                                 }
                             }}
                             errors={{

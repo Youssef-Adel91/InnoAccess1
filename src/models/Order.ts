@@ -71,13 +71,11 @@ const OrderSchema = new Schema<IOrder>(
             type: Schema.Types.ObjectId,
             ref: 'User',
             required: [true, 'User ID is required'],
-            index: true,
         },
         courseId: {
             type: Schema.Types.ObjectId,
             ref: 'Course',
             required: [true, 'Course ID is required'],
-            index: true,
         },
         amount: {
             type: Number,
@@ -93,7 +91,6 @@ const OrderSchema = new Schema<IOrder>(
             type: String,
             enum: Object.values(OrderStatus),
             default: OrderStatus.PENDING,
-            index: true,
         },
         paymentMethod: {
             type: String,
@@ -104,7 +101,6 @@ const OrderSchema = new Schema<IOrder>(
         // Paymob fields
         paymobOrderId: {
             type: String,
-            sparse: true, // Allows null but creates index for non-null values
         },
         paymobTransactionId: {
             type: String,

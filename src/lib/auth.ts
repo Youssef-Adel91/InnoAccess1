@@ -21,8 +21,7 @@ export const authOptions: NextAuthOptions = {
     // compares the Host header (the internal Vercel hostname) against the
     // NEXTAUTH_URL value (the public domain), sees a mismatch, and either hangs
     // or returns a 400 "Host mismatch" error — the root cause of the hanging
-    // auth sessions reported behind Cloudflare.
-    trustHost: true,
+    // trustHost should be set via AUTH_TRUST_HOST=1 env var in NextAuth v4
     providers: [
         CredentialsProvider({
             name: 'Credentials',

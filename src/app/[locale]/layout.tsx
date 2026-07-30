@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations } from 'next-intl/server';
+import { ClerkProvider } from '@clerk/nextjs';
 import { routing } from '@/i18n/routing';
 import '../globals.css';
 import { Header } from '@/components/layout/Header';
@@ -67,20 +68,22 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
     return (
         <html lang={locale} dir={dir}>
             <body suppressHydrationWarning>
-                <NextIntlClientProvider messages={messages}>
-                    <SessionProvider>
-                        {/*
-                          * Skip link — always the first focusable element.
-                          * The href targets #main-content which each page renders.
-                          */}
-                        <a href="#main-content" className="skip-link">
-                            {locale === 'ar' ? 'انتقل إلى المحتوى الرئيسي' : 'Skip to main content'}
-                        </a>
-                        <Header locale={locale} />
-                        {children}
-                        <Footer locale={locale} />
-                    </SessionProvider>
-                </NextIntlClientProvider>
+                <ClerkProvider>
+                    <NextIntlClientProvider messages={messages}>
+                        <SessionProvider>
+                            {/*
+                              * Skip link — always the first focusable element.
+                              * The href targets #main-content which each page renders.
+                              */}
+                            <a href="#main-content" className="skip-link">
+                                {locale === 'ar' ? 'انتقل إلى المحتوى الرئيسي' : 'Skip to main content'}
+                            </a>
+                            <Header locale={locale} />
+                            {children}
+                            <Footer locale={locale} />
+                        </SessionProvider>
+                    </NextIntlClientProvider>
+                </ClerkProvider>
             </body>
         </html>
     );

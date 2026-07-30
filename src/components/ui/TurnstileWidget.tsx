@@ -21,7 +21,7 @@ interface TurnstileProps {
 
 const TurnstileWidget = forwardRef<TurnstileRef, TurnstileProps>(({ onVerify }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
-    const widgetIdRef = useRef<string>();
+    const widgetIdRef = useRef<string | undefined>(undefined);
 
     useImperativeHandle(ref, () => ({
         reset: () => {
