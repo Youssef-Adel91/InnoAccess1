@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { currentUser } from '@clerk/nextjs/server';
 import { connectDB } from '@/lib/db';
 import User, { UserRole } from '@/models/User';
-import { authOptions } from '@/lib/auth';
 
 /**
  * GET /api/admin/companies/pending
@@ -10,10 +9,11 @@ import { authOptions } from '@/lib/auth';
  */
 export async function GET(request: NextRequest) {
     try {
-        const session = await getServerSession(authOptions);
+        const user = await currentUser();
+        const userRole = (user?.publicMetadata?.role || user?.unsafeMetadata?.role) as string | undefined;
 
         // Check if user is admin
-        if (!session || session.user.role !== 'admin') {
+        if (!user || userRole !== 'admin') {
             return NextResponse.json(
                 {
                     success: false,

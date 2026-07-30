@@ -1,9 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { useSession } from 'next-auth/react';
-import { redirect } from 'next/navigation';
-import Link from 'next/link';
+import { useUser } from '@clerk/nextjs';
+import { useRouter, Link } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { Users, Briefcase, GraduationCap, Building2, CheckCircle, XCircle, Eye, X, Mail, Banknote, TrendingUp, BarChart3, FileText, ClipboardList, AlertTriangle, BookOpen, Handshake, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -112,7 +111,8 @@ interface VolunteerPagination {
 
 export default function AdminDashboardPage() {
     const t = useTranslations('AdminDashboard');
-    const { data: session, status } = useSession();
+    const { user, isLoaded } = useUser();
+    const router = useRouter();
     const [stats, setStats] = useState<Stats | null>(null);
     const [pendingCompanies, setPendingCompanies] = useState<PendingCompany[]>([]);
     const [pendingCoursesCount, setPendingCoursesCount] = useState<number>(0);
@@ -133,16 +133,6 @@ export default function AdminDashboardPage() {
     const [volunteersError, setVolunteersError] = useState('');
     // Track whether the first fetch has happened so we only call the API once on tab open
     const hasFetchedVolunteers = useRef(false);
-
-    useEffect(() => {
-        if (status === 'unauthenticated' || (session && session.user.role !== 'admin')) {
-            redirect('/dashboard');
-        }
-
-        if (status === 'authenticated' && session.user.role === 'admin') {
-            fetchData();
-        }
-    }, [status, session]);
 
     const fetchData = useCallback(async () => {
         try {
@@ -170,6 +160,11 @@ export default function AdminDashboardPage() {
         }
     }, []);
 
+    useEffect(() => {
+        if (!isLoaded || !user) return;
+        fetchData();
+    }, [isLoaded, user, fetchData]);
+
     const fetchVolunteers = useCallback(async (page = 1, search = '') => {
         setVolunteersLoading(true);
         setVolunteersError('');
@@ -191,7 +186,7 @@ export default function AdminDashboardPage() {
     // Fetch volunteers lazily — only when the volunteers tab is first opened,
     // then re-fetch whenever the page number changes via pagination controls.
     useEffect(() => {
-        if (status !== 'authenticated') return;
+        if (!isLoaded || !user) return;
         if (activeTab !== 'volunteers') return;
         if (!hasFetchedVolunteers.current) {
             hasFetchedVolunteers.current = true;
@@ -201,7 +196,7 @@ export default function AdminDashboardPage() {
         // Subsequent calls: page change triggered from pagination buttons
         fetchVolunteers(volunteerPage, volunteerSearch);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [activeTab, volunteerPage, status]);
+    }, [activeTab, volunteerPage, isLoaded, user]);
 
     const handleApprove = async (companyId: string) => {
         if (!confirm('Approve this company?')) return;

@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { currentUser } from '@clerk/nextjs/server';
 import { z } from 'zod';
 import { connectDB } from '@/lib/db';
 import User, { UserRole } from '@/models/User';
 import { hashPassword } from '@/lib/auth-utils';
-import { authOptions } from '@/lib/auth';
 
 /**
  * Create Admin Schema
@@ -21,10 +20,11 @@ const createAdminSchema = z.object({
  */
 export async function POST(request: NextRequest) {
     try {
-        const session = await getServerSession(authOptions);
+        const user = await currentUser();
+        const userRole = (user?.publicMetadata?.role || user?.unsafeMetadata?.role) as string | undefined;
 
         // Only admins can create other admins
-        if (!session || session.user.role !== 'admin') {
+        if (!user || userRole !== 'admin') {
             return NextResponse.json(
                 {
                     success: false,

@@ -5,19 +5,18 @@ import TrainerProfile from '@/models/TrainerProfile';
 import Course from '@/models/Course';
 import Image from 'next/image';
 import { UserCircle, FileText, Briefcase, ChevronLeft } from 'lucide-react';
-import Link from 'next/link';
-import { redirect } from 'next/navigation';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
+import { Link, redirect } from '@/i18n/navigation';
+import { currentUser } from '@clerk/nextjs/server';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminTrainersDirectoryPage() {
     const t = await getTranslations('AdminTrainers');
-    const session = await getServerSession(authOptions);
+    const user = await currentUser();
+    const userRole = (user?.publicMetadata?.role || user?.unsafeMetadata?.role) as string | undefined;
 
-    if (!session || session.user.role !== 'admin') {
-        redirect('/dashboard');
+    if (!user || userRole !== 'admin') {
+        redirect({ href: '/dashboard', locale: 'en' });
     }
 
     await connectDB();

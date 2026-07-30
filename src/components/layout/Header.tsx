@@ -1,13 +1,12 @@
 'use client';
 
-import Link from 'next/link';
 import { useUser, useClerk, UserButton } from '@clerk/nextjs';
 import { useTranslations } from 'next-intl';
 // ⚠️  Both useRouter AND usePathname must come from @/i18n/navigation (next-intl's
 //     localized wrappers), NOT from next/navigation.
 //     next-intl's usePathname strips the locale prefix so router.replace receives
 //     the bare path (e.g. '/about') and prepends the new locale correctly.
-import { useRouter, usePathname } from '@/i18n/navigation';
+import { Link, useRouter, usePathname } from '@/i18n/navigation';
 import {
     Briefcase,
     GraduationCap,

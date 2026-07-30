@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { currentUser } from '@clerk/nextjs/server';
 import { connectDB } from '@/lib/db';
 import User from '@/models/User';
 import Job from '@/models/Job';
@@ -8,7 +8,6 @@ import Enrollment from '@/models/Enrollment';
 import Application from '@/models/Application';
 import Resume from '@/models/Resume';
 import Notification, { NotificationType } from '@/models/Notification';
-import { authOptions } from '@/lib/auth';
 
 /**
  * GET /api/admin/stats
@@ -16,9 +15,10 @@ import { authOptions } from '@/lib/auth';
  */
 export async function GET(request: NextRequest) {
     try {
-        const session = await getServerSession(authOptions);
+        const user = await currentUser();
+        const userRole = (user?.publicMetadata?.role || user?.unsafeMetadata?.role) as string | undefined;
 
-        if (!session || session.user.role !== 'admin') {
+        if (!user || userRole !== 'admin') {
             return NextResponse.json(
                 {
                     success: false,

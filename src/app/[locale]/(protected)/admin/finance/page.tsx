@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState, useCallback, useTransition } from 'react';
-import { useSession }      from 'next-auth/react';
+import { useUser } from '@clerk/nextjs';
+import { useRouter, Link } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
-import { redirect }        from 'next/navigation';
 import {
     TrendingUp, Banknote, ReceiptText, DollarSign,
     ChevronDown, CheckCircle2, AlertTriangle, Loader2,
@@ -182,7 +182,9 @@ const LEDGER_TYPES       = [
 
 export default function AdminFinancePage() {
     const t = useTranslations('AdminFinance');
-    const { data: session, status } = useSession();
+    const { user, isLoaded } = useUser();
+    const router = useRouter();
+    const userRole = (user?.publicMetadata?.role || user?.unsafeMetadata?.role) as string | undefined;
 
     const [activeTab, setActiveTab]       = useState<ActiveTab>('overview');
     const [summary,   setSummary]         = useState<FinanceSummary | null>(null);
@@ -205,10 +207,11 @@ export default function AdminFinancePage() {
 
     // ── Auth guard ────────────────────────────────────────────────────────────
     useEffect(() => {
-        if (status === 'unauthenticated' || (session && session.user.role !== 'admin')) {
-            redirect('/dashboard');
+        if (!isLoaded) return;
+        if (!user || userRole !== 'admin') {
+            router.push('/dashboard');
         }
-    }, [status, session]);
+    }, [isLoaded, user, userRole, router]);
 
     // ── Data fetching ─────────────────────────────────────────────────────────
     const showToast = useCallback((type: 'success' | 'error', msg: string) => {

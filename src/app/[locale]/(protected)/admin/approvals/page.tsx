@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useUser } from '@clerk/nextjs';
+import { useRouter } from '@/i18n/navigation';
 import { VideoApprovalCard } from '@/components/admin/VideoApprovalCard';
 
 interface PendingVideo {
@@ -24,21 +24,22 @@ interface PendingVideo {
 }
 
 export default function AdminApprovalsPage() {
-    const { data: session, status } = useSession();
+    const { user, isLoaded } = useUser();
     const router = useRouter();
     const [videos, setVideos] = useState<PendingVideo[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [filter, setFilter] = useState<{ course?: string; trainer?: string }>({});
+    const userRole = (user?.publicMetadata?.role || user?.unsafeMetadata?.role) as string | undefined;
 
     // Check if user is admin
     useEffect(() => {
-        if (status === 'loading') return;
+        if (!isLoaded) return;
 
-        if (!session || session.user.role !== 'admin') {
-            router.push('/');
+        if (!user || userRole !== 'admin') {
+            router.push('/dashboard');
         }
-    }, [session, status, router]);
+    }, [user, isLoaded, userRole, router]);
 
     // Fetch pending videos
     const fetchPendingVideos = async () => {
@@ -49,23 +50,24 @@ export default function AdminApprovalsPage() {
             const response = await fetch('/api/admin/pending-videos');
             const data = await response.json();
 
-            if (!data.success) {
-                throw new Error(data.error?.message || 'Failed to fetch pending videos');
+            if (data.success) {
+                setVideos(data.data);
+            } else {
+                setError(data.error?.message || 'Failed to fetch pending videos');
             }
-
-            setVideos(data.data.videos);
         } catch (err: any) {
-            setError(err.message);
+            setError('Error loading pending videos. Please try again.');
+            console.error('Error fetching pending videos:', err);
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        if (session?.user.role === 'admin') {
+        if (isLoaded && userRole === 'admin') {
             fetchPendingVideos();
         }
-    }, [session]);
+    }, [isLoaded, userRole]);
 
     // Get unique courses and trainers for filters
     const uniqueCourses = Array.from(new Set(videos.map(v => v.courseTitle)));
@@ -78,7 +80,7 @@ export default function AdminApprovalsPage() {
         return true;
     });
 
-    if (status === 'loading') {
+    if (!isLoaded) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
@@ -89,7 +91,7 @@ export default function AdminApprovalsPage() {
         );
     }
 
-    if (!session || session.user.role !== 'admin') {
+    if (!user || userRole !== 'admin') {
         return null;
     }
 

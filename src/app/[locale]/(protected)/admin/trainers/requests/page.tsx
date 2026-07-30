@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useUser } from '@clerk/nextjs';
+import { useRouter } from '@/i18n/navigation';
 import { TrainerRequestCard } from '@/components/admin/TrainerRequestCard';
 
 interface TrainerApplication {
@@ -21,20 +21,21 @@ interface TrainerApplication {
 }
 
 export default function TrainerRequestsPage() {
-    const { data: session, status } = useSession();
+    const { user, isLoaded } = useUser();
     const router = useRouter();
     const [applications, setApplications] = useState<TrainerApplication[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const userRole = (user?.publicMetadata?.role || user?.unsafeMetadata?.role) as string | undefined;
 
     // Check if user is admin
     useEffect(() => {
-        if (status === 'loading') return;
+        if (!isLoaded) return;
 
-        if (!session || session.user.role !== 'admin') {
-            router.push('/');
+        if (!user || userRole !== 'admin') {
+            router.push('/dashboard');
         }
-    }, [session, status, router]);
+    }, [user, isLoaded, userRole, router]);
 
     // Fetch pending applications
     const fetchApplications = async () => {
@@ -45,25 +46,26 @@ export default function TrainerRequestsPage() {
             const response = await fetch('/api/admin/trainer-requests');
             const data = await response.json();
 
-            if (!data.success) {
-                throw new Error(data.error?.message || 'Failed to fetch applications');
+            if (data.success) {
+                setApplications(data.data);
+            } else {
+                setError(data.error?.message || 'Failed to fetch applications');
             }
-
-            setApplications(data.data.applications);
         } catch (err: any) {
-            setError(err.message);
+            setError('Error loading applications. Please try again.');
+            console.error('Error fetching applications:', err);
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        if (session?.user.role === 'admin') {
+        if (isLoaded && userRole === 'admin') {
             fetchApplications();
         }
-    }, [session]);
+    }, [isLoaded, userRole]);
 
-    if (status === 'loading') {
+    if (!isLoaded) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
@@ -74,7 +76,7 @@ export default function TrainerRequestsPage() {
         );
     }
 
-    if (!session || session.user.role !== 'admin') {
+    if (!user || userRole !== 'admin') {
         return null;
     }
 

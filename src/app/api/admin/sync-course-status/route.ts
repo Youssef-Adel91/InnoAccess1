@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { currentUser } from '@clerk/nextjs/server';
 import { connectDB } from '@/lib/db';
 import mongoose from 'mongoose';
 
@@ -21,9 +20,10 @@ import mongoose from 'mongoose';
  */
 export async function POST(request: Request) {
     try {
-        const session = await getServerSession(authOptions);
+        const user = await currentUser();
+        const userRole = (user?.publicMetadata?.role || user?.unsafeMetadata?.role) as string | undefined;
 
-        if (!session || session.user.role !== 'admin') {
+        if (!user || userRole !== 'admin') {
             return NextResponse.json(
                 { success: false, error: { message: 'Admin access required', code: 'FORBIDDEN' } },
                 { status: 403 }

@@ -2,9 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import React from 'react';
-import { useSession }   from 'next-auth/react';
-import { redirect }     from 'next/navigation';
-import Link             from 'next/link';
+import { useUser } from '@clerk/nextjs';
+import { useRouter, Link } from '@/i18n/navigation';
 import {
     GraduationCap, ChevronLeft, TrendingUp, Users, Banknote,
     Search, Radio, PlayCircle, CheckCircle, XCircle, Clock,
@@ -55,7 +54,9 @@ function formatDate(iso: string) {
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 export default function AdminCoursesPage() {
-    const { data: session, status } = useSession();
+    const { user, isLoaded } = useUser();
+    const router = useRouter();
+    const userRole = (user?.publicMetadata?.role || user?.unsafeMetadata?.role) as string | undefined;
 
     const [courses,     setCourses]     = useState<CourseIntelligence[]>([]);
     const [totals,      setTotals]      = useState<Totals>({ revenue: 0, enrollments: 0, courses: 0 });
@@ -89,11 +90,16 @@ export default function AdminCoursesPage() {
     }, [pubFilter]);
 
     useEffect(() => {
-        if (session?.user?.role === 'admin') fetchCourses();
-    }, [session, fetchCourses]);
+        if (!isLoaded) return;
+        if (!user || userRole !== 'admin') {
+            router.push('/dashboard');
+            return;
+        }
+        fetchCourses();
+    }, [isLoaded, user, userRole, router, fetchCourses]);
 
     // ── Auth ──────────────────────────────────────────────────────────────────
-    if (status === 'loading') {
+    if (!isLoaded) {
         return (
             <main id="main-content" className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="animate-spin h-10 w-10 border-4 border-blue-600 border-t-transparent rounded-full" aria-hidden="true" />
@@ -101,8 +107,8 @@ export default function AdminCoursesPage() {
         );
     }
 
-    if (status === 'unauthenticated' || session?.user?.role !== 'admin') {
-        redirect('/dashboard');
+    if (!user || userRole !== 'admin') {
+        return null;
     }
 
     // ── Client-side filter ────────────────────────────────────────────────────

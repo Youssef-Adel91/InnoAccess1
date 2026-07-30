@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getToken } from 'next-auth/jwt';
+import { currentUser } from '@clerk/nextjs/server';
 import { connectDB } from '@/lib/db';
 import Course, { CourseStatus, ICourseContract } from '@/models/Course';
 import { Types } from 'mongoose';
@@ -9,12 +9,10 @@ export async function POST(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const token = await getToken({
-            req: request as any,
-            secret: process.env.NEXTAUTH_SECRET,
-        });
+        const user = await currentUser();
+        const userRole = (user?.publicMetadata?.role || user?.unsafeMetadata?.role) as string | undefined;
 
-        if (!token || token.role !== 'admin') {
+        if (!user || userRole !== 'admin') {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 

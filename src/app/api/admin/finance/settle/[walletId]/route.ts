@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { currentUser } from '@clerk/nextjs/server';
 import { connectDB } from '@/lib/db';
+import User from '@/models/User';
 import Wallet from '@/models/Wallet';
 import LedgerEntry, { LedgerEntryType } from '@/models/LedgerEntry';
 import mongoose, { Types } from 'mongoose';
@@ -29,8 +29,9 @@ export async function POST(
     { params }: { params: Promise<{ walletId: string }> }
 ) {
     try {
-        const session = await getServerSession(authOptions);
-        if (!session || session.user.role !== 'admin') {
+        const user = await currentUser();
+        const userRole = (user?.publicMetadata?.role || user?.unsafeMetadata?.role) as string | undefined;
+        if (!user || userRole !== 'admin') {
             return NextResponse.json(
                 { success: false, error: { message: 'Admin access required', code: 'FORBIDDEN' } },
                 { status: 403 }
@@ -72,7 +73,8 @@ export async function POST(
         }
 
         const settledAmount = wallet.availableBalance;
-        const adminId       = new Types.ObjectId(session.user.id);
+        const dbUser = await User.findOne({ email: user.emailAddresses?.[0]?.emailAddress });
+        const adminId       = dbUser?._id || new Types.ObjectId();
 
         // ── Step 2: Transaction — all-or-nothing ──────────────────────────────
         const dbSession = await mongoose.startSession();

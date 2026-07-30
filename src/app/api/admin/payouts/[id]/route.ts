@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { currentUser } from '@clerk/nextjs/server';
 import { connectDB } from '@/lib/db';
+import User from '@/models/User';
 import Payout, { PayoutStatus } from '@/models/Payout';
 import Commission, { CommissionStatus } from '@/models/Commission';
 import Wallet from '@/models/Wallet';
@@ -47,9 +47,10 @@ export async function PATCH(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await getServerSession(authOptions);
+        const user = await currentUser();
+        const userRole = (user?.publicMetadata?.role || user?.unsafeMetadata?.role) as string | undefined;
 
-        if (!session || session.user.role !== 'admin') {
+        if (!user || userRole !== 'admin') {
             return NextResponse.json(
                 { success: false, error: { message: 'Admin access required', code: 'FORBIDDEN' } },
                 { status: 403 }
@@ -117,7 +118,8 @@ export async function PATCH(
             );
         }
 
-        const adminId = new Types.ObjectId(session.user.id);
+        const dbUser  = await User.findOne({ email: user.emailAddresses?.[0]?.emailAddress });
+        const adminId = dbUser?._id || new Types.ObjectId();
         const now     = new Date();
 
         // ── APPROVED or PAID: simple status update ────────────────────────────
@@ -130,7 +132,7 @@ export async function PATCH(
             }
             await payout.save();
 
-            console.log(`✅ Payout ${id}: ${payout.status} → ${newStatus} by admin ${session.user.id}`);
+            console.log(`✅ Payout ${id}: ${payout.status} → ${newStatus} by admin ${user.id}`);
 
             return NextResponse.json({
                 success: true,
@@ -198,7 +200,7 @@ export async function PATCH(
             await dbSession.commitTransaction();
 
             console.log(
-                `🔄 Payout ${id} REJECTED by admin ${session.user.id}. ` +
+                `🔄 Payout ${id} REJECTED by admin ${user.id}. ` +
                 `Refunded EGP ${payout.amount} to volunteer ${payout.volunteerId}. ` +
                 `${payout.commissionIds.length} commission(s) restored to 'available'.`
             );

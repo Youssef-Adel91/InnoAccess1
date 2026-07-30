@@ -3,10 +3,9 @@ import { connectDB } from '@/lib/db';
 import Course from '@/models/Course';
 import Enrollment from '@/models/Enrollment';
 import { UserRole } from '@/models/User';
-import Link from 'next/link';
-import { redirect, notFound } from 'next/navigation';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
+import { Link, redirect } from '@/i18n/navigation';
+import { notFound } from 'next/navigation';
+import { currentUser } from '@clerk/nextjs/server';
 import { ChevronLeft, Users, Calendar, Mail, GraduationCap } from 'lucide-react';
 import { Types } from 'mongoose';
 
@@ -14,10 +13,11 @@ export const dynamic = 'force-dynamic';
 
 export default async function AdminCourseAnalyticsPage({ params }: { params: { id: string, locale: string } }) {
     const t = await getTranslations('AdminCourseDetails');
-    const session = await getServerSession(authOptions);
+    const user = await currentUser();
+    const userRole = (user?.publicMetadata?.role || user?.unsafeMetadata?.role) as string | undefined;
 
-    if (!session || session.user.role !== 'admin') {
-        redirect('/dashboard');
+    if (!user || userRole !== 'admin') {
+        redirect({ href: '/dashboard', locale: 'en' });
     }
 
     if (!Types.ObjectId.isValid(params.id)) {

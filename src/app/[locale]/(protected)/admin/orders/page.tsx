@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useUser } from '@clerk/nextjs';
+import { useRouter } from '@/i18n/navigation';
 import { CheckCircle, XCircle, Eye, Loader2, DollarSign } from 'lucide-react';
 import { approveManualPayment, rejectManualPayment } from '@/app/actions/payment';
 import { useTranslations } from 'next-intl';
@@ -27,9 +27,10 @@ interface Order {
 }
 
 export default function AdminOrdersPage() {
-    const { data: session, status } = useSession();
+    const { user, isLoaded } = useUser();
     const router = useRouter();
     const t = useTranslations('Admin.orders');
+    const userRole = (user?.publicMetadata?.role || user?.unsafeMetadata?.role) as string | undefined;
 
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
@@ -38,13 +39,13 @@ export default function AdminOrdersPage() {
     const [selectedReceipt, setSelectedReceipt] = useState<string | null>(null);
 
     useEffect(() => {
-        if (status === 'loading') return;
-        if (!session || session.user.role !== 'admin') {
-            router.push('/');
+        if (!isLoaded) return;
+        if (!user || userRole !== 'admin') {
+            router.push('/dashboard');
             return;
         }
         fetchOrders();
-    }, [session, status]);
+    }, [user, isLoaded, userRole, router]);
 
     const fetchOrders = async () => {
         setLoading(true);

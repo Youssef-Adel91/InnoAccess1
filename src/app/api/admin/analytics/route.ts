@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { currentUser } from '@clerk/nextjs/server';
 import { connectDB } from '@/lib/db';
 import User from '@/models/User';
 import Enrollment from '@/models/Enrollment';
@@ -24,9 +23,10 @@ export const revalidate = 3600; // 1-hour ISR cache
 
 export async function GET() {
     try {
-        const session = await getServerSession(authOptions);
+        const user = await currentUser();
+        const userRole = (user?.publicMetadata?.role || user?.unsafeMetadata?.role) as string | undefined;
 
-        if (!session || session.user.role !== 'admin') {
+        if (!user || userRole !== 'admin') {
             return NextResponse.json(
                 { success: false, error: { message: 'Admin access required', code: 'FORBIDDEN' } },
                 { status: 403 }

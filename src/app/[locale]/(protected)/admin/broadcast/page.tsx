@@ -1,14 +1,14 @@
 'use client';
 
-import { useState } from 'react';
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { useState, useEffect } from 'react';
+import { useUser } from '@clerk/nextjs';
+import { useRouter, Link } from '@/i18n/navigation';
 import { ArrowLeft, Mail, Send, Loader2, CheckCircle } from 'lucide-react';
 
 export default function BroadcastPage() {
-    const { data: session, status } = useSession();
+    const { user, isLoaded } = useUser();
     const router = useRouter();
+    const userRole = (user?.publicMetadata?.role || user?.unsafeMetadata?.role) as string | undefined;
 
     const [subject, setSubject] = useState('');
     const [message, setMessage] = useState('');
@@ -17,15 +17,21 @@ export default function BroadcastPage() {
     const [error, setError] = useState<string | null>(null);
     const [result, setResult] = useState<{ successCount: number; totalUsers: number } | null>(null);
 
+    useEffect(() => {
+        if (!isLoaded) return;
+        if (!user || userRole !== 'admin') {
+            router.push('/dashboard');
+        }
+    }, [isLoaded, user, userRole, router]);
+
     // Redirect if not admin
-    if (status === 'loading') {
+    if (!isLoaded) {
         return <div className="min-h-screen flex items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
         </div>;
     }
 
-    if (!session || session.user.role !== 'admin') {
-        router.push('/');
+    if (!user || userRole !== 'admin') {
         return null;
     }
 

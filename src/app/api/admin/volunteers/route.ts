@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { currentUser } from '@clerk/nextjs/server';
 import { connectDB } from '@/lib/db';
 import User, { UserRole } from '@/models/User';
 import Commission from '@/models/Commission';
@@ -20,8 +19,9 @@ import mongoose from 'mongoose';
 export async function GET(request: NextRequest) {
     try {
         // ── Auth guard: admins only ──────────────────────────────────────────────
-        const session = await getServerSession(authOptions);
-        if (!session || session.user.role !== UserRole.ADMIN) {
+        const user = await currentUser();
+        const userRole = (user?.publicMetadata?.role || user?.unsafeMetadata?.role) as string | undefined;
+        if (!user || userRole !== 'admin') {
             return NextResponse.json(
                 { success: false, error: { message: 'Forbidden', code: 'FORBIDDEN' } },
                 { status: 403 }

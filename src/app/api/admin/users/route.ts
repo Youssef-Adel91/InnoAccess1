@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { currentUser } from '@clerk/nextjs/server';
 import { connectDB } from '@/lib/db';
 import User, { UserRole } from '@/models/User';
 
@@ -24,8 +23,9 @@ import User, { UserRole } from '@/models/User';
 export async function GET(request: NextRequest) {
     try {
         // Auth guard: admins only
-        const session = await getServerSession(authOptions);
-        if (!session || session.user.role !== UserRole.ADMIN) {
+        const user = await currentUser();
+        const userRole = (user?.publicMetadata?.role || user?.unsafeMetadata?.role) as string | undefined;
+        if (!user || userRole !== 'admin') {
             return NextResponse.json(
                 { success: false, error: { message: 'Forbidden', code: 'FORBIDDEN' } },
                 { status: 403 }
@@ -111,8 +111,9 @@ export async function GET(request: NextRequest) {
  */
 export async function PATCH(request: NextRequest) {
     try {
-        const session = await getServerSession(authOptions);
-        if (!session || session.user.role !== UserRole.ADMIN) {
+        const authUser = await currentUser();
+        const userRole = (authUser?.publicMetadata?.role || authUser?.unsafeMetadata?.role) as string | undefined;
+        if (!authUser || userRole !== 'admin') {
             return NextResponse.json(
                 { success: false, error: { message: 'Forbidden', code: 'FORBIDDEN' } },
                 { status: 403 }
@@ -131,25 +132,25 @@ export async function PATCH(request: NextRequest) {
 
         await connectDB();
 
-        const user = await User.findOne({ email });
-        if (!user) {
+        const dbUser = await User.findOne({ email });
+        if (!dbUser) {
             return NextResponse.json(
                 { success: false, error: { message: 'No account found with this email', code: 'NOT_FOUND' } },
                 { status: 404 }
             );
         }
 
-        if (user.isActive) {
+        if (dbUser.isActive) {
             return NextResponse.json(
                 { success: false, error: { message: 'Account is already active', code: 'ALREADY_ACTIVE' } },
                 { status: 409 }
             );
         }
 
-        user.isActive = true;
-        await user.save();
+        dbUser.isActive = true;
+        await dbUser.save();
 
-        console.log(`[Admin] Reactivated ghost account for: ${email} by admin ${session.user.email}`);
+        console.log(`[Admin] Reactivated ghost account for: ${email} by admin ${authUser.emailAddresses?.[0]?.emailAddress}`);
 
         return NextResponse.json({
             success: true,

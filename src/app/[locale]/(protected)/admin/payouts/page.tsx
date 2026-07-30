@@ -1,9 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { useSession }  from 'next-auth/react';
-import { redirect }    from 'next/navigation';
-import Link            from 'next/link';
+import { useUser } from '@clerk/nextjs';
+import { useRouter, Link } from '@/i18n/navigation';
 import {
     Banknote, Clock, CheckCircle, BadgeCheck, XCircle,
     ChevronLeft, Loader2, AlertCircle, User, Phone, X,
@@ -189,7 +188,9 @@ function RejectModal({
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function AdminPayoutsPage() {
-    const { data: session, status } = useSession();
+    const { user, isLoaded } = useUser();
+    const router = useRouter();
+    const userRole = (user?.publicMetadata?.role || user?.unsafeMetadata?.role) as string | undefined;
 
     const [data,         setData]         = useState<QueueData | null>(null);
     const [activeTab,    setActiveTab]    = useState<PayoutStatus | 'all'>('pending');
@@ -214,13 +215,16 @@ export default function AdminPayoutsPage() {
     }, []);
 
     useEffect(() => {
-        if (session?.user?.role === 'admin') {
-            fetchPayouts(activeTab);
+        if (!isLoaded) return;
+        if (!user || userRole !== 'admin') {
+            router.push('/dashboard');
+            return;
         }
-    }, [session, activeTab, fetchPayouts]);
+        fetchPayouts(activeTab);
+    }, [isLoaded, user, userRole, router, activeTab, fetchPayouts]);
 
     // ── Auth guards ───────────────────────────────────────────────────────────
-    if (status === 'loading') {
+    if (!isLoaded) {
         return (
             <main id="main-content" className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="animate-spin h-10 w-10 border-4 border-blue-600 border-t-transparent rounded-full" aria-hidden="true" />
@@ -228,8 +232,8 @@ export default function AdminPayoutsPage() {
         );
     }
 
-    if (status === 'unauthenticated' || session?.user?.role !== 'admin') {
-        redirect('/dashboard');
+    if (!user || userRole !== 'admin') {
+        return null;
     }
 
     // ── Toast helper ──────────────────────────────────────────────────────────

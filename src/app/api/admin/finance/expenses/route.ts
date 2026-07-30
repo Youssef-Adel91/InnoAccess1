@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { currentUser } from '@clerk/nextjs/server';
 import { connectDB } from '@/lib/db';
+import User from '@/models/User';
 import Expense, { ExpenseCategory } from '@/models/Expense';
 import LedgerEntry, { LedgerEntryType } from '@/models/LedgerEntry';
 import { Types } from 'mongoose';
@@ -23,8 +23,9 @@ import { Types } from 'mongoose';
  */
 export async function GET(req: NextRequest) {
     try {
-        const session = await getServerSession(authOptions);
-        if (!session || session.user.role !== 'admin') {
+        const user = await currentUser();
+        const userRole = (user?.publicMetadata?.role || user?.unsafeMetadata?.role) as string | undefined;
+        if (!user || userRole !== 'admin') {
             return NextResponse.json(
                 { success: false, error: { message: 'Admin access required', code: 'FORBIDDEN' } },
                 { status: 403 }
@@ -131,8 +132,9 @@ export async function GET(req: NextRequest) {
  */
 export async function POST(req: NextRequest) {
     try {
-        const session = await getServerSession(authOptions);
-        if (!session || session.user.role !== 'admin') {
+        const user = await currentUser();
+        const userRole = (user?.publicMetadata?.role || user?.unsafeMetadata?.role) as string | undefined;
+        if (!user || userRole !== 'admin') {
             return NextResponse.json(
                 { success: false, error: { message: 'Admin access required', code: 'FORBIDDEN' } },
                 { status: 403 }
@@ -186,7 +188,8 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const adminId = new Types.ObjectId(session.user.id);
+        const dbUser = await User.findOne({ email: user.emailAddresses?.[0]?.emailAddress });
+        const adminId = dbUser?._id || new Types.ObjectId();
         const trimmedDescription = (description as string).trim();
 
         // ── Create LedgerEntry first, then Expense with ledgerEntryId ref ─────
