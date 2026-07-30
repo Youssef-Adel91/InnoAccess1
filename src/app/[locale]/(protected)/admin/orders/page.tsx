@@ -79,13 +79,17 @@ export default function AdminOrdersPage() {
         setError(null);
 
         try {
-            const result = await approveManualPayment(orderId);
+            const response = await fetch(`/api/admin/orders/${orderId}/approve`, {
+                method: 'POST',
+            });
+            const result = await response.json();
 
-            if (!result.success) {
+            if (!response.ok || !result.success) {
                 throw new Error(result.error?.message || 'Failed to approve payment');
             }
 
-            await fetchOrders(); // Refresh list
+            await fetchOrders(); // Refresh orders list immediately
+            router.refresh();    // Refresh server components & UI state
         } catch (err: any) {
             setError(err.message);
         } finally {
