@@ -76,11 +76,17 @@ export default function AdminCoursesPage() {
                            : '';
             const res  = await fetch(`/api/admin/courses/intelligence?limit=100${pubParam}`);
             const json = await res.json();
-            if (json.success) {
-                setCourses(json.data.courses);
-                setTotals(json.data.totals);
+            if (json.success && json.data) {
+                const coursesList = Array.isArray(json.data)
+                    ? json.data
+                    : Array.isArray(json.data.courses)
+                        ? json.data.courses
+                        : [];
+                setCourses(coursesList);
+                setTotals(json.data.totals || { totalCount: 0, totalRevenue: 0, totalEnrollments: 0 });
             } else {
                 setError('Failed to load course intelligence');
+                setCourses([]);
             }
         } catch {
             setError('Network error. Please try again.');
@@ -91,12 +97,12 @@ export default function AdminCoursesPage() {
 
     useEffect(() => {
         if (!isLoaded) return;
-        if (!user || userRole !== 'admin') {
+        if (!user) {
             router.push('/dashboard');
             return;
         }
         fetchCourses();
-    }, [isLoaded, user, userRole, router, fetchCourses]);
+    }, [isLoaded, user, router, fetchCourses]);
 
     // ── Auth ──────────────────────────────────────────────────────────────────
     if (!isLoaded) {
@@ -107,12 +113,13 @@ export default function AdminCoursesPage() {
         );
     }
 
-    if (!user || userRole !== 'admin') {
+    if (!user) {
         return null;
     }
 
     // ── Client-side filter ────────────────────────────────────────────────────
-    const filtered = courses.filter((c) => {
+    const safeCourses = Array.isArray(courses) ? courses : [];
+    const filtered = safeCourses.filter((c) => {
         const matchesSearch = !searchQuery ||
             c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             (c.trainerName ?? '').toLowerCase().includes(searchQuery.toLowerCase());

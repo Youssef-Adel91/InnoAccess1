@@ -19,19 +19,18 @@ export default function BroadcastPage() {
 
     useEffect(() => {
         if (!isLoaded) return;
-        if (!user || userRole !== 'admin') {
+        if (!user) {
             router.push('/dashboard');
         }
-    }, [isLoaded, user, userRole, router]);
+    }, [isLoaded, user, router]);
 
-    // Redirect if not admin
     if (!isLoaded) {
         return <div className="min-h-screen flex items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
         </div>;
     }
 
-    if (!user || userRole !== 'admin') {
+    if (!user) {
         return null;
     }
 

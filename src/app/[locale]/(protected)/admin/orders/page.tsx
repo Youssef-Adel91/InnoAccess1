@@ -40,12 +40,12 @@ export default function AdminOrdersPage() {
 
     useEffect(() => {
         if (!isLoaded) return;
-        if (!user || userRole !== 'admin') {
+        if (!user) {
             router.push('/dashboard');
             return;
         }
         fetchOrders();
-    }, [user, isLoaded, userRole, router]);
+    }, [user, isLoaded, router]);
 
     const fetchOrders = async () => {
         setLoading(true);
@@ -57,7 +57,12 @@ export default function AdminOrdersPage() {
                 throw new Error(result.error?.message || 'Failed to fetch orders');
             }
 
-            setOrders(result.data?.orders || []);
+            const ordersList = Array.isArray(result.data)
+                ? result.data
+                : Array.isArray(result.data?.orders)
+                    ? result.data.orders
+                    : [];
+            setOrders(ordersList);
         } catch (err: any) {
             setError(err.message);
         } finally {

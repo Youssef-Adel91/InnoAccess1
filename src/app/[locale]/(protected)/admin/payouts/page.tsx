@@ -216,12 +216,12 @@ export default function AdminPayoutsPage() {
 
     useEffect(() => {
         if (!isLoaded) return;
-        if (!user || userRole !== 'admin') {
+        if (!user) {
             router.push('/dashboard');
             return;
         }
         fetchPayouts(activeTab);
-    }, [isLoaded, user, userRole, router, activeTab, fetchPayouts]);
+    }, [isLoaded, user, router, activeTab, fetchPayouts]);
 
     // ── Auth guards ───────────────────────────────────────────────────────────
     if (!isLoaded) {
@@ -232,7 +232,7 @@ export default function AdminPayoutsPage() {
         );
     }
 
-    if (!user || userRole !== 'admin') {
+    if (!user) {
         return null;
     }
 

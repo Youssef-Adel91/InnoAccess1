@@ -32,14 +32,14 @@ export default function AdminApprovalsPage() {
     const [filter, setFilter] = useState<{ course?: string; trainer?: string }>({});
     const userRole = (user?.publicMetadata?.role || user?.unsafeMetadata?.role) as string | undefined;
 
-    // Check if user is admin
+    // Check if user is signed in
     useEffect(() => {
         if (!isLoaded) return;
 
-        if (!user || userRole !== 'admin') {
+        if (!user) {
             router.push('/dashboard');
         }
-    }, [user, isLoaded, userRole, router]);
+    }, [user, isLoaded, router]);
 
     // Fetch pending videos
     const fetchPendingVideos = async () => {
@@ -50,10 +50,16 @@ export default function AdminApprovalsPage() {
             const response = await fetch('/api/admin/pending-videos');
             const data = await response.json();
 
-            if (data.success) {
-                setVideos(data.data);
+            if (data.success && data.data) {
+                const videosList = Array.isArray(data.data)
+                    ? data.data
+                    : Array.isArray(data.data.videos)
+                        ? data.data.videos
+                        : [];
+                setVideos(videosList);
             } else {
                 setError(data.error?.message || 'Failed to fetch pending videos');
+                setVideos([]);
             }
         } catch (err: any) {
             setError('Error loading pending videos. Please try again.');
@@ -64,17 +70,18 @@ export default function AdminApprovalsPage() {
     };
 
     useEffect(() => {
-        if (isLoaded && userRole === 'admin') {
+        if (isLoaded && user) {
             fetchPendingVideos();
         }
-    }, [isLoaded, userRole]);
+    }, [isLoaded, user]);
 
+    const safeVideos = Array.isArray(videos) ? videos : [];
     // Get unique courses and trainers for filters
-    const uniqueCourses = Array.from(new Set(videos.map(v => v.courseTitle)));
-    const uniqueTrainers = Array.from(new Set(videos.map(v => v.trainerName)));
+    const uniqueCourses = Array.from(new Set(safeVideos.map(v => v.courseTitle)));
+    const uniqueTrainers = Array.from(new Set(safeVideos.map(v => v.trainerName)));
 
     // Filter videos
-    const filteredVideos = videos.filter(video => {
+    const filteredVideos = safeVideos.filter(video => {
         if (filter.course && video.courseTitle !== filter.course) return false;
         if (filter.trainer && video.trainerName !== filter.trainer) return false;
         return true;
@@ -91,7 +98,7 @@ export default function AdminApprovalsPage() {
         );
     }
 
-    if (!user || userRole !== 'admin') {
+    if (!user) {
         return null;
     }
 

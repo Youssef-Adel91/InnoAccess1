@@ -28,14 +28,14 @@ export default function TrainerRequestsPage() {
     const [error, setError] = useState<string | null>(null);
     const userRole = (user?.publicMetadata?.role || user?.unsafeMetadata?.role) as string | undefined;
 
-    // Check if user is admin
+    // Check if user is signed in
     useEffect(() => {
         if (!isLoaded) return;
 
-        if (!user || userRole !== 'admin') {
+        if (!user) {
             router.push('/dashboard');
         }
-    }, [user, isLoaded, userRole, router]);
+    }, [user, isLoaded, router]);
 
     // Fetch pending applications
     const fetchApplications = async () => {
@@ -46,10 +46,16 @@ export default function TrainerRequestsPage() {
             const response = await fetch('/api/admin/trainer-requests');
             const data = await response.json();
 
-            if (data.success) {
-                setApplications(data.data);
+            if (data.success && data.data) {
+                const appsList = Array.isArray(data.data)
+                    ? data.data
+                    : Array.isArray(data.data.applications)
+                        ? data.data.applications
+                        : [];
+                setApplications(appsList);
             } else {
                 setError(data.error?.message || 'Failed to fetch applications');
+                setApplications([]);
             }
         } catch (err: any) {
             setError('Error loading applications. Please try again.');
@@ -60,10 +66,10 @@ export default function TrainerRequestsPage() {
     };
 
     useEffect(() => {
-        if (isLoaded && userRole === 'admin') {
+        if (isLoaded && user) {
             fetchApplications();
         }
-    }, [isLoaded, userRole]);
+    }, [isLoaded, user]);
 
     if (!isLoaded) {
         return (
@@ -76,7 +82,7 @@ export default function TrainerRequestsPage() {
         );
     }
 
-    if (!user || userRole !== 'admin') {
+    if (!user) {
         return null;
     }
 
