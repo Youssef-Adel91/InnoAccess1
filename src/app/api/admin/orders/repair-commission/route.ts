@@ -67,10 +67,13 @@ async function handleRepair(req: NextRequest) {
 
             // If no specific referral code was stored on the order, find an active volunteer in the system
             if (!refCode || !/^VOL_[A-Z0-9]{6}$/i.test(refCode)) {
-                const activeVol = await User.findOne({ role: 'volunteer', isActive: true })
-                    .select('name affiliateCode')
-                    .lean();
-                if (activeVol && activeVol.affiliateCode) {
+                const activeVol = await User.findOne({ role: 'volunteer', isActive: { $ne: false } });
+                if (activeVol) {
+                    if (!activeVol.affiliateCode) {
+                        const { generateAffiliateCode } = await import('@/lib/affiliateUtils');
+                        activeVol.affiliateCode = generateAffiliateCode();
+                        await activeVol.save();
+                    }
                     refCode = activeVol.affiliateCode;
                 }
             }

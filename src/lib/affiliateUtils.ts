@@ -152,7 +152,7 @@ export async function attributeAffiliateCommission(
         const volunteer = await User.findOne({
             affiliateCode: refCode,
             role:          'volunteer',
-            isActive:      true,
+            isActive:      { $ne: false },
         }).select('_id role').lean();
 
         if (!volunteer) {
