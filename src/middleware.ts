@@ -50,9 +50,22 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
     const path = req.nextUrl.pathname;
     const locale = extractLocale(path);
 
-    // Check for affiliate referral query param ?ref=VOL_XXXX
+    // Check for affiliate referral query param ?ref=...
     const refParam = req.nextUrl.searchParams.get('ref');
-    const validRef = refParam && /^VOL_[A-Z0-9]{6}$/i.test(refParam) ? refParam.toUpperCase() : undefined;
+    const validRef = refParam && refParam.trim().length >= 3 ? refParam.trim().toUpperCase() : undefined;
+
+    const attachRefCookie = (res: NextResponse) => {
+        if (validRef) {
+            res.cookies.set('innoaccess_ref', validRef, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax',
+                maxAge: 30 * 24 * 60 * 60, // 30 days
+                path: '/',
+            });
+        }
+        return res;
+    };
 
     // 1. STRICTLY IGNORE API/TRPC routes from being processed by next-intl localization
     //    We return early so intlMiddleware is never called for API routes.
@@ -73,7 +86,7 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
         !isAuthRoute(req)
     ) {
         const onboardingUrl = new URL(`/${locale}/onboarding`, req.url);
-        return NextResponse.redirect(onboardingUrl);
+        return attachRefCookie(NextResponse.redirect(onboardingUrl));
     }
 
     // 3. If logged in WITH a role and trying to visit /onboarding OR an auth route,
@@ -83,7 +96,7 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
             userRole === 'student'
                 ? `/${locale}/dashboard`
                 : `/${locale}/${userRole}`;
-        return NextResponse.redirect(new URL(destination, req.url));
+        return attachRefCookie(NextResponse.redirect(new URL(destination, req.url)));
     }
 
     // 4. Protect non-public routes (require authentication)
@@ -93,16 +106,7 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
 
     // 5. Run next-intl middleware for localization on page routes only
     const res = intlMiddleware(req);
-    if (validRef) {
-        res.cookies.set('innoaccess_ref', validRef, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 30 * 24 * 60 * 60, // 30 days
-            path: '/',
-        });
-    }
-    return res;
+    return attachRefCookie(res);
 });
 
 export const config = {

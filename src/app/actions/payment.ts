@@ -109,7 +109,9 @@ export async function submitManualPayment(courseId: string, formData: FormData) 
         // needing a browser session.
         const cookieStore = await cookies();
         let affiliateRef = cookieStore.get('innoaccess_ref')?.value;
-        if (affiliateRef && !/^VOL_[A-Z0-9]{6}$/i.test(affiliateRef)) {
+        if (affiliateRef && typeof affiliateRef === 'string' && affiliateRef.trim() !== '') {
+            affiliateRef = affiliateRef.trim().toUpperCase();
+        } else {
             affiliateRef = undefined;
         }
 
@@ -189,7 +191,9 @@ export async function initPaymobPayment(
         // present. The Paymob webhook fires server-to-server with no cookies.
         const cookieStore = await cookies();
         let affiliateRef = cookieStore.get('innoaccess_ref')?.value;
-        if (affiliateRef && !/^VOL_[A-Z0-9]{6}$/i.test(affiliateRef)) {
+        if (affiliateRef && typeof affiliateRef === 'string' && affiliateRef.trim() !== '') {
+            affiliateRef = affiliateRef.trim().toUpperCase();
+        } else {
             affiliateRef = undefined;
         }
 

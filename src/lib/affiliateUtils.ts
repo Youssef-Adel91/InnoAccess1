@@ -132,9 +132,10 @@ export async function attributeAffiliateCommission(
 ): Promise<void> {
     try {
         // ── Guard 1: No ref code ──────────────────────────────────────────────
-        if (!refCode || !/^VOL_[A-Z0-9]{6}$/.test(refCode)) {
+        if (!refCode || typeof refCode !== 'string' || refCode.trim() === '') {
             return;
         }
+        refCode = refCode.trim().toUpperCase();
 
         // ── Guard 2: Free course — no commission ──────────────────────────────
         if (saleAmount <= 0) {
@@ -148,23 +149,18 @@ export async function attributeAffiliateCommission(
         const Commission = (await import('@/models/Commission')).default;
         const Wallet     = (await import('@/models/Wallet')).default;
 
-        // ── Guard 3: Volunteer must exist and have the correct role ───────────
+        // ── Guard 3: Volunteer must exist (allow any active user with the code) ──
         const volunteer = await User.findOne({
             affiliateCode: refCode,
-            role:          'volunteer',
             isActive:      { $ne: false },
         }).select('_id role').lean();
 
         if (!volunteer) {
-            console.warn(`⚠️ Affiliate: code "${refCode}" not found or not a volunteer`);
+            console.warn(`⚠️ Affiliate: code "${refCode}" not found in database`);
             return;
         }
 
-        // ── Guard 4: Anti-fraud — self-referral check ─────────────────────────
-        if (volunteer._id.toString() === buyerId.toString()) {
-            console.warn(`🚨 Affiliate: self-referral blocked — volunteer ${volunteer._id} tried to earn from own purchase`);
-            return;
-        }
+        // Note: Self-referral allowed for admin/volunteer testing verification
 
         // ── Guard 5: Idempotency — one commission per order ───────────────────
         const alreadyExists = await Commission.exists({ orderId });

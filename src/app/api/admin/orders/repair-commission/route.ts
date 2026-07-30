@@ -66,7 +66,7 @@ async function handleRepair(req: NextRequest) {
             let refCode = order.affiliateRef || requestedCode;
 
             // If no specific referral code was stored on the order, find an active volunteer in the system
-            if (!refCode || !/^VOL_[A-Z0-9]{6}$/i.test(refCode)) {
+            if (!refCode || refCode.trim() === '') {
                 const activeVol = await User.findOne({ role: 'volunteer', isActive: { $ne: false } });
                 if (activeVol) {
                     if (!activeVol.affiliateCode) {
@@ -78,7 +78,8 @@ async function handleRepair(req: NextRequest) {
                 }
             }
 
-            if (refCode && /^VOL_[A-Z0-9]{6}$/i.test(refCode)) {
+            if (refCode && refCode.trim() !== '') {
+                refCode = refCode.trim().toUpperCase();
                 // Update order's affiliateRef in database if missing
                 if (order.affiliateRef !== refCode) {
                     order.affiliateRef = refCode;

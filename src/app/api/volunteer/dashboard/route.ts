@@ -63,9 +63,16 @@ export async function GET(request: NextRequest) {
         const affiliateCode = user.affiliateCode;
         const now = new Date();
 
+        const commissionQuery = {
+            $or: [
+                { volunteerId },
+                { affiliateCode: user.affiliateCode }
+            ]
+        };
+
         // 2. Perform lazy unlock for pending commissions that have matured
         const toUnlock = await Commission.find({
-            volunteerId,
+            ...commissionQuery,
             status: CommissionStatus.PENDING,
             unlocksAt: { $lte: now },
         }).select('_id commissionAmount').lean();
@@ -92,6 +99,7 @@ export async function GET(request: NextRequest) {
         const walletData = await Wallet.findOne({
             $or: [
                 { userId: volunteerId, userType: 'volunteer' },
+                { userId: volunteerId },
                 { volunteerId: volunteerId },
             ],
         }).lean() ?? {
@@ -102,7 +110,7 @@ export async function GET(request: NextRequest) {
         };
 
         // 4. Fetch commissions & calculate stats
-        const commissions = await Commission.find({ volunteerId })
+        const commissions = await Commission.find(commissionQuery)
             .populate('courseId', 'title thumbnail')
             .sort({ createdAt: -1 })
             .lean();
