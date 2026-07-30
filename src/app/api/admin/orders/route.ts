@@ -12,9 +12,9 @@ import Order, { OrderStatus, PaymentMethod } from '@/models/Order';
 export async function GET() {
     try {
         const user = await currentUser();
-        const userRole = (user?.publicMetadata?.role || user?.unsafeMetadata?.role) as string | undefined;
+        let userRole = (user?.publicMetadata?.role || user?.unsafeMetadata?.role) as string | undefined;
 
-        if (!user || userRole !== 'admin') {
+        if (!user) {
             return NextResponse.json(
                 {
                     success: false,
@@ -29,10 +29,44 @@ export async function GET() {
 
         await connectDB();
 
-        // Get pending manual orders
+        if (userRole !== 'admin') {
+            const email = user.emailAddresses[0]?.emailAddress?.toLowerCase().trim();
+            if (email) {
+                const mongoUser = await User.findOne({ email });
+                if (mongoUser?.role === 'admin') {
+                    userRole = 'admin';
+                }
+            }
+        }
+
+        if (userRole !== 'admin') {
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: {
+                        message: 'Unauthorized',
+                        code: 'UNAUTHORIZED',
+                    },
+                },
+                { status: 403 }
+            );
+        }
+
+        // Get pending manual, Vodafone Cash, Instapay orders OR any pending order with a receipt screenshot
         const orders = await Order.find({
-            paymentMethod: PaymentMethod.MANUAL,
             status: OrderStatus.PENDING,
+            $or: [
+                {
+                    paymentMethod: {
+                        $in: [
+                            PaymentMethod.MANUAL,
+                            PaymentMethod.VODAFONE_CASH,
+                            PaymentMethod.INSTAPAY,
+                        ],
+                    },
+                },
+                { receiptUrl: { $exists: true, $ne: null } },
+            ],
         })
             .populate('userId', 'name email')
             .populate('courseId', 'title')
