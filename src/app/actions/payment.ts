@@ -1,8 +1,18 @@
 'use server';
 
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { currentUser } from '@clerk/nextjs/server';
+import User from '@/models/User';
 import { connectDB } from '@/lib/db';
+
+async function getAuthenticatedUser() {
+    const clerkUser = await currentUser();
+    if (!clerkUser) return null;
+    await connectDB();
+    const email = clerkUser.emailAddresses[0]?.emailAddress?.toLowerCase().trim();
+    if (!email) return null;
+    const mongoUser = await User.findOne({ email });
+    return mongoUser;
+}
 import Order, { OrderStatus, PaymentMethod } from '@/models/Order';
 import Course from '@/models/Course';
 import Enrollment from '@/models/Enrollment';
@@ -20,9 +30,9 @@ import { executeRevenueSplit } from '@/lib/revenueSplitEngine';
  */
 export async function submitManualPayment(courseId: string, formData: FormData) {
     try {
-        const session = await getServerSession(authOptions);
+        const user = await getAuthenticatedUser();
 
-        if (!session) {
+        if (!user) {
             throw new Error('You must be logged in');
         }
 
@@ -40,7 +50,7 @@ export async function submitManualPayment(courseId: string, formData: FormData) 
 
         // Check if already enrolled
         const existingEnrollment = await Enrollment.findOne({
-            userId: session.user.id,
+            userId: user._id,
             courseId: courseId,
         });
 
@@ -50,7 +60,7 @@ export async function submitManualPayment(courseId: string, formData: FormData) 
 
         // Check for pending order
         const pendingOrder = await Order.findOne({
-            userId: session.user.id,
+            userId: user._id,
             courseId: courseId,
             status: OrderStatus.PENDING,
         });
@@ -77,7 +87,7 @@ export async function submitManualPayment(courseId: string, formData: FormData) 
 
         // Upload to Vercel Blob
         const blob = await put(
-            `receipts/${session.user.id}/${courseId}-${Date.now()}.${receiptFile.name.split('.').pop()}`,
+            `receipts/${user._id}/${courseId}-${Date.now()}.${receiptFile.name.split('.').pop()}`,
             receiptFile,
             {
                 access: 'public',
@@ -105,7 +115,7 @@ export async function submitManualPayment(courseId: string, formData: FormData) 
 
         // Create order
         const order = await Order.create({
-            userId: new Types.ObjectId(session.user.id),
+            userId: user._id,
             courseId: new Types.ObjectId(courseId),
             amount: course.price,
             currency: CURRENCY,
@@ -146,9 +156,9 @@ export async function initPaymobPayment(
     phoneNumber?: string
 ) {
     try {
-        const session = await getServerSession(authOptions);
+        const user = await getAuthenticatedUser();
 
-        if (!session) {
+        if (!user) {
             throw new Error('You must be logged in');
         }
 
@@ -166,7 +176,7 @@ export async function initPaymobPayment(
 
         // Check if already enrolled
         const existingEnrollment = await Enrollment.findOne({
-            userId: session.user.id,
+            userId: user._id,
             courseId: courseId,
         });
 
@@ -185,7 +195,7 @@ export async function initPaymobPayment(
 
         // Create order first
         const order = await Order.create({
-            userId: new Types.ObjectId(session.user.id),
+            userId: user._id,
             courseId: new Types.ObjectId(courseId),
             amount: course.price,
             currency: CURRENCY,
@@ -196,9 +206,9 @@ export async function initPaymobPayment(
 
         // Prepare billing data
         const billingData: BillingData = {
-            email: session.user.email || `user${session.user.id}@innoaccess.com`,
-            first_name: session.user.name?.split(' ')[0] || 'Student',
-            last_name: session.user.name?.split(' ').slice(1).join(' ') || 'User',
+            email: user.email || 'student@innoaccess.com',
+            first_name: user.name?.split(' ')[0] || 'Student',
+            last_name: user.name?.split(' ').slice(1).join(' ') || 'User',
             phone_number: phoneNumber || '+20100000000',
             city: 'Cairo',
             country: 'EG',
@@ -267,9 +277,9 @@ export async function initPaymobPayment(
  */
 export async function approveManualPayment(orderId: string) {
     try {
-        const session = await getServerSession(authOptions);
+        const user = await getAuthenticatedUser();
 
-        if (!session || session.user.role !== 'admin') {
+        if (!user || user.role !== 'admin') {
             throw new Error('Unauthorized');
         }
 
@@ -288,7 +298,7 @@ export async function approveManualPayment(orderId: string) {
 
         // Update order
         order.status = OrderStatus.COMPLETED;
-        order.reviewedBy = new Types.ObjectId(session.user.id);
+        order.reviewedBy = user._id;
         order.reviewedAt = new Date();
         await order.save();
 
@@ -458,9 +468,9 @@ export async function approveManualPayment(orderId: string) {
  */
 export async function rejectManualPayment(orderId: string, reason: string) {
     try {
-        const session = await getServerSession(authOptions);
+        const user = await getAuthenticatedUser();
 
-        if (!session || session.user.role !== 'admin') {
+        if (!user || user.role !== 'admin') {
             throw new Error('Unauthorized');
         }
 
@@ -480,7 +490,7 @@ export async function rejectManualPayment(orderId: string, reason: string) {
         // Update order
         order.status = OrderStatus.REJECTED;
         order.rejectionReason = reason;
-        order.reviewedBy = new Types.ObjectId(session.user.id);
+        order.reviewedBy = user._id;
         order.reviewedAt = new Date();
         await order.save();
 
@@ -569,9 +579,9 @@ export async function rejectManualPayment(orderId: string, reason: string) {
  */
 export async function verifyPaymentStatus(orderId: string) {
     try {
-        const session = await getServerSession(authOptions);
+        const user = await getAuthenticatedUser();
 
-        if (!session) {
+        if (!user) {
             throw new Error('You must be logged in');
         }
 
@@ -600,7 +610,7 @@ export async function verifyPaymentStatus(orderId: string) {
         }
 
         // Check if this order belongs to the current user
-        if (order.userId.toString() !== session.user.id) {
+        if (order.userId.toString() !== user._id.toString()) {
             throw new Error('Unauthorized');
         }
 
