@@ -109,13 +109,13 @@ export function Header({ locale = 'en' }: HeaderProps) {
 
     const navigation = user
         ? [
-            { name: t('nav.jobs'),    href: `/${locale}/jobs`,    icon: Briefcase },
-            { name: t('nav.courses'), href: `/${locale}/courses`,  icon: GraduationCap },
+            { name: t('nav.jobs'),    href: '/jobs',    icon: Briefcase },
+            { name: t('nav.courses'), href: '/courses',  icon: GraduationCap },
         ]
         : [
-            { name: t('nav.aboutUs'),  href: `/${locale}/about`,    icon: Users },
-            { name: t('nav.features'), href: `/${locale}/features`,  icon: GraduationCap },
-            { name: t('nav.contact'),  href: `/${locale}/contact`,   icon: Bell },
+            { name: t('nav.aboutUs'),  href: '/about',    icon: Users },
+            { name: t('nav.features'), href: '/features',  icon: GraduationCap },
+            { name: t('nav.contact'),  href: '/contact',   icon: Bell },
         ];
 
     useEffect(() => {
@@ -152,7 +152,7 @@ export function Header({ locale = 'en' }: HeaderProps) {
                 <div className="flex h-16 items-center justify-between">
                     {/* Logo */}
                     <Link
-                        href={`/${locale}`}
+                        href="/"
                         className="flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded-lg px-1"
                         aria-label={t('logoLabel')}
                     >
@@ -316,13 +316,13 @@ export function Header({ locale = 'en' }: HeaderProps) {
                         {!user ? (
                             <>
                                 <Link
-                                    href={`/${locale}/auth/login`}
+                                    href="/auth/login"
                                     className="hidden sm:inline-flex items-center px-4 py-2 rounded-xl text-sm font-semibold text-gray-700 transition-all duration-200 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 min-h-[44px]"
                                 >
                                     {t('auth.signIn')}
                                 </Link>
                                 <Link
-                                    href={`/${locale}/auth/register`}
+                                    href="/auth/register"
                                     className="hidden sm:inline-flex items-center px-4 py-2 rounded-xl text-sm font-semibold text-white bg-blue-600 transition-all duration-200 hover:bg-blue-700 hover:shadow-md hover:shadow-blue-500/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 min-h-[44px]"
                                 >
                                     {t('auth.getStarted')}
@@ -447,14 +447,14 @@ export function Header({ locale = 'en' }: HeaderProps) {
                         {!user ? (
                             <div className="pt-3 mt-2 border-t border-gray-100 flex flex-col gap-2 px-1">
                                 <Link
-                                    href={`/${locale}/auth/login`}
+                                    href="/auth/login"
                                     className="flex items-center justify-center w-full min-h-[44px] px-4 py-3 rounded-xl text-sm font-semibold text-gray-700 border-2 border-gray-200 hover:bg-gray-50 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
                                     onClick={() => setMobileMenuOpen(false)}
                                 >
                                     {t('auth.signIn')}
                                 </Link>
                                 <Link
-                                    href={`/${locale}/auth/register`}
+                                    href="/auth/register"
                                     className="flex items-center justify-center w-full min-h-[44px] px-4 py-3 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 hover:shadow-md transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
                                     onClick={() => setMobileMenuOpen(false)}
                                 >

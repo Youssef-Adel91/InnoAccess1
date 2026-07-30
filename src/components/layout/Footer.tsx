@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import { Facebook, Linkedin } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { SOCIAL_LINKS } from '@/lib/constants';
@@ -27,14 +27,14 @@ export function Footer({ locale = 'en' }: FooterProps) {
 
     const navigation = {
         platform: [
-            { name: t('links.findJobs'),           href: `/${locale}/jobs` },
-            { name: t('links.browseCourses'),       href: `/${locale}/courses` },
+            { name: t('links.findJobs'),           href: '/jobs' },
+            { name: t('links.browseCourses'),       href: '/courses' },
             { name: t('links.postJob'),             href: '/company/jobs/new' },
             { name: t('links.teachOnInnoAccess'),   href: '/join-trainer' },
         ],
         company: [
-            { name: t('links.aboutUs'), href: `/${locale}/about` },
-            { name: t('links.contact'),  href: `/${locale}/contact` },
+            { name: t('links.aboutUs'), href: '/about' },
+            { name: t('links.contact'),  href: '/contact' },
         ],
         legal: [] as { name: string; href: string }[],
     };
@@ -54,7 +54,7 @@ export function Footer({ locale = 'en' }: FooterProps) {
                     {/* Brand */}
                     <div className="sm:col-span-2 md:col-span-1">
                         <Link
-                            href={`/${locale}`}
+                            href="/"
                             className="inline-flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 rounded"
                             aria-label={t('logoLabel')}
                         >
