@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { useUser } from '@clerk/nextjs';
 import Link from 'next/link';
 import { ArrowLeft, Lock, CheckCircle, Youtube, Video } from 'lucide-react';
 import SecureYouTubePlayer from '@/components/common/SecureYouTubePlayer';
@@ -36,7 +36,7 @@ interface VideoLesson {
 export default function CoursePlayerPage() {
     const params = useParams();
     const router = useRouter();
-    const { data: session, status } = useSession();
+    const { isSignedIn, isLoaded } = useUser();
     const courseId = params.id as string;
 
     const [course, setCourse] = useState<Course | null>(null);
@@ -46,13 +46,13 @@ export default function CoursePlayerPage() {
     const [isEnrolled, setIsEnrolled] = useState(false);
 
     useEffect(() => {
-        if (status === 'loading') return;
-        if (!session) {
-            router.push('/auth/signin');
+        if (!isLoaded) return;
+        if (!isSignedIn) {
+            router.push('/auth/login');
             return;
         }
         fetchCourse();
-    }, [session, status, courseId]);
+    }, [isSignedIn, isLoaded, courseId]);
 
     const fetchCourse = async () => {
         setLoading(true);
@@ -98,7 +98,7 @@ export default function CoursePlayerPage() {
         );
     }
 
-    if (!session || error || !course) {
+    if (!isSignedIn || error || !course) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
                 <div className="text-center">

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { useUser } from '@clerk/nextjs';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { ArrowLeft, BookOpen, Clock, Users, Star, Video, Lock, PlayCircle, Calendar, Copy } from 'lucide-react';
@@ -61,7 +61,7 @@ interface VideoLesson {
 export default function CourseDetailPage() {
     const params = useParams();
     const router = useRouter();
-    const { data: session } = useSession();
+    const { isSignedIn, user } = useUser();
     const courseId = params.id as string;
 
     const [course, setCourse] = useState<Course | null>(null);
@@ -109,8 +109,8 @@ export default function CourseDetailPage() {
     };
 
     const handleEnroll = async () => {
-        if (!session) {
-            router.push('/auth/signin');
+        if (!isSignedIn) {
+            router.push('/auth/login');
             return;
         }
 
@@ -321,7 +321,7 @@ export default function CourseDetailPage() {
                                     )}
                                 </div>
 
-                                {session ? (
+                                {isSignedIn ? (
                                     isEnrolled ? (
                                         course.courseType === 'LIVE' && course.liveSession ? (
                                             <LiveSessionAction liveSession={course.liveSession} />
@@ -349,7 +349,7 @@ export default function CourseDetailPage() {
                                         </Link>
                                     )
                                 ) : (
-                                    <Link href="/auth/signin">
+                                    <Link href="/auth/login">
                                         <Button variant="primary" className="w-full mb-3">
                                             Sign in to Enroll
                                         </Button>
@@ -357,7 +357,7 @@ export default function CourseDetailPage() {
                                 )}
 
                                 {/* Volunteer Affiliate Action */}
-                                {session?.user?.role === 'volunteer' && (
+                                {user?.publicMetadata?.role === 'volunteer' && (
                                     <div className="mt-4 pt-4 border-t border-gray-100">
                                         <Button
                                             variant="outline"

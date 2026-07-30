@@ -1,11 +1,11 @@
 'use server';
 
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { currentUser } from '@clerk/nextjs/server';
 import { connectDB } from '@/lib/db';
 import Enrollment from '@/models/Enrollment';
 import Course from '@/models/Course';
 import Category from '@/models/Category';
+import User from '@/models/User';
 import { Types } from 'mongoose';
 
 /**
@@ -13,13 +13,19 @@ import { Types } from 'mongoose';
  */
 export async function enrollInCourse(courseId: string) {
     try {
-        const session = await getServerSession(authOptions);
+        const clerkUser = await currentUser();
 
-        if (!session) {
+        if (!clerkUser) {
             throw new Error('You must be logged in to enroll');
         }
 
         await connectDB();
+
+        const email = clerkUser.emailAddresses[0]?.emailAddress?.toLowerCase().trim();
+        const mongoUser = await User.findOne({ email });
+        if (!mongoUser) {
+            throw new Error('User profile not found');
+        }
 
         // Check if course exists and is free
         const course = await Course.findById(courseId);
@@ -38,7 +44,7 @@ export async function enrollInCourse(courseId: string) {
 
         // Check if already enrolled
         const existingEnrollment = await Enrollment.findOne({
-            userId: session.user.id,
+            userId: mongoUser._id,
             courseId: courseId,
         });
 
@@ -54,7 +60,7 @@ export async function enrollInCourse(courseId: string) {
 
         // Create enrollment
         const enrollment = await Enrollment.create({
-            userId: new Types.ObjectId(session.user.id),
+            userId: mongoUser._id,
             courseId: new Types.ObjectId(courseId),
             progress: [],
             enrolledAt: new Date(),
@@ -91,9 +97,9 @@ export async function enrollInCourse(courseId: string) {
  */
 export async function checkEnrollment(courseId: string) {
     try {
-        const session = await getServerSession(authOptions);
+        const clerkUser = await currentUser();
 
-        if (!session) {
+        if (!clerkUser) {
             return {
                 success: true,
                 data: {
@@ -104,8 +110,19 @@ export async function checkEnrollment(courseId: string) {
 
         await connectDB();
 
+        const email = clerkUser.emailAddresses[0]?.emailAddress?.toLowerCase().trim();
+        const mongoUser = await User.findOne({ email });
+        if (!mongoUser) {
+            return {
+                success: true,
+                data: {
+                    isEnrolled: false,
+                },
+            };
+        }
+
         const enrollment = await Enrollment.findOne({
-            userId: session.user.id,
+            userId: mongoUser._id,
             courseId: courseId,
         });
 
@@ -127,3 +144,4 @@ export async function checkEnrollment(courseId: string) {
         };
     }
 }
+

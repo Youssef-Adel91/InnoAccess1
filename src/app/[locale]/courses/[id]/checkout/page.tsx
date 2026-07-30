@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { useUser } from '@clerk/nextjs';
 import Link from 'next/link';
 import { ArrowLeft, CreditCard, Smartphone, CheckCircle, Loader2 } from 'lucide-react';
 import { submitManualPayment, initPaymobPayment } from '@/app/actions/payment';
@@ -23,7 +23,7 @@ type PaymentTab = 'paymob' | 'manual';
 export default function CheckoutPage() {
     const params = useParams();
     const router = useRouter();
-    const { data: session, status } = useSession();
+    const { isSignedIn, isLoaded } = useUser();
 
     // In Next.js 15, params may be a Promise
     const [courseId, setCourseId] = useState<string>('');
@@ -60,14 +60,14 @@ export default function CheckoutPage() {
     }, [params]);
 
     useEffect(() => {
-        if (status === 'loading' || !courseId) return;
-        if (!session) {
-            router.push('/auth/signin');
+        if (!isLoaded || !courseId) return;
+        if (!isSignedIn) {
+            router.push('/auth/login');
             return;
         }
         fetchCourse();
         checkEnrollmentStatus();
-    }, [session, status, courseId]);
+    }, [isSignedIn, isLoaded, courseId]);
 
     const fetchCourse = async () => {
         setLoading(true);
@@ -209,7 +209,7 @@ export default function CheckoutPage() {
         );
     }
 
-    if (!session || error || !course) {
+    if (!isSignedIn || error || !course) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
                 <div className="text-center">
