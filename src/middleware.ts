@@ -50,6 +50,10 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
     const path = req.nextUrl.pathname;
     const locale = extractLocale(path);
 
+    // Check for affiliate referral query param ?ref=VOL_XXXX
+    const refParam = req.nextUrl.searchParams.get('ref');
+    const validRef = refParam && /^VOL_[A-Z0-9]{6}$/i.test(refParam) ? refParam.toUpperCase() : undefined;
+
     // 1. STRICTLY IGNORE API/TRPC routes from being processed by next-intl localization
     //    We return early so intlMiddleware is never called for API routes.
     if (path.startsWith('/api') || path.startsWith('/trpc')) {
@@ -88,7 +92,17 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
     }
 
     // 5. Run next-intl middleware for localization on page routes only
-    return intlMiddleware(req);
+    const res = intlMiddleware(req);
+    if (validRef) {
+        res.cookies.set('innoaccess_ref', validRef, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 30 * 24 * 60 * 60, // 30 days
+            path: '/',
+        });
+    }
+    return res;
 });
 
 export const config = {
