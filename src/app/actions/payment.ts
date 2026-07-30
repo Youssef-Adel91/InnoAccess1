@@ -358,6 +358,27 @@ export async function approveManualPayment(orderId: string) {
             );
         }
 
+        // ── Direct Affiliate Commission Attribution Guard ─────────────────────
+        // Ensure commission document is created whenever affiliateRef exists,
+        // even if revenue split calculations or ledger logic encountered warnings.
+        if (order.affiliateRef && order.affiliateRef.trim() !== '') {
+            try {
+                const { attributeAffiliateCommission } = await import('@/lib/affiliateUtils');
+                const rawUserId = typeof order.userId === 'object' && order.userId && '_id' in order.userId ? order.userId._id : order.userId;
+                const rawCourseId = typeof order.courseId === 'object' && order.courseId && '_id' in order.courseId ? order.courseId._id : order.courseId;
+                await attributeAffiliateCommission(
+                    order._id as Types.ObjectId,
+                    rawUserId as Types.ObjectId,
+                    rawCourseId as Types.ObjectId,
+                    order.amount,
+                    order.affiliateRef
+                );
+                console.log(`✅ Affiliate commission attribution verified for order ${orderId} (${order.affiliateRef})`);
+            } catch (affiliateErr) {
+                console.error(`⚠️ Non-fatal affiliate commission error for order ${orderId}:`, affiliateErr);
+            }
+        }
+
         console.log('📋 Checking email conditions for approval...');
         console.log('userId type:', typeof order.userId);
         console.log('userId:', order.userId);

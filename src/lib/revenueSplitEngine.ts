@@ -187,7 +187,8 @@ export async function executeRevenueSplit(
         // We derive the volunteer amount from the same tiered logic used there.
         let volunteerCommissionEGP = 0;
 
-        if (affiliateRef && /^VOL_[A-Z0-9]{6}$/.test(affiliateRef)) {
+        if (affiliateRef && typeof affiliateRef === 'string' && affiliateRef.trim() !== '') {
+            const cleanRef = affiliateRef.trim().toUpperCase();
             // Mirror the tier logic from affiliateUtils.ts to get the EGP amount
             // for the ledger entry. attributeAffiliateCommission will re-compute
             // and write the actual wallet credit atomically.
@@ -195,7 +196,7 @@ export async function executeRevenueSplit(
             const Commission = (await import('@/models/Commission')).default;
             const User = (await import('@/models/User')).default;
 
-            const vol = await User.findOne({ affiliateCode: affiliateRef, role: 'volunteer' })
+            const vol = await User.findOne({ affiliateCode: cleanRef, isActive: { $ne: false } })
                 .select('_id').lean();
             if (vol) {
                 const existingCount = await Commission.countDocuments({ volunteerId: vol._id });
